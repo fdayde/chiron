@@ -1,7 +1,7 @@
 [project]
-name = "healstra-beonemed-avisct"
+name = "chiron"
 version = "0.1.0"
-description = "Add your description here"
+description = "Assistant IA pour la préparation des conseils de classe"
 requires-python = ">=3.13"
 dependencies = [
     "anthropic>=0.46.0",
