@@ -1,0 +1,46 @@
+# Standardisation des fins de ligne (LF) pour éviter les problèmes Windows/Unix
+
+# Fichiers texte : forcer LF
+*.py text eol=lf
+*.pyi text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Fichiers de configuration
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+.pre-commit-config.yaml text eol=lf
+
+# Fichiers Windows : forcer CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Fichiers binaires
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.db binary
+*.duckdb binary
+*.pickle binary
+*.pkl binary
+*.whl binary
+*.egg binary
+*.pyc binary
+*.pyd binary
+*.so binary
+*.dll binary
+*.exe binary
+*.zip binary
+*.tar binary
+*.gz binary
