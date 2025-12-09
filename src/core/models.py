@@ -65,28 +65,29 @@ class GroundTruthDataset(BaseModel):
 # =============================================================================
 
 
-class Insight(BaseModel):
-    """Un insight détecté (alerte, réussite, etc.)."""
+class Alerte(BaseModel):
+    """Une alerte sur une matière ou un comportement."""
 
-    type: Literal["alerte", "reussite", "engagement", "posture", "ecart"]
+    matiere: str
     description: str
-    matieres: list[str] | None = None
-    severite: Literal["info", "attention", "urgent"] | None = None
+    severite: Literal["urgent", "attention"]
+
+
+class Reussite(BaseModel):
+    """Une réussite dans une matière."""
+
+    matiere: str
+    description: str
 
 
 class SyntheseGeneree(BaseModel):
-    """Synthèse générée par le LLM."""
+    """Synthèse générée par le LLM avec insights."""
 
     synthese_texte: str
-    alertes: list[Insight] = Field(default_factory=list)
-    reussites: list[Insight] = Field(default_factory=list)
-    engagement_differencie: dict[str, str] = Field(default_factory=dict)
-    posture_generale: Literal["actif", "passif", "perturbateur", "variable"] | None = (
-        None
-    )
-    ecart_effort_resultat: (
-        Literal["equilibre", "effort_sup_resultat", "resultat_sup_effort"] | None
-    ) = None
+    alertes: list[Alerte] = Field(default_factory=list)
+    reussites: list[Reussite] = Field(default_factory=list)
+    posture_generale: Literal["actif", "passif", "perturbateur", "variable"]
+    axes_travail: list[str] = Field(default_factory=list)
 
 
 # =============================================================================

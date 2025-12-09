@@ -22,10 +22,10 @@ class LLMSettings(BaseSettings):
         extra="ignore",
     )
 
-    # API Keys
-    openai_api_key: str = Field(..., description="Clé API OpenAI")
-    anthropic_api_key: str = Field(..., description="Clé API Anthropic")
-    mistral_api_key: str = Field(..., description="Clé API Mistral")
+    # API Keys (optionnelles pour permettre le dev sans toutes les clés)
+    openai_api_key: str = Field(default="", description="Clé API OpenAI")
+    anthropic_api_key: str = Field(default="", description="Clé API Anthropic")
+    mistral_api_key: str = Field(default="", description="Clé API Mistral")
 
     # Modèles par défaut (production)
     default_openai_model: str = Field(

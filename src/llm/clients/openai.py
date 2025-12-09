@@ -71,11 +71,17 @@ class OpenAIClient(LLMClient):
         is_gpt5 = model.startswith("gpt-5")
 
         # Paramètres par défaut
-        # GPT-5 ne supporte que temperature=1 (défaut), donc on ne l'envoie pas
-        if not is_gpt5 and "temperature" not in kwargs:
+        # GPT-5 ne supporte que temperature=1 (défaut), donc on le retire si présent
+        if is_gpt5:
+            kwargs.pop("temperature", None)
+        elif "temperature" not in kwargs:
             kwargs["temperature"] = settings.default_temperature
 
         # GPT-5 utilise max_completion_tokens au lieu de max_tokens
+        # Convertir max_tokens en max_completion_tokens si présent
+        if is_gpt5 and "max_tokens" in kwargs:
+            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+
         max_tokens_key = "max_completion_tokens" if is_gpt5 else "max_tokens"
 
         if max_tokens_key not in kwargs:
