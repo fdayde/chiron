@@ -1,7 +1,7 @@
 {
   "metadata": {
     "projet": "Chiron",
-    "description": "Ground truth pour validation des prompts LLM",
+    "description": "Ground truth pour validation des prompts LLM - Structure PRONOTE complète",
     "classe": "5ème",
     "trimestre": "T1",
     "nb_eleves": 4
@@ -10,81 +10,119 @@
     {
       "eleve_id": "ELEVE_A",
       "genre": "F",
+      "etablissement": "Collège Test",
+      "classe": "5ème",
+      "trimestre": 1,
+      "annee_scolaire": "2024-2025",
       "absences_demi_journees": 4,
       "absences_justifiees": true,
       "retards": 0,
       "engagements": ["Déléguée titulaire"],
+      "parcours": ["Parcours éducatifs", "Parcours citoyen"],
+      "evenements": ["06/11/2025 : ELEVE DELEGUE DE CLASSE - suivi par Mme NUNEZ"],
       "matieres": [
         {
-          "nom": "Anglais LV1",
+          "nom": "ANGLAIS LV1",
+          "professeur": "Mme AJENJO",
           "moyenne_eleve": 15.21,
           "moyenne_classe": 10.83,
+          "note_ecrit": 16.67,
+          "note_oral": 13.75,
+          "moyenne_ecrit_classe": 11.25,
+          "moyenne_oral_classe": 10.40,
+          "competences": ["5 compétences langagières", "parler de soi et des autres"],
           "appreciation": "Bons résultats. ELEVE_A fournit un travail régulier et sérieux à la maison tout comme en classe. L'attitude est toujours positive et constructive. Poursuivez ainsi!"
         },
         {
-          "nom": "Arts Plastiques",
+          "nom": "ARTS PLASTIQUES",
+          "professeur": "Mme BLASCO",
           "moyenne_eleve": 15.00,
           "moyenne_classe": 14.92,
+          "competences": ["Expérimenter, produire, créer", "S'approprier des questions artistiques en prenant appui sur une pratique artistique et réflexive", "Faire preuve d'autonomie, d'initiative, de responsabilité, d'engagement et d'esprit critique dans la conduite d'un projet artistique"],
           "appreciation": "Bon ensemble, bilan satisfaisant, continuez ainsi en restant concentrée."
         },
         {
-          "nom": "EPS",
+          "nom": "ED.PHYSIQUE & SPORT",
+          "professeur": "Mme JULIEN",
           "moyenne_eleve": 8.00,
           "moyenne_classe": 12.79,
+          "competences": ["course d'orientation"],
           "appreciation": "Bilan très insuffisant, ELEVE_A n'a pas réussi à s'orienter avec efficacité. Elle a beaucoup marché et s'est dispersée avec son groupe. Son travail a manqué de sérieux et d'implication dans les défis à relever en course d'orientation. De sincères efforts sont attendus au prochain trimestre."
         },
         {
-          "nom": "Éducation Musicale",
+          "nom": "EDUCATION MUSICALE",
+          "professeur": "Mme HERMITE",
           "moyenne_eleve": 13.00,
           "moyenne_classe": 9.53,
+          "competences": ["Échanger, partager, argumenter et débattre", "Écouter, comparer et construire une culture musicale commune", "Explorer, imaginer, créer et produire", "Réaliser des projets musicaux d'interprétation ou de création"],
           "appreciation": "C'est très bien quand vous voulez. Votre investissement doit être régulier."
         },
         {
-          "nom": "Espagnol LV2",
+          "nom": "ESPAGNOL LV2",
+          "professeur": "Mme ANDREO",
           "moyenne_eleve": 13.83,
           "moyenne_classe": 10.76,
+          "note_ecrit": 11.47,
+          "note_oral": 16.19,
+          "moyenne_ecrit_classe": 7.09,
+          "moyenne_oral_classe": 14.03,
+          "competences": ["5 activités langagières"],
           "appreciation": ""
         },
         {
-          "nom": "Français",
+          "nom": "FRANCAIS",
+          "professeur": "Mme MAUREL",
           "moyenne_eleve": 13.21,
           "moyenne_classe": 10.12,
+          "competences": ["Adopter les procédés d'écriture qui répondent à la consigne et à l'objectif", "Comprendre les messages oraux", "Comprendre les différences entre l'oral et l'écrit", "Imaginer des univers nouveaux (contes merveilleux, romans d'anticipation...)", "Le voyage et l'aventure (récits d'aventures, de voyages...)", "Lire des textes littéraires et fréquenter des œuvres d'art - Maîtriser l'usage du vocabulaire"],
           "appreciation": "Assez bons résultats à l'écrit. La participation orale est satisfaisante. Mais pour progresser encore et consolider les acquis, ELEVE_A doit veiller à rester bien concentrée en classe."
         },
         {
-          "nom": "Histoire-Géographie-EMC",
+          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "professeur": "Mme PERREE",
           "moyenne_eleve": 14.66,
           "moyenne_classe": 10.77,
+          "competences": ["Comprendre le sens général d'un document", "Construire des hypothèses d'interprétation de phénomènes historiques ou géographiques", "Écrire pour construire sa pensée et son savoir, pour argumenter et écrire pour communiquer et échanger", "Extraire des informations pertinentes pour répondre à une question portant sur un docu."],
           "appreciation": "Bon trimestre ! ELEVE_A est une élève impliquée et sérieuse, en témoigne ses résultats. Je l'encourage à conserver cette motivation pour le second trimestre !"
         },
         {
-          "nom": "Latin et Grec",
+          "nom": "LCA LATIN ET GREC",
+          "professeur": "Mme MAUREL",
           "moyenne_eleve": 18.21,
           "moyenne_classe": 17.77,
+          "competences": [],
           "appreciation": "Très bon travail. Élève volontaire et investie."
         },
         {
-          "nom": "Mathématiques",
+          "nom": "MATHEMATIQUES",
+          "professeur": "Mme CAIRE",
           "moyenne_eleve": 16.07,
           "moyenne_classe": 11.75,
+          "competences": ["Travail des 6 compétences mathématiques", "Notions de divisibilité et nombres premiers", "Enchaînements d'opérations", "Triangles : Constructions et calcul d'angles", "Périmètre et aire d'une figure quelconque", "Périmètre et aire d'un rectangle ; volume d'un pavé droit"],
           "appreciation": "Très bon trimestre. ELEVE_A a de bons acquis, elle est volontaire, sa participation est active et son travail appliqué. Je l'encourage à poursuivre dans cette dynamique, en veillant à ne pas se disperser."
         },
         {
-          "nom": "Physique-Chimie",
+          "nom": "PHYSIQUE-CHIMIE",
+          "professeur": "Mme CHIVAS",
           "moyenne_eleve": 15.71,
           "moyenne_classe": 12.49,
+          "competences": ["Pratiquer des langages", "Les différents types de signaux", "Propriétés des signaux"],
           "appreciation": "C'est un très bon trimestre. La participation de ELEVE_A en classe est précieuse."
         },
         {
-          "nom": "SVT",
+          "nom": "SCIENCES VIE & TERRE",
+          "professeur": "M. WOLFF",
           "moyenne_eleve": 10.86,
           "moyenne_classe": 8.68,
+          "competences": [],
           "appreciation": "Bilan un peu juste de ELEVE_A. Le travail personnel est encore perfectible comme la participation en classe qui est encore trop timide."
         },
         {
-          "nom": "Technologie",
+          "nom": "TECHNOLOGIE",
+          "professeur": "M. MALBOS",
           "moyenne_eleve": 15.80,
           "moyenne_classe": 13.73,
+          "competences": ["S'approprier les outils et les méthodes", "Mobiliser les outils numériques", "Fonctionnement d'un réseau informatique"],
           "appreciation": "Très bon trimestre, c'est très bien, continuez ainsi."
         }
       ],
@@ -93,75 +131,107 @@
     {
       "eleve_id": "ELEVE_B",
       "genre": "F",
+      "etablissement": "Collège Test",
+      "classe": "5ème",
+      "trimestre": 1,
+      "annee_scolaire": "2024-2025",
       "absences_demi_journees": 8,
       "absences_justifiees": true,
       "retards": 0,
       "engagements": [],
+      "parcours": [],
+      "evenements": [],
       "matieres": [
         {
-          "nom": "Anglais LV1",
+          "nom": "ANGLAIS LV1",
+          "professeur": "Mme AJENJO",
           "moyenne_eleve": 11.60,
           "moyenne_classe": 10.83,
+          "note_ecrit": 15.69,
+          "note_oral": 7.50,
+          "moyenne_ecrit_classe": 11.25,
+          "moyenne_oral_classe": 10.40,
+          "competences": ["5 compétences langagières", "parler de soi et des autres"],
           "appreciation": "Bons résultats à l'écrit ternis par une moyenne orale faible due à un accident au dernier contrôle. Je suis sûre que ELEVE_B saura y remédier au trimestre prochain en participant davantage en classe. Je compte sur elle."
         },
         {
-          "nom": "Arts Plastiques",
+          "nom": "ARTS PLASTIQUES",
+          "professeur": "Mme BLASCO",
           "moyenne_eleve": 15.75,
           "moyenne_classe": 14.92,
+          "competences": ["Expérimenter, produire, créer", "S'approprier des questions artistiques en prenant appui sur une pratique artistique et réflexive", "Faire preuve d'autonomie, d'initiative, de responsabilité, d'engagement et d'esprit critique dans la conduite d'un projet artistique"],
           "appreciation": "Bon trimestre, bon investissement dans le travail, continuez ainsi."
         },
         {
-          "nom": "EPS",
+          "nom": "ED.PHYSIQUE & SPORT",
+          "professeur": "Mme JULIEN",
           "moyenne_eleve": 15.75,
           "moyenne_classe": 12.79,
+          "competences": ["course d'orientation"],
           "appreciation": "Bon trimestre, un investissement sérieux et régulier. Poursuis avec la même détermination !"
         },
         {
-          "nom": "Éducation Musicale",
+          "nom": "EDUCATION MUSICALE",
+          "professeur": "Mme HERMITE",
           "moyenne_eleve": 8.40,
           "moyenne_classe": 9.53,
+          "competences": ["Échanger, partager, argumenter et débattre", "Écouter, comparer et construire une culture musicale commune", "Explorer, imaginer, créer et produire", "Réaliser des projets musicaux d'interprétation ou de création"],
           "appreciation": "Résultats alarmants. Apprenez vos leçons régulièrement."
         },
         {
-          "nom": "Français",
+          "nom": "FRANCAIS",
+          "professeur": "Mme MAUREL",
           "moyenne_eleve": 11.90,
           "moyenne_classe": 10.12,
+          "competences": ["Adopter les procédés d'écriture qui répondent à la consigne et à l'objectif", "Comprendre les messages oraux", "Comprendre les différences entre l'oral et l'écrit", "Imaginer des univers nouveaux (contes merveilleux, romans d'anticipation...)", "Le voyage et l'aventure (récits d'aventures, de voyages...)", "Lire des textes littéraires et fréquenter des œuvres d'art", "Maîtriser l'usage du vocabulaire", "Maîtriser le fonctionnement du verbe"],
           "appreciation": "Des résultats convenables à l'écrit. Je regrette simplement que ELEVE_B reste en retrait. J'attends de toi que tu t'investisses davantage dans le cours et dans ton travail personnel."
         },
         {
-          "nom": "Histoire-Géographie-EMC",
+          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "professeur": "Mme PERREE",
           "moyenne_eleve": 14.45,
           "moyenne_classe": 10.77,
+          "competences": ["Comprendre le sens général d'un document", "Construire des hypothèses d'interprétation de phénomènes historiques ou géographiques", "Écrire pour construire sa pensée et son savoir, pour argumenter et écrire pour communiquer et échanger", "Extraire des informations pertinentes pour répondre à une question portant sur un document ou plusieurs documents, les classer, les hiérarchiser", "Identifier le document et son point de vue particulier", "Nommer et localiser les grands repères géographiques"],
           "appreciation": "Bon trimestre pour ELEVE_B. C'est une élève très discrète en classe. Je l'encourage à participer davantage !"
         },
         {
-          "nom": "Italien LV2",
+          "nom": "ITALIEN LV2",
+          "professeur": "Mme PORTET",
           "moyenne_eleve": 19.32,
           "moyenne_classe": 14.59,
+          "competences": [],
           "appreciation": "C'est un excellent premier trimestre pour ELEVE_B en terme de résultats. Toutefois, ELEVE_B en classe est très discrète et sa participation orale en classe est quasi inexistante. J'attends d'elle qu'elle participe activement en classe. Bravo pour ce premier trimestre."
         },
         {
-          "nom": "Mathématiques",
+          "nom": "MATHEMATIQUES",
+          "professeur": "Mme CAIRE",
           "moyenne_eleve": 11.13,
           "moyenne_classe": 11.75,
+          "competences": ["Travail des 6 compétences mathématiques", "Notions de divisibilité et nombres premiers + Enchaînements d'opérations", "Triangles : Constructions et calcul d'angles", "Périmètre et aire d'une figure quelconque", "Périmètre et aire d'un rectangle ; volume d'un pavé droit"],
           "appreciation": "Ensemble juste convenable. ELEVE_B est sérieuse, elle fait des efforts de participation en classe et son travail est régulier. Je l'encourage à poursuivre ses efforts pour consolider les acquis, elle est capable de progresser."
         },
         {
-          "nom": "Physique-Chimie",
+          "nom": "PHYSIQUE-CHIMIE",
+          "professeur": "Mme CHIVAS",
           "moyenne_eleve": 13.52,
           "moyenne_classe": 12.49,
+          "competences": ["Pratiquer des langages", "Les différents types de signaux", "Propriétés des signaux"],
           "appreciation": "C'est un assez bon trimestre. Il faut poursuivre dans cette voie en accentuant la participation en classe."
         },
         {
-          "nom": "SVT",
+          "nom": "SCIENCES VIE & TERRE",
+          "professeur": "M. WOLFF",
           "moyenne_eleve": 7.57,
           "moyenne_classe": 8.68,
+          "competences": [],
           "appreciation": "ELEVE_B doit fournir un travail personnel bien plus approfondi pour espérer progresser. Elle doit également se montrer moins passive en classe et oser participer."
         },
         {
-          "nom": "Technologie",
+          "nom": "TECHNOLOGIE",
+          "professeur": "M. MALBOS",
           "moyenne_eleve": 18.07,
           "moyenne_classe": 13.73,
+          "competences": ["S'approprier les outils et les méthodes", "Mobiliser les outils numériques", "Fonctionnement d'un réseau informatique"],
           "appreciation": "Excellent travail, excellent trimestre, c'est très bien, bravo, félicitations."
         }
       ],
@@ -170,81 +240,119 @@
     {
       "eleve_id": "ELEVE_C",
       "genre": "M",
+      "etablissement": "Collège Test",
+      "classe": "5ème",
+      "trimestre": 1,
+      "annee_scolaire": "2024-2025",
       "absences_demi_journees": 5,
       "absences_justifiees": true,
       "retards": 0,
       "engagements": [],
+      "parcours": [],
+      "evenements": [],
       "matieres": [
         {
-          "nom": "Anglais LV1",
+          "nom": "ANGLAIS LV1",
+          "professeur": "Mme AJENJO",
           "moyenne_eleve": 8.22,
           "moyenne_classe": 10.83,
+          "note_ecrit": 11.85,
+          "note_oral": 4.58,
+          "moyenne_ecrit_classe": 11.25,
+          "moyenne_oral_classe": 10.40,
+          "competences": ["5 compétences langagières", "parler de soi et des autres"],
           "appreciation": "Résultats insuffisants. ELEVE_C semble peu intéressé par la matière et se montre très passif en classe. Son absence de participation le pénalise beaucoup. Dommage car il montre des réussites à l'écrit."
         },
         {
-          "nom": "Arts Plastiques",
+          "nom": "ARTS PLASTIQUES",
+          "professeur": "Mme BLASCO",
           "moyenne_eleve": 15.63,
           "moyenne_classe": 14.92,
+          "competences": ["Expérimenter, produire, créer", "S'approprier des questions artistiques en prenant appui sur une pratique artistique et réflexive", "Faire preuve d'autonomie, d'initiative, de responsabilité, d'engagement et d'esprit critique dans la conduite d'un projet artistique"],
           "appreciation": "Bon trimestre, bon investissement dans le travail, continuez ainsi en participant davantage."
         },
         {
-          "nom": "EPS",
+          "nom": "ED.PHYSIQUE & SPORT",
+          "professeur": "Mme JULIEN",
           "moyenne_eleve": 15.75,
           "moyenne_classe": 12.79,
+          "competences": ["course d'orientation"],
           "appreciation": "Bon trimestre. ELEVE_C a su progresser tout au long du cycle avec sérieux et application. Bravo ! Poursuis tes efforts avec le même état d'esprit!"
         },
         {
-          "nom": "Éducation Musicale",
+          "nom": "EDUCATION MUSICALE",
+          "professeur": "Mme HERMITE",
           "moyenne_eleve": 14.00,
           "moyenne_classe": 9.53,
+          "competences": ["Échanger, partager, argumenter et débattre", "Écouter, comparer et construire une culture musicale commune", "Explorer, imaginer, créer et produire", "Réaliser des projets musicaux d'interprétation ou de création"],
           "appreciation": "Bon travail dans l'ensemble. Continuez."
         },
         {
-          "nom": "Espagnol LV2",
+          "nom": "ESPAGNOL LV2",
+          "professeur": "Mme ANDREO",
           "moyenne_eleve": 10.39,
           "moyenne_classe": 10.76,
+          "note_ecrit": 8.82,
+          "note_oral": 11.96,
+          "moyenne_ecrit_classe": 7.09,
+          "moyenne_oral_classe": 14.03,
+          "competences": ["5 activités langagières"],
           "appreciation": ""
         },
         {
-          "nom": "Français",
+          "nom": "FRANCAIS",
+          "professeur": "Mme PERRIN",
           "moyenne_eleve": 11.38,
           "moyenne_classe": 9.38,
+          "competences": ["Avec autrui : familles, amis, réseaux (comédies, récits d'enfance et d'adolescence...)", "Explorer des lectures pour enrichir son écrit", "Connaître les notions d'analyse littéraire", "Adopter les procédés d'écriture qui répondent à la consigne et à l'objectif"],
           "appreciation": "Trimestre un peu fragile. J'attends plus d'investissement notamment en classe. ELEVE_C est trop en retrait et attentiste."
         },
         {
-          "nom": "Histoire-Géographie-EMC",
+          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "professeur": "Mme PERREE",
           "moyenne_eleve": 14.26,
           "moyenne_classe": 10.77,
+          "competences": ["Comprendre le sens général d'un document", "Construire des hypothèses d'interprétation de phénomènes historiques ou géographiques", "Écrire pour construire sa pensée et son savoir, pour argumenter et écrire pour communiquer et échanger", "Extraire des informations pertinentes pour répondre à une question portant sur un document ou plusieurs documents, les classer, les hiérarchiser", "Identifier le document et son point de vue particulier"],
           "appreciation": "Bon trimestre pour ELEVE_C ! Il participe régulièrement."
         },
         {
-          "nom": "Latin et Grec",
+          "nom": "LCA LATIN ET GREC",
+          "professeur": "Mme MAUREL",
           "moyenne_eleve": 15.71,
           "moyenne_classe": 17.77,
+          "competences": [],
           "appreciation": "Bon travail."
         },
         {
-          "nom": "Mathématiques",
+          "nom": "MATHEMATIQUES",
+          "professeur": "M. FIELOUX, Mme RAFIY",
           "moyenne_eleve": 16.11,
           "moyenne_classe": 11.37,
+          "competences": ["Calculer", "Chercher", "Communiquer", "Raisonner"],
           "appreciation": "J'invite à lire avec grande précaution les résultats de ce premier trimestre. Il m'est difficile d'être objectif par manque de recul et compte tenu des circonstances. Des débuts qui sont très encourageants. ELEVE_C dispose de bases solides, il ne doit pas hésiter à intensifier l'implication orale au prochain trimestre, je compte sur lui !"
         },
         {
-          "nom": "Physique-Chimie",
+          "nom": "PHYSIQUE-CHIMIE",
+          "professeur": "Mme CHIVAS",
           "moyenne_eleve": 16.27,
           "moyenne_classe": 12.49,
+          "competences": ["Pratiquer des langages", "Les différents types de signaux", "Propriétés des signaux"],
           "appreciation": "C'est un très bon trimestre. Il faut poursuivre ainsi."
         },
         {
-          "nom": "SVT",
+          "nom": "SCIENCES VIE & TERRE",
+          "professeur": "M. WOLFF",
           "moyenne_eleve": 7.71,
           "moyenne_classe": 8.68,
+          "competences": [],
           "appreciation": "ELEVE_C a des difficultés qu'il ne pourra surmonter qu'en s'investissant davantage en classe et en fournissant un travail personnel bien plus approfondi. Je compte sur lui."
         },
         {
-          "nom": "Technologie",
+          "nom": "TECHNOLOGIE",
+          "professeur": "M. MALBOS",
           "moyenne_eleve": 16.43,
           "moyenne_classe": 13.73,
+          "competences": ["S'approprier les outils et les méthodes", "Mobiliser les outils numériques", "Fonctionnement d'un réseau informatique"],
           "appreciation": "Très bon trimestre, c'est très bien, continuez."
         }
       ],
@@ -253,75 +361,111 @@
     {
       "eleve_id": "ELEVE_D",
       "genre": "M",
+      "etablissement": "Collège Test",
+      "classe": "5ème",
+      "trimestre": 1,
+      "annee_scolaire": "2024-2025",
       "absences_demi_journees": 0,
       "absences_justifiees": true,
       "retards": 0,
       "engagements": [],
+      "parcours": [],
+      "evenements": [],
       "matieres": [
         {
-          "nom": "Anglais LV1",
+          "nom": "ANGLAIS LV1",
+          "professeur": "Mme AJENJO",
           "moyenne_eleve": 11.85,
           "moyenne_classe": 10.83,
+          "note_ecrit": 10.37,
+          "note_oral": 13.33,
+          "moyenne_ecrit_classe": 11.25,
+          "moyenne_oral_classe": 10.40,
+          "competences": ["5 compétences langagières", "parler de soi et des autres"],
           "appreciation": "Résultats moyens et fragiles. Le travail personnel est irrégulier et encore trop superficiel. Avec davantage de sérieux dans le travail mais également dans l'investissement en classe, je suis sûre que ELEVE_D a les capacités de progresser."
         },
         {
-          "nom": "Arts Plastiques",
+          "nom": "ARTS PLASTIQUES",
+          "professeur": "Mme BLASCO",
           "moyenne_eleve": 16.75,
           "moyenne_classe": 14.92,
+          "competences": ["Expérimenter, produire, créer", "S'approprier des questions artistiques en prenant appui sur une pratique artistique et réflexive", "Faire preuve d'autonomie, d'initiative, de responsabilité, d'engagement et d'esprit critique dans la conduite d'un projet artistique"],
           "appreciation": "Bon trimestre, bon investissement dans le travail, continuez ainsi, en restant bien concentré."
         },
         {
-          "nom": "EPS",
+          "nom": "ED.PHYSIQUE & SPORT",
+          "professeur": "Mme JULIEN",
           "moyenne_eleve": 11.25,
           "moyenne_classe": 12.79,
+          "competences": ["course d'orientation"],
           "appreciation": "Assez bon trimestre, ELEVE_D s'implique de mieux en mieux dans les exercices donnés. Son attitude doit être plus positive et moins agitée. Il gagnerait à rester centré sur les consignes données pour continuer à progresser."
         },
         {
-          "nom": "Éducation Musicale",
+          "nom": "EDUCATION MUSICALE",
+          "professeur": "Mme HERMITE",
           "moyenne_eleve": 11.25,
           "moyenne_classe": 9.53,
+          "competences": ["Échanger, partager, argumenter et débattre", "Écouter, comparer et construire une culture musicale commune", "Explorer, imaginer, créer et produire", "Réaliser des projets musicaux d'interprétation ou de création"],
           "appreciation": "Beaucoup trop de bavardages et d'amusements très gênants. Cela doit cesser et il faut se mettre au travail sérieusement."
         },
         {
-          "nom": "Espagnol LV2",
+          "nom": "ESPAGNOL LV2",
+          "professeur": "Mme ANDREO",
           "moyenne_eleve": 10.74,
           "moyenne_classe": 10.76,
+          "note_ecrit": 6.47,
+          "note_oral": 15.00,
+          "moyenne_ecrit_classe": 7.09,
+          "moyenne_oral_classe": 14.03,
+          "competences": ["5 activités langagières"],
           "appreciation": ""
         },
         {
-          "nom": "Français",
+          "nom": "FRANCAIS",
+          "professeur": "Mme AUSSEIL",
           "moyenne_eleve": 10.17,
           "moyenne_classe": 13.79,
+          "competences": [],
           "appreciation": "Résultats justes qui ne reflètent pas les capacités de ELEVE_D. Il participe, certes, mais va trop vite et s'agite beaucoup en classe : progrès en fin de trimestre : il doit accentuer son travail à la maison et prendre le temps de la réflexion avant de parler pour montrer ce qu'il vaut !"
         },
         {
-          "nom": "Histoire-Géographie-EMC",
+          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "professeur": "Mme PERREE",
           "moyenne_eleve": 13.12,
           "moyenne_classe": 10.77,
+          "competences": ["Comprendre le sens général d'un document", "Construire des hypothèses d'interprétation de phénomènes historiques ou géographiques", "Écrire pour construire sa pensée et son savoir, pour argumenter et écrire pour communiquer et échanger", "Extraire des informations pertinentes pour répondre à une question portant sur un document ou plusieurs documents, les classer, les hiérarchiser", "Identifier le document et son point de vue particulier", "Nommer et localiser les grands repères géographiques"],
           "appreciation": "C'est un bon trimestre pour ELEVE_D notamment concernant son attitude en classe. Il participe régulièrement et effectue le travail demandé. Je l'encourage à accentuer ses efforts quant à son travail personnel."
         },
         {
-          "nom": "Mathématiques",
+          "nom": "MATHEMATIQUES",
+          "professeur": "M. BOULAJHAF",
           "moyenne_eleve": 14.52,
           "moyenne_classe": 14.09,
+          "competences": ["Priorités opératoires", "Triangles", "Nombres relatifs", "Symétrie centrale", "Écrire, mettre au point un programme simple"],
           "appreciation": "Tu obtiens de bons résultats et la participation en classe est très appréciée. Il est toutefois important que tu apprennes à mieux te canaliser et à cesser les bavardages afin de rester pleinement concentré et de progresser davantage."
         },
         {
-          "nom": "Physique-Chimie",
+          "nom": "PHYSIQUE-CHIMIE",
+          "professeur": "Mme CHIVAS",
           "moyenne_eleve": 13.73,
           "moyenne_classe": 12.49,
+          "competences": ["Pratiquer des langages", "Les différents types de signaux", "Propriétés des signaux"],
           "appreciation": "C'est un assez bon trimestre. Il ne faudrait pas s'en contenter."
         },
         {
-          "nom": "SVT",
+          "nom": "SCIENCES VIE & TERRE",
+          "professeur": "M. WOLFF",
           "moyenne_eleve": 11.71,
           "moyenne_classe": 8.68,
+          "competences": [],
           "appreciation": "Trimestre un peu juste de ELEVE_D au vu de ses capacités. ELEVE_D gagnerait à s'investir davantage en classe et à ne pas se laisser distraire par des amusements inutiles."
         },
         {
-          "nom": "Technologie",
+          "nom": "TECHNOLOGIE",
+          "professeur": "M. MALBOS",
           "moyenne_eleve": 15.10,
           "moyenne_classe": 13.73,
+          "competences": ["S'approprier les outils et les méthodes", "Mobiliser les outils numériques", "Fonctionnement d'un réseau informatique"],
           "appreciation": "C'est un très bon trimestre, Mais il faut fournir un travail personnel plus régulier."
         }
       ],
