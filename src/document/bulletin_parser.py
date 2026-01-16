@@ -228,11 +228,9 @@ class BulletinParser:
     def _parse_matiere_row(self, row: list[str | None]) -> MatiereExtraction | None:
         """Parse une ligne de tableau comme matière.
 
-        Format attendu (4 colonnes PRONOTE) :
-        - [0] Matière + professeur (séparés par newline)
-        - [1] Moyennes élève | classe + écrit/oral si applicable
-        - [2] Éléments du programme (compétences)
-        - [3] Appréciation
+        Supporte deux formats :
+        - 4 colonnes (PRONOTE complet) : Matière | Moyennes | Compétences | Appréciation
+        - 3 colonnes (simplifié) : Matière | Moyennes | Appréciation
 
         Args:
             row: Ligne du tableau.
@@ -242,6 +240,9 @@ class BulletinParser:
         """
         if not row or len(row) < 2:
             return None
+
+        # Détecter le format (3 ou 4 colonnes)
+        num_cols = len(row)
 
         # Column 0: Matière + professeur
         matiere_cell = _clean_cell(row[0])
@@ -315,35 +316,42 @@ class BulletinParser:
                     note_oral = oral_nums[0]
                     moyenne_oral_classe = oral_nums[1] if len(oral_nums) > 1 else None
 
-        # Column 2: Compétences (format: "- comp1\n- comp2")
-        # Handle line wrapping: join continuation lines to their bullet point
+        # Colonnes 2 et 3 : dépend du format
         competences: list[str] = []
-        if len(row) > 2 and row[2]:
-            comp_cell = _clean_cell(row[2])
-            if comp_cell:
-                current_comp = ""
-                for line in comp_cell.split("\n"):
-                    line = line.strip()
-                    if line.startswith("-"):
-                        # Save previous competence if exists
-                        if current_comp:
-                            competences.append(current_comp)
-                        # Start new competence
-                        current_comp = line[1:].strip()
-                    elif current_comp:
-                        # Continuation of previous line
-                        current_comp += " " + line
-                    elif line:
-                        # No bullet point, treat as single competence
-                        current_comp = line
-                # Don't forget last competence
-                if current_comp:
-                    competences.append(current_comp)
-
-        # Column 3: Appréciation (join lines with space)
         appreciation = ""
-        if len(row) > 3 and row[3]:
-            appreciation = " ".join(_clean_cell(row[3]).split("\n"))
+
+        if num_cols == 3:
+            # Format simplifié : [Matière, Notes, Appréciation]
+            if row[2]:
+                appreciation = " ".join(_clean_cell(row[2]).split("\n"))
+        else:
+            # Format PRONOTE complet : [Matière, Notes, Compétences, Appréciation]
+            # Column 2: Compétences (format: "- comp1\n- comp2")
+            if len(row) > 2 and row[2]:
+                comp_cell = _clean_cell(row[2])
+                if comp_cell:
+                    current_comp = ""
+                    for line in comp_cell.split("\n"):
+                        line = line.strip()
+                        if line.startswith("-"):
+                            # Save previous competence if exists
+                            if current_comp:
+                                competences.append(current_comp)
+                            # Start new competence
+                            current_comp = line[1:].strip()
+                        elif current_comp:
+                            # Continuation of previous line
+                            current_comp += " " + line
+                        elif line:
+                            # No bullet point, treat as single competence
+                            current_comp = line
+                    # Don't forget last competence
+                    if current_comp:
+                        competences.append(current_comp)
+
+            # Column 3: Appréciation (join lines with space)
+            if len(row) > 3 and row[3]:
+                appreciation = " ".join(_clean_cell(row[3]).split("\n"))
 
         return MatiereExtraction(
             nom=nom,

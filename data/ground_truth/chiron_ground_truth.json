@@ -22,7 +22,7 @@
       "evenements": ["06/11/2025 : ELEVE DELEGUE DE CLASSE - suivi par Mme NUNEZ"],
       "matieres": [
         {
-          "nom": "ANGLAIS LV1",
+          "nom": "Anglais LV1",
           "professeur": "Mme AJENJO",
           "moyenne_eleve": 15.21,
           "moyenne_classe": 10.83,
@@ -34,7 +34,7 @@
           "appreciation": "Bons résultats. ELEVE_A fournit un travail régulier et sérieux à la maison tout comme en classe. L'attitude est toujours positive et constructive. Poursuivez ainsi!"
         },
         {
-          "nom": "ARTS PLASTIQUES",
+          "nom": "Arts Plastiques",
           "professeur": "Mme BLASCO",
           "moyenne_eleve": 15.00,
           "moyenne_classe": 14.92,
@@ -42,7 +42,7 @@
           "appreciation": "Bon ensemble, bilan satisfaisant, continuez ainsi en restant concentrée."
         },
         {
-          "nom": "ED.PHYSIQUE & SPORT",
+          "nom": "EPS",
           "professeur": "Mme JULIEN",
           "moyenne_eleve": 8.00,
           "moyenne_classe": 12.79,
@@ -50,7 +50,7 @@
           "appreciation": "Bilan très insuffisant, ELEVE_A n'a pas réussi à s'orienter avec efficacité. Elle a beaucoup marché et s'est dispersée avec son groupe. Son travail a manqué de sérieux et d'implication dans les défis à relever en course d'orientation. De sincères efforts sont attendus au prochain trimestre."
         },
         {
-          "nom": "EDUCATION MUSICALE",
+          "nom": "Éducation Musicale",
           "professeur": "Mme HERMITE",
           "moyenne_eleve": 13.00,
           "moyenne_classe": 9.53,
@@ -58,7 +58,7 @@
           "appreciation": "C'est très bien quand vous voulez. Votre investissement doit être régulier."
         },
         {
-          "nom": "ESPAGNOL LV2",
+          "nom": "Espagnol LV2",
           "professeur": "Mme ANDREO",
           "moyenne_eleve": 13.83,
           "moyenne_classe": 10.76,
@@ -70,7 +70,7 @@
           "appreciation": ""
         },
         {
-          "nom": "FRANCAIS",
+          "nom": "Français",
           "professeur": "Mme MAUREL",
           "moyenne_eleve": 13.21,
           "moyenne_classe": 10.12,
@@ -78,7 +78,7 @@
           "appreciation": "Assez bons résultats à l'écrit. La participation orale est satisfaisante. Mais pour progresser encore et consolider les acquis, ELEVE_A doit veiller à rester bien concentrée en classe."
         },
         {
-          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "nom": "Histoire-Géographie-EMC",
           "professeur": "Mme PERREE",
           "moyenne_eleve": 14.66,
           "moyenne_classe": 10.77,
@@ -86,7 +86,7 @@
           "appreciation": "Bon trimestre ! ELEVE_A est une élève impliquée et sérieuse, en témoigne ses résultats. Je l'encourage à conserver cette motivation pour le second trimestre !"
         },
         {
-          "nom": "LCA LATIN ET GREC",
+          "nom": "Latin et Grec",
           "professeur": "Mme MAUREL",
           "moyenne_eleve": 18.21,
           "moyenne_classe": 17.77,
@@ -94,7 +94,7 @@
           "appreciation": "Très bon travail. Élève volontaire et investie."
         },
         {
-          "nom": "MATHEMATIQUES",
+          "nom": "Mathématiques",
           "professeur": "Mme CAIRE",
           "moyenne_eleve": 16.07,
           "moyenne_classe": 11.75,
@@ -102,7 +102,7 @@
           "appreciation": "Très bon trimestre. ELEVE_A a de bons acquis, elle est volontaire, sa participation est active et son travail appliqué. Je l'encourage à poursuivre dans cette dynamique, en veillant à ne pas se disperser."
         },
         {
-          "nom": "PHYSIQUE-CHIMIE",
+          "nom": "Physique-Chimie",
           "professeur": "Mme CHIVAS",
           "moyenne_eleve": 15.71,
           "moyenne_classe": 12.49,
@@ -110,7 +110,7 @@
           "appreciation": "C'est un très bon trimestre. La participation de ELEVE_A en classe est précieuse."
         },
         {
-          "nom": "SCIENCES VIE & TERRE",
+          "nom": "SVT",
           "professeur": "M. WOLFF",
           "moyenne_eleve": 10.86,
           "moyenne_classe": 8.68,
@@ -118,7 +118,7 @@
           "appreciation": "Bilan un peu juste de ELEVE_A. Le travail personnel est encore perfectible comme la participation en classe qui est encore trop timide."
         },
         {
-          "nom": "TECHNOLOGIE",
+          "nom": "Technologie",
           "professeur": "M. MALBOS",
           "moyenne_eleve": 15.80,
           "moyenne_classe": 13.73,
@@ -143,7 +143,7 @@
       "evenements": [],
       "matieres": [
         {
-          "nom": "ANGLAIS LV1",
+          "nom": "Anglais LV1",
           "professeur": "Mme AJENJO",
           "moyenne_eleve": 11.60,
           "moyenne_classe": 10.83,
@@ -155,7 +155,7 @@
           "appreciation": "Bons résultats à l'écrit ternis par une moyenne orale faible due à un accident au dernier contrôle. Je suis sûre que ELEVE_B saura y remédier au trimestre prochain en participant davantage en classe. Je compte sur elle."
         },
         {
-          "nom": "ARTS PLASTIQUES",
+          "nom": "Arts Plastiques",
           "professeur": "Mme BLASCO",
           "moyenne_eleve": 15.75,
           "moyenne_classe": 14.92,
@@ -163,7 +163,7 @@
           "appreciation": "Bon trimestre, bon investissement dans le travail, continuez ainsi."
         },
         {
-          "nom": "ED.PHYSIQUE & SPORT",
+          "nom": "EPS",
           "professeur": "Mme JULIEN",
           "moyenne_eleve": 15.75,
           "moyenne_classe": 12.79,
@@ -171,7 +171,7 @@
           "appreciation": "Bon trimestre, un investissement sérieux et régulier. Poursuis avec la même détermination !"
         },
         {
-          "nom": "EDUCATION MUSICALE",
+          "nom": "Éducation Musicale",
           "professeur": "Mme HERMITE",
           "moyenne_eleve": 8.40,
           "moyenne_classe": 9.53,
@@ -179,7 +179,7 @@
           "appreciation": "Résultats alarmants. Apprenez vos leçons régulièrement."
         },
         {
-          "nom": "FRANCAIS",
+          "nom": "Français",
           "professeur": "Mme MAUREL",
           "moyenne_eleve": 11.90,
           "moyenne_classe": 10.12,
@@ -187,7 +187,7 @@
           "appreciation": "Des résultats convenables à l'écrit. Je regrette simplement que ELEVE_B reste en retrait. J'attends de toi que tu t'investisses davantage dans le cours et dans ton travail personnel."
         },
         {
-          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "nom": "Histoire-Géographie-EMC",
           "professeur": "Mme PERREE",
           "moyenne_eleve": 14.45,
           "moyenne_classe": 10.77,
@@ -195,7 +195,7 @@
           "appreciation": "Bon trimestre pour ELEVE_B. C'est une élève très discrète en classe. Je l'encourage à participer davantage !"
         },
         {
-          "nom": "ITALIEN LV2",
+          "nom": "Italien LV2",
           "professeur": "Mme PORTET",
           "moyenne_eleve": 19.32,
           "moyenne_classe": 14.59,
@@ -203,7 +203,7 @@
           "appreciation": "C'est un excellent premier trimestre pour ELEVE_B en terme de résultats. Toutefois, ELEVE_B en classe est très discrète et sa participation orale en classe est quasi inexistante. J'attends d'elle qu'elle participe activement en classe. Bravo pour ce premier trimestre."
         },
         {
-          "nom": "MATHEMATIQUES",
+          "nom": "Mathématiques",
           "professeur": "Mme CAIRE",
           "moyenne_eleve": 11.13,
           "moyenne_classe": 11.75,
@@ -211,7 +211,7 @@
           "appreciation": "Ensemble juste convenable. ELEVE_B est sérieuse, elle fait des efforts de participation en classe et son travail est régulier. Je l'encourage à poursuivre ses efforts pour consolider les acquis, elle est capable de progresser."
         },
         {
-          "nom": "PHYSIQUE-CHIMIE",
+          "nom": "Physique-Chimie",
           "professeur": "Mme CHIVAS",
           "moyenne_eleve": 13.52,
           "moyenne_classe": 12.49,
@@ -219,7 +219,7 @@
           "appreciation": "C'est un assez bon trimestre. Il faut poursuivre dans cette voie en accentuant la participation en classe."
         },
         {
-          "nom": "SCIENCES VIE & TERRE",
+          "nom": "SVT",
           "professeur": "M. WOLFF",
           "moyenne_eleve": 7.57,
           "moyenne_classe": 8.68,
@@ -227,7 +227,7 @@
           "appreciation": "ELEVE_B doit fournir un travail personnel bien plus approfondi pour espérer progresser. Elle doit également se montrer moins passive en classe et oser participer."
         },
         {
-          "nom": "TECHNOLOGIE",
+          "nom": "Technologie",
           "professeur": "M. MALBOS",
           "moyenne_eleve": 18.07,
           "moyenne_classe": 13.73,
@@ -252,7 +252,7 @@
       "evenements": [],
       "matieres": [
         {
-          "nom": "ANGLAIS LV1",
+          "nom": "Anglais LV1",
           "professeur": "Mme AJENJO",
           "moyenne_eleve": 8.22,
           "moyenne_classe": 10.83,
@@ -264,7 +264,7 @@
           "appreciation": "Résultats insuffisants. ELEVE_C semble peu intéressé par la matière et se montre très passif en classe. Son absence de participation le pénalise beaucoup. Dommage car il montre des réussites à l'écrit."
         },
         {
-          "nom": "ARTS PLASTIQUES",
+          "nom": "Arts Plastiques",
           "professeur": "Mme BLASCO",
           "moyenne_eleve": 15.63,
           "moyenne_classe": 14.92,
@@ -272,7 +272,7 @@
           "appreciation": "Bon trimestre, bon investissement dans le travail, continuez ainsi en participant davantage."
         },
         {
-          "nom": "ED.PHYSIQUE & SPORT",
+          "nom": "EPS",
           "professeur": "Mme JULIEN",
           "moyenne_eleve": 15.75,
           "moyenne_classe": 12.79,
@@ -280,7 +280,7 @@
           "appreciation": "Bon trimestre. ELEVE_C a su progresser tout au long du cycle avec sérieux et application. Bravo ! Poursuis tes efforts avec le même état d'esprit!"
         },
         {
-          "nom": "EDUCATION MUSICALE",
+          "nom": "Éducation Musicale",
           "professeur": "Mme HERMITE",
           "moyenne_eleve": 14.00,
           "moyenne_classe": 9.53,
@@ -288,7 +288,7 @@
           "appreciation": "Bon travail dans l'ensemble. Continuez."
         },
         {
-          "nom": "ESPAGNOL LV2",
+          "nom": "Espagnol LV2",
           "professeur": "Mme ANDREO",
           "moyenne_eleve": 10.39,
           "moyenne_classe": 10.76,
@@ -300,7 +300,7 @@
           "appreciation": ""
         },
         {
-          "nom": "FRANCAIS",
+          "nom": "Français",
           "professeur": "Mme PERRIN",
           "moyenne_eleve": 11.38,
           "moyenne_classe": 9.38,
@@ -308,7 +308,7 @@
           "appreciation": "Trimestre un peu fragile. J'attends plus d'investissement notamment en classe. ELEVE_C est trop en retrait et attentiste."
         },
         {
-          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "nom": "Histoire-Géographie-EMC",
           "professeur": "Mme PERREE",
           "moyenne_eleve": 14.26,
           "moyenne_classe": 10.77,
@@ -316,7 +316,7 @@
           "appreciation": "Bon trimestre pour ELEVE_C ! Il participe régulièrement."
         },
         {
-          "nom": "LCA LATIN ET GREC",
+          "nom": "Latin et Grec",
           "professeur": "Mme MAUREL",
           "moyenne_eleve": 15.71,
           "moyenne_classe": 17.77,
@@ -324,7 +324,7 @@
           "appreciation": "Bon travail."
         },
         {
-          "nom": "MATHEMATIQUES",
+          "nom": "Mathématiques",
           "professeur": "M. FIELOUX, Mme RAFIY",
           "moyenne_eleve": 16.11,
           "moyenne_classe": 11.37,
@@ -332,7 +332,7 @@
           "appreciation": "J'invite à lire avec grande précaution les résultats de ce premier trimestre. Il m'est difficile d'être objectif par manque de recul et compte tenu des circonstances. Des débuts qui sont très encourageants. ELEVE_C dispose de bases solides, il ne doit pas hésiter à intensifier l'implication orale au prochain trimestre, je compte sur lui !"
         },
         {
-          "nom": "PHYSIQUE-CHIMIE",
+          "nom": "Physique-Chimie",
           "professeur": "Mme CHIVAS",
           "moyenne_eleve": 16.27,
           "moyenne_classe": 12.49,
@@ -340,7 +340,7 @@
           "appreciation": "C'est un très bon trimestre. Il faut poursuivre ainsi."
         },
         {
-          "nom": "SCIENCES VIE & TERRE",
+          "nom": "SVT",
           "professeur": "M. WOLFF",
           "moyenne_eleve": 7.71,
           "moyenne_classe": 8.68,
@@ -348,7 +348,7 @@
           "appreciation": "ELEVE_C a des difficultés qu'il ne pourra surmonter qu'en s'investissant davantage en classe et en fournissant un travail personnel bien plus approfondi. Je compte sur lui."
         },
         {
-          "nom": "TECHNOLOGIE",
+          "nom": "Technologie",
           "professeur": "M. MALBOS",
           "moyenne_eleve": 16.43,
           "moyenne_classe": 13.73,
@@ -373,7 +373,7 @@
       "evenements": [],
       "matieres": [
         {
-          "nom": "ANGLAIS LV1",
+          "nom": "Anglais LV1",
           "professeur": "Mme AJENJO",
           "moyenne_eleve": 11.85,
           "moyenne_classe": 10.83,
@@ -385,7 +385,7 @@
           "appreciation": "Résultats moyens et fragiles. Le travail personnel est irrégulier et encore trop superficiel. Avec davantage de sérieux dans le travail mais également dans l'investissement en classe, je suis sûre que ELEVE_D a les capacités de progresser."
         },
         {
-          "nom": "ARTS PLASTIQUES",
+          "nom": "Arts Plastiques",
           "professeur": "Mme BLASCO",
           "moyenne_eleve": 16.75,
           "moyenne_classe": 14.92,
@@ -393,7 +393,7 @@
           "appreciation": "Bon trimestre, bon investissement dans le travail, continuez ainsi, en restant bien concentré."
         },
         {
-          "nom": "ED.PHYSIQUE & SPORT",
+          "nom": "EPS",
           "professeur": "Mme JULIEN",
           "moyenne_eleve": 11.25,
           "moyenne_classe": 12.79,
@@ -401,7 +401,7 @@
           "appreciation": "Assez bon trimestre, ELEVE_D s'implique de mieux en mieux dans les exercices donnés. Son attitude doit être plus positive et moins agitée. Il gagnerait à rester centré sur les consignes données pour continuer à progresser."
         },
         {
-          "nom": "EDUCATION MUSICALE",
+          "nom": "Éducation Musicale",
           "professeur": "Mme HERMITE",
           "moyenne_eleve": 11.25,
           "moyenne_classe": 9.53,
@@ -409,7 +409,7 @@
           "appreciation": "Beaucoup trop de bavardages et d'amusements très gênants. Cela doit cesser et il faut se mettre au travail sérieusement."
         },
         {
-          "nom": "ESPAGNOL LV2",
+          "nom": "Espagnol LV2",
           "professeur": "Mme ANDREO",
           "moyenne_eleve": 10.74,
           "moyenne_classe": 10.76,
@@ -421,7 +421,7 @@
           "appreciation": ""
         },
         {
-          "nom": "FRANCAIS",
+          "nom": "Français",
           "professeur": "Mme AUSSEIL",
           "moyenne_eleve": 10.17,
           "moyenne_classe": 13.79,
@@ -429,7 +429,7 @@
           "appreciation": "Résultats justes qui ne reflètent pas les capacités de ELEVE_D. Il participe, certes, mais va trop vite et s'agite beaucoup en classe : progrès en fin de trimestre : il doit accentuer son travail à la maison et prendre le temps de la réflexion avant de parler pour montrer ce qu'il vaut !"
         },
         {
-          "nom": "HISTOIRE-GEOGRAPHIE-EMC",
+          "nom": "Histoire-Géographie-EMC",
           "professeur": "Mme PERREE",
           "moyenne_eleve": 13.12,
           "moyenne_classe": 10.77,
@@ -437,7 +437,7 @@
           "appreciation": "C'est un bon trimestre pour ELEVE_D notamment concernant son attitude en classe. Il participe régulièrement et effectue le travail demandé. Je l'encourage à accentuer ses efforts quant à son travail personnel."
         },
         {
-          "nom": "MATHEMATIQUES",
+          "nom": "Mathématiques",
           "professeur": "M. BOULAJHAF",
           "moyenne_eleve": 14.52,
           "moyenne_classe": 14.09,
@@ -445,7 +445,7 @@
           "appreciation": "Tu obtiens de bons résultats et la participation en classe est très appréciée. Il est toutefois important que tu apprennes à mieux te canaliser et à cesser les bavardages afin de rester pleinement concentré et de progresser davantage."
         },
         {
-          "nom": "PHYSIQUE-CHIMIE",
+          "nom": "Physique-Chimie",
           "professeur": "Mme CHIVAS",
           "moyenne_eleve": 13.73,
           "moyenne_classe": 12.49,
@@ -453,7 +453,7 @@
           "appreciation": "C'est un assez bon trimestre. Il ne faudrait pas s'en contenter."
         },
         {
-          "nom": "SCIENCES VIE & TERRE",
+          "nom": "SVT",
           "professeur": "M. WOLFF",
           "moyenne_eleve": 11.71,
           "moyenne_classe": 8.68,
@@ -461,7 +461,7 @@
           "appreciation": "Trimestre un peu juste de ELEVE_D au vu de ses capacités. ELEVE_D gagnerait à s'investir davantage en classe et à ne pas se laisser distraire par des amusements inutiles."
         },
         {
-          "nom": "TECHNOLOGIE",
+          "nom": "Technologie",
           "professeur": "M. MALBOS",
           "moyenne_eleve": 15.10,
           "moyenne_classe": 13.73,
