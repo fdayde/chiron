@@ -10,28 +10,82 @@ from pydantic import BaseModel, Field
 
 
 class MatiereExtraction(BaseModel):
-    """Données extraites pour une matière."""
+    """Données extraites pour une matière.
+
+    Structure alignée sur le format PRONOTE :
+    - Matière avec nom du professeur
+    - Moyennes élève/classe (globales et écrit/oral pour langues)
+    - Compétences travaillées durant la période
+    - Appréciation du professeur
+    """
 
     nom: str
+    professeur: str | None = None  # "Mme AJENJO", "M. WOLFF"
+
+    # Moyennes globales
     moyenne_eleve: float | None = None
     moyenne_classe: float | None = None
+
+    # Moyennes détaillées (langues)
+    note_ecrit: float | None = None
+    note_oral: float | None = None
+    moyenne_ecrit_classe: float | None = None
+    moyenne_oral_classe: float | None = None
+
+    # Compétences travaillées (éléments du programme)
+    competences: list[str] = Field(default_factory=list)
+
+    # Appréciation du professeur de la matière
     appreciation: str = ""
 
 
 class EleveExtraction(BaseModel):
-    """Données extraites pour un élève (depuis PDF bulletin)."""
+    """Données extraites pour un élève (depuis PDF bulletin).
 
+    Structure alignée sur le format PRONOTE complet :
+    - Identité et classe
+    - Matières avec notes et appréciations
+    - Engagements (délégué, éco-délégué...)
+    - Parcours éducatifs
+    - Absences et retards (en bas du bulletin)
+    - Appréciation générale (synthèse du PP - ground truth)
+    """
+
+    # Identité
     eleve_id: str | None = None  # Généré après pseudonymisation
     nom: str | None = None  # Avant pseudonymisation
     prenom: str | None = None  # Avant pseudonymisation
     genre: Literal["M", "F"] | None = None
+
+    # Contexte scolaire
+    etablissement: str | None = None
     classe: str | None = None
     trimestre: int | None = None
+    annee_scolaire: str | None = None  # "2024-2025"
+
+    # Résultats par matière
     matieres: list[MatiereExtraction] = Field(default_factory=list)
+
+    # Engagements et responsabilités
+    engagements: list[str] = Field(default_factory=list)  # ["Délégué(e) titulaire"]
+
+    # Parcours éducatifs (PRONOTE)
+    parcours: list[str] = Field(
+        default_factory=list
+    )  # ["Parcours éducatifs", "Parcours citoyen"]
+
+    # Événements datés
+    evenements: list[str] = Field(
+        default_factory=list
+    )  # ["06/11/2025 : DELEGUE DE CLASSE"]
+
+    # Absences et retards (section footer du bulletin)
     absences_demi_journees: int | None = None
     absences_justifiees: bool | None = None
     retards: int | None = None
-    engagements: list[str] = Field(default_factory=list)
+
+    # Appréciation générale du PP (= synthèse à générer, sert de ground truth)
+    # Note: Ce champ ne sera PAS présent dans les PDFs réels à parser
     appreciation_generale: str | None = None
 
 
