@@ -229,3 +229,11 @@ data/**/batch_*/
 
 # Prompt exports (dev/validation)
 prompts/
+
+# Claude Code temp files
+tmpclaude-*
+.claude/settings.local.json
+
+# DuckDB local databases
+data/db/*.duckdb
+data/db/*.duckdb.wal
