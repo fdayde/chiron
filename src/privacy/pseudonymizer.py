@@ -1,0 +1,284 @@
+"""Pseudonymizer for RGPD-compliant student data handling.
+
+Replaces real names with pseudonyms and maintains a secure mapping
+in DuckDB for later depseudonymization when needed.
+"""
+
+import logging
+import re
+from pathlib import Path
+
+import duckdb
+
+from src.core.exceptions import PrivacyError
+from src.core.models import EleveExtraction
+from src.privacy.config import privacy_settings
+
+logger = logging.getLogger(__name__)
+
+
+class Pseudonymizer:
+    """Handles pseudonymization of student data.
+
+    Replaces nom/prenom with generated pseudo_ids and stores
+    the mapping in DuckDB for secure depseudonymization.
+
+    Usage:
+        pseudo = Pseudonymizer()
+        eleve_safe = pseudo.pseudonymize(eleve_raw, classe_id="5A")
+        # eleve_safe.eleve_id = "ELEVE_001", nom=None, prenom=None
+
+        # Later, to recover original data:
+        original = pseudo.depseudonymize("ELEVE_001")
+    """
+
+    def __init__(self, db_path: Path | str | None = None) -> None:
+        """Initialize pseudonymizer.
+
+        Args:
+            db_path: Path to DuckDB database. Defaults to config setting.
+        """
+        self.db_path = Path(db_path) if db_path else Path(privacy_settings.db_path)
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._ensure_table()
+
+    def _get_connection(self) -> duckdb.DuckDBPyConnection:
+        """Get a DuckDB connection."""
+        return duckdb.connect(str(self.db_path))
+
+    def _ensure_table(self) -> None:
+        """Ensure the mapping table exists."""
+        with self._get_connection() as conn:
+            conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS {privacy_settings.mapping_table} (
+                    eleve_id VARCHAR PRIMARY KEY,
+                    nom_original VARCHAR NOT NULL,
+                    prenom_original VARCHAR,
+                    classe_id VARCHAR NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+    def pseudonymize(
+        self,
+        eleve: EleveExtraction,
+        classe_id: str,
+    ) -> EleveExtraction:
+        """Pseudonymize a student record.
+
+        Replaces nom/prenom with a generated eleve_id and stores
+        the mapping in the database.
+
+        Args:
+            eleve: Student data with real name.
+            classe_id: Class identifier for grouping.
+
+        Returns:
+            New EleveExtraction with pseudonymized identity.
+
+        Raises:
+            PrivacyError: If pseudonymization fails.
+        """
+        if not eleve.nom:
+            raise PrivacyError("Cannot pseudonymize: eleve.nom is required")
+
+        # Generate unique eleve_id
+        eleve_id = self._generate_eleve_id(classe_id)
+
+        # Store mapping
+        try:
+            with self._get_connection() as conn:
+                conn.execute(
+                    f"""
+                    INSERT INTO {privacy_settings.mapping_table}
+                    (eleve_id, nom_original, prenom_original, classe_id)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    [eleve_id, eleve.nom, eleve.prenom, classe_id],
+                )
+        except Exception as e:
+            raise PrivacyError(f"Failed to store mapping: {e}") from e
+
+        # Create pseudonymized copy
+        data = eleve.model_dump()
+        data["eleve_id"] = eleve_id
+        data["nom"] = None
+        data["prenom"] = None
+
+        logger.info(f"Pseudonymized {eleve.nom} -> {eleve_id}")
+        return EleveExtraction(**data)
+
+    def _generate_eleve_id(self, classe_id: str) -> str:
+        """Generate a unique eleve_id.
+
+        Args:
+            classe_id: Class identifier.
+
+        Returns:
+            Unique eleve_id like "ELEVE_001".
+        """
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT COUNT(*) FROM {privacy_settings.mapping_table}
+                WHERE classe_id = ?
+                """,
+                [classe_id],
+            ).fetchone()
+            count = result[0] if result else 0
+
+        return f"{privacy_settings.pseudonym_prefix}{count + 1:03d}"
+
+    def depseudonymize(self, eleve_id: str) -> dict | None:
+        """Retrieve original identity for an eleve_id.
+
+        Args:
+            eleve_id: Pseudonymized identifier.
+
+        Returns:
+            Dict with nom_original, prenom_original, classe_id or None.
+        """
+        with self._get_connection() as conn:
+            result = conn.execute(
+                f"""
+                SELECT nom_original, prenom_original, classe_id
+                FROM {privacy_settings.mapping_table}
+                WHERE eleve_id = ?
+                """,
+                [eleve_id],
+            ).fetchone()
+
+        if not result:
+            return None
+
+        return {
+            "nom_original": result[0],
+            "prenom_original": result[1],
+            "classe_id": result[2],
+        }
+
+    def pseudonymize_text(self, text: str, classe_id: str) -> str:
+        """Replace all known names in a text with their pseudonyms.
+
+        Args:
+            text: Text potentially containing student names.
+            classe_id: Class to look up names from.
+
+        Returns:
+            Text with names replaced by pseudonyms.
+        """
+        with self._get_connection() as conn:
+            mappings = conn.execute(
+                f"""
+                SELECT eleve_id, nom_original, prenom_original
+                FROM {privacy_settings.mapping_table}
+                WHERE classe_id = ?
+                """,
+                [classe_id],
+            ).fetchall()
+
+        for eleve_id, nom, prenom in mappings:
+            if nom:
+                # Replace full name (case insensitive)
+                if prenom:
+                    pattern = re.compile(
+                        rf"\b{re.escape(prenom)}\s+{re.escape(nom)}\b",
+                        re.IGNORECASE,
+                    )
+                    text = pattern.sub(eleve_id, text)
+                    pattern = re.compile(
+                        rf"\b{re.escape(nom)}\s+{re.escape(prenom)}\b",
+                        re.IGNORECASE,
+                    )
+                    text = pattern.sub(eleve_id, text)
+                # Replace just nom
+                pattern = re.compile(rf"\b{re.escape(nom)}\b", re.IGNORECASE)
+                text = pattern.sub(eleve_id, text)
+
+        return text
+
+    def depseudonymize_text(self, text: str) -> str:
+        """Restore original names in a text.
+
+        Args:
+            text: Text containing pseudonyms.
+
+        Returns:
+            Text with pseudonyms replaced by original names.
+        """
+        with self._get_connection() as conn:
+            mappings = conn.execute(
+                f"""
+                SELECT eleve_id, nom_original, prenom_original
+                FROM {privacy_settings.mapping_table}
+                """,
+            ).fetchall()
+
+        for eleve_id, nom, prenom in mappings:
+            if nom:
+                replacement = f"{prenom} {nom}" if prenom else nom
+                text = text.replace(eleve_id, replacement)
+
+        return text
+
+    def list_mappings(self, classe_id: str | None = None) -> list[dict]:
+        """List all pseudonymization mappings.
+
+        Args:
+            classe_id: Optional filter by class.
+
+        Returns:
+            List of mapping dictionaries.
+        """
+        with self._get_connection() as conn:
+            if classe_id:
+                result = conn.execute(
+                    f"""
+                    SELECT eleve_id, nom_original, prenom_original, classe_id, created_at
+                    FROM {privacy_settings.mapping_table}
+                    WHERE classe_id = ?
+                    ORDER BY created_at
+                    """,
+                    [classe_id],
+                ).fetchall()
+            else:
+                result = conn.execute(
+                    f"""
+                    SELECT eleve_id, nom_original, prenom_original, classe_id, created_at
+                    FROM {privacy_settings.mapping_table}
+                    ORDER BY created_at
+                    """,
+                ).fetchall()
+
+        return [
+            {
+                "eleve_id": row[0],
+                "nom_original": row[1],
+                "prenom_original": row[2],
+                "classe_id": row[3],
+                "created_at": row[4],
+            }
+            for row in result
+        ]
+
+    def clear_mappings(self, classe_id: str | None = None) -> int:
+        """Clear pseudonymization mappings.
+
+        Args:
+            classe_id: Optional filter to clear only one class.
+
+        Returns:
+            Number of mappings deleted.
+        """
+        with self._get_connection() as conn:
+            if classe_id:
+                result = conn.execute(
+                    f"""
+                    DELETE FROM {privacy_settings.mapping_table}
+                    WHERE classe_id = ?
+                    """,
+                    [classe_id],
+                )
+            else:
+                result = conn.execute(f"DELETE FROM {privacy_settings.mapping_table}")
+            return result.rowcount
