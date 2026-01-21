@@ -91,6 +91,10 @@ class EleveExtraction(BaseModel):
     # Note: Ce champ ne sera PAS présent dans les PDFs réels à parser
     appreciation_generale: str | None = None
 
+    # Données brutes extraites du PDF (pour post-traitement)
+    raw_text: str | None = None
+    raw_tables: list | None = None
+
 
 # =============================================================================
 # Ground Truth (validation)
