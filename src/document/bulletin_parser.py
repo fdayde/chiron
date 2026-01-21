@@ -149,6 +149,7 @@ class BulletinParser:
             "absences_justifiees": None,
             "retards": None,
             "engagements": [],
+            "moyenne_generale": None,
         }
 
         # Extract nom and prénom
@@ -201,6 +202,14 @@ class BulletinParser:
         detected_genre = detect_genre(text)
         if detected_genre:
             info["genre"] = detected_genre
+
+        # Extract moyenne générale
+        moyenne_str = extract_field("moyenne_generale", text)
+        if moyenne_str:
+            try:
+                info["moyenne_generale"] = float(moyenne_str.replace(",", "."))
+            except ValueError:
+                logger.warning(f"Could not parse moyenne_generale: {moyenne_str}")
 
         return info
 

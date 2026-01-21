@@ -79,6 +79,11 @@ PATTERNS: dict[str, re.Pattern[str]] = {
         r"(?:\s+(?:titulaire|suppléant|suppléante|de classe|élève))?)",
         re.IGNORECASE,
     ),
+    # Moyenne générale - matches "Moyenne générale : 14.13" or "Moyenne : 14,5/20"
+    "moyenne_generale": re.compile(
+        r"Moyenne\s+g[ée]n[ée]rale\s*:?\s*(\d+[,.]?\d*)",
+        re.IGNORECASE,
+    ),
 }
 
 
@@ -191,9 +196,9 @@ def detect_genre(text: str) -> str | None:
     masc_matches = len(PATTERNS["genre_masculin"].findall(text))
 
     if fem_matches > masc_matches:
-        return "F"
+        return "Fille"
     elif masc_matches > fem_matches:
-        return "M"
+        return "Garçon"
 
     return None
 

@@ -55,7 +55,7 @@ class EleveExtraction(BaseModel):
     eleve_id: str | None = None  # Généré après pseudonymisation
     nom: str | None = None  # Avant pseudonymisation
     prenom: str | None = None  # Avant pseudonymisation
-    genre: Literal["M", "F"] | None = None
+    genre: Literal["Fille", "Garçon"] | None = None
 
     # Contexte scolaire
     etablissement: str | None = None
@@ -65,6 +65,9 @@ class EleveExtraction(BaseModel):
 
     # Résultats par matière
     matieres: list[MatiereExtraction] = Field(default_factory=list)
+
+    # Moyenne générale du bulletin
+    moyenne_generale: float | None = None
 
     # Engagements et responsabilités
     engagements: list[str] = Field(default_factory=list)  # ["Délégué(e) titulaire"]

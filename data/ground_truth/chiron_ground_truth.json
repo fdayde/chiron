@@ -9,7 +9,7 @@
   "eleves": [
     {
       "eleve_id": "ELEVE_A",
-      "genre": "F",
+      "genre": "Fille",
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,
@@ -126,11 +126,12 @@
           "appreciation": "Très bon trimestre, c'est très bien, continuez ainsi."
         }
       ],
-      "synthese_ground_truth": "ELEVE_A a obtenu des résultats globalement positifs, entachés par une dispersion importante relevée dans de nombreuses matières. Nous l'invitons donc à se montrer plus régulière dans son travail personnel mais également dans sa concentration en classe afin de réaliser une belle année de 5ème. Nous comptons sur elle."
+      "synthese_ground_truth": "ELEVE_A a obtenu des résultats globalement positifs, entachés par une dispersion importante relevée dans de nombreuses matières. Nous l'invitons donc à se montrer plus régulière dans son travail personnel mais également dans sa concentration en classe afin de réaliser une belle année de 5ème. Nous comptons sur elle.",
+      "moyenne_generale": 14.13
     },
     {
       "eleve_id": "ELEVE_B",
-      "genre": "F",
+      "genre": "Fille",
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,
@@ -235,11 +236,12 @@
           "appreciation": "Excellent travail, excellent trimestre, c'est très bien, bravo, félicitations."
         }
       ],
-      "synthese_ground_truth": "Bilan positif mais perfectible. ELEVE_B est en réussite dans de nombreuses matières en fournissant un travail régulier. Nous l'encourageons cependant à se montrer bien plus active à l'oral pour consolider ses apprentissages. Un effort en SVT et en éducation musicale est également attendu pour parfaire son bilan. Nous comptons sur elle."
+      "synthese_ground_truth": "Bilan positif mais perfectible. ELEVE_B est en réussite dans de nombreuses matières en fournissant un travail régulier. Nous l'encourageons cependant à se montrer bien plus active à l'oral pour consolider ses apprentissages. Un effort en SVT et en éducation musicale est également attendu pour parfaire son bilan. Nous comptons sur elle.",
+      "moyenne_generale": 13.41
     },
     {
       "eleve_id": "ELEVE_C",
-      "genre": "M",
+      "genre": "Garçon",
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,
@@ -356,11 +358,12 @@
           "appreciation": "Très bon trimestre, c'est très bien, continuez."
         }
       ],
-      "synthese_ground_truth": "Bilan globalement positif mais perfectible. ELEVE_C a fourni un travail sérieux dans de nombreuses matières. Nous comptons désormais sur lui, pour améliorer sa participation en classe et intensifier son travail personnel en SVT et en Anglais afin de réaliser une belle année de 5ème. Nous l'en savons capable."
+      "synthese_ground_truth": "Bilan globalement positif mais perfectible. ELEVE_C a fourni un travail sérieux dans de nombreuses matières. Nous comptons désormais sur lui, pour améliorer sa participation en classe et intensifier son travail personnel en SVT et en Anglais afin de réaliser une belle année de 5ème. Nous l'en savons capable.",
+      "moyenne_generale": 13.49
     },
     {
       "eleve_id": "ELEVE_D",
-      "genre": "M",
+      "genre": "Garçon",
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,
@@ -469,7 +472,8 @@
           "appreciation": "C'est un très bon trimestre, Mais il faut fournir un travail personnel plus régulier."
         }
       ],
-      "synthese_ground_truth": "Bilan perfectible. ELEVE_D a des capacités et sait se montrer pertinent à l'écrit comme à l'oral. Cependant, il manque souvent de concentration en classe entraînant une baisse de ses résultats. Il lui faut changer de comportement et se remettre réellement au travail afin de réaliser une année de 5ème digne de ses capacités. Nous comptons sur lui."
+      "synthese_ground_truth": "Bilan perfectible. ELEVE_D a des capacités et sait se montrer pertinent à l'écrit comme à l'oral. Cependant, il manque souvent de concentration en classe entraînant une baisse de ses résultats. Il lui faut changer de comportement et se remettre réellement au travail afin de réaliser une année de 5ème digne de ses capacités. Nous comptons sur lui.",
+      "moyenne_generale": 12.74
     }
   ]
 }
