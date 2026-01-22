@@ -12,8 +12,8 @@ from src.document.parser import extract_pdf_content
 logger = logging.getLogger(__name__)
 
 
-class BulletinParser:
-    """Minimal PDF parser - returns raw tables and text."""
+class PdfplumberParser:
+    """Parser PDF utilisant pdfplumber - extraction mécanique."""
 
     def parse(self, pdf_path: str | Path) -> list[EleveExtraction]:
         """Parse PDF and return raw data.

@@ -90,8 +90,14 @@ Extraire les données structurées d'un PDF bulletin PRONOTE (tableau 3 colonnes
 
 ### Livrable
 ```python
-from src.document.bulletin_parser import BulletinParser
-parser = BulletinParser()
+from src.document import get_parser, ParserType
+
+# Parser par défaut (depuis PDF_PARSER_TYPE dans .env)
+parser = get_parser()
+
+# Ou forcer un parser spécifique
+parser = get_parser(ParserType.PDFPLUMBER)  # ou MISTRAL_OCR
+
 eleves = parser.parse("data/raw/bulletin_3A_T1.pdf")
 # -> list[EleveExtraction] avec toutes les données structurées
 ```

@@ -13,7 +13,7 @@ from src.api.dependencies import (
     get_pseudonymizer,
     get_synthese_repo,
 )
-from src.document.bulletin_parser import BulletinParser
+from src.document import get_parser
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.classe import ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
@@ -91,7 +91,7 @@ async def import_pdf(
 
     try:
         # Parse PDF
-        parser = BulletinParser()
+        parser = get_parser()
         eleves = parser.parse(tmp_path)
 
         imported = []
@@ -147,7 +147,7 @@ async def import_pdf_batch(
                 tmp.write(content)
                 tmp_path = Path(tmp.name)
 
-            parser = BulletinParser()
+            parser = get_parser()
             eleves = parser.parse(tmp_path)
 
             imported = []
