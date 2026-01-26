@@ -51,6 +51,38 @@ Analyse les appréciations pour déterminer la posture dominante :
 
 Liste 1 à 3 axes prioritaires d'amélioration (ex: "Participation orale", "Régularité du travail personnel").
 
+## ÉTAPE 6 : DÉTECTER LES BIAIS DE GENRE DANS LES APPRÉCIATIONS
+
+IMPORTANT : Analyse les appréciations pour identifier les stéréotypes de genre.
+Des recherches (École d'économie de Paris, 2026) montrent qu'à compétences égales,
+les filles et garçons reçoivent des appréciations différentes.
+
+Types de biais à détecter :
+
+1. **Effort vs Talent** (type: "effort_vs_talent")
+   - BIAIS FILLES : "appliquée", "travailleuse", "sérieuse", "consciencieuse", "studieuse"
+   - BIAIS GARÇONS : "intuitif", "brillant", "doué", "facilités naturelles", "potentiel"
+   → Ces formulations attribuent la réussite des filles à l'effort, celle des garçons au talent inné.
+
+2. **Comportement** (type: "comportement")
+   - BIAIS FILLES : "sage", "calme", "discrète", "effacée", "docile"
+   - BIAIS GARÇONS : "dynamique", "leader", "meneur", "s'impose", "charismatique"
+   → Ces formulations valorisent la passivité chez les filles, l'assertivité chez les garçons.
+
+3. **Émotionnel** (type: "emotionnel")
+   - BIAIS FILLES : "sensible", "émotive", "anxieuse", "manque de confiance"
+   - BIAIS GARÇONS : "passionné", "enthousiaste", "déterminé", "confiant"
+   → Ces formulations pathologisent les émotions des filles, valorisent celles des garçons.
+
+Pour chaque biais détecté, propose une reformulation neutre :
+- "appliquée" → "travail régulier et méthodique"
+- "intuitif" → "bonne compréhension des concepts"
+- "sage" → "attitude propice au travail"
+- "dynamique" → "participe activement"
+
+Ne signale un biais QUE si la formulation est clairement stéréotypée.
+Une liste vide est acceptable si aucun biais n'est détecté.
+
 ## FORMAT DE RÉPONSE (JSON)
 
 Réponds UNIQUEMENT avec un JSON valide selon cette structure :
@@ -64,7 +96,10 @@ Réponds UNIQUEMENT avec un JSON valide selon cette structure :
     {"matiere": "Nom matière", "description": "Description courte"}
   ],
   "posture_generale": "actif|passif|perturbateur|variable",
-  "axes_travail": ["Axe 1", "Axe 2"]
+  "axes_travail": ["Axe 1", "Axe 2"],
+  "biais_detectes": [
+    {"matiere": "Nom matière", "formulation_biaisee": "Citation exacte", "type_biais": "effort_vs_talent|comportement|emotionnel|autre", "suggestion": "Reformulation neutre"}
+  ]
 }
 ```"""
 
@@ -101,6 +136,32 @@ RESPONSE_SCHEMA = {
             "enum": ["actif", "passif", "perturbateur", "variable"],
         },
         "axes_travail": {"type": "array", "items": {"type": "string"}},
+        "biais_detectes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "matiere": {"type": "string"},
+                    "formulation_biaisee": {"type": "string"},
+                    "type_biais": {
+                        "type": "string",
+                        "enum": [
+                            "effort_vs_talent",
+                            "comportement",
+                            "emotionnel",
+                            "autre",
+                        ],
+                    },
+                    "suggestion": {"type": "string"},
+                },
+                "required": [
+                    "matiere",
+                    "formulation_biaisee",
+                    "type_biais",
+                    "suggestion",
+                ],
+            },
+        },
     },
     "required": [
         "synthese_texte",
@@ -108,6 +169,7 @@ RESPONSE_SCHEMA = {
         "reussites",
         "posture_generale",
         "axes_travail",
+        "biais_detectes",
     ],
 }
 

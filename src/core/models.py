@@ -141,6 +141,27 @@ class Reussite(BaseModel):
     description: str
 
 
+class BiaisGenre(BaseModel):
+    """Un biais de genre détecté dans une appréciation.
+
+    Basé sur les recherches de l'École d'économie de Paris (Charousset & Monnet, 2026)
+    montrant que les filles sont plus souvent qualifiées de "appliquées", "sérieuses"
+    tandis que les garçons sont décrits comme "intuitifs", "passionnés".
+    """
+
+    matiere: str
+    """Matière où le biais a été détecté."""
+
+    formulation_biaisee: str
+    """Citation exacte de la formulation stéréotypée."""
+
+    type_biais: Literal["effort_vs_talent", "comportement", "emotionnel", "autre"]
+    """Type de biais détecté."""
+
+    suggestion: str
+    """Suggestion de reformulation neutre."""
+
+
 class SyntheseGeneree(BaseModel):
     """Synthèse générée par le LLM avec insights."""
 
@@ -149,6 +170,7 @@ class SyntheseGeneree(BaseModel):
     reussites: list[Reussite] = Field(default_factory=list)
     posture_generale: Literal["actif", "passif", "perturbateur", "variable"]
     axes_travail: list[str] = Field(default_factory=list)
+    biais_detectes: list[BiaisGenre] = Field(default_factory=list)
 
 
 # =============================================================================
