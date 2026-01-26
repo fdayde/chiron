@@ -2,7 +2,7 @@
 
 Supporte deux backends :
 - pdfplumber : extraction mécanique (rapide, gratuit)
-- mistral_ocr : vision model cloud (précis, payant)
+- mistral_ocr : vision model cloud (précis, payant) + anonymisation automatique
 
 Usage:
     from src.document import get_parser, ParserType, estimate_mistral_cost
@@ -11,12 +11,18 @@ Usage:
     parser = get_parser()
     result = parser.parse("bulletin.pdf")
 
-    # Ou forcer un parser spécifique
+    # Ou forcer un parser spécifique avec anonymisation (défaut)
     parser = get_parser(ParserType.MISTRAL_OCR)
+    result = parser.parse("bulletin.pdf", eleve_id="ELEVE_001")
 
     # Estimer le coût avant envoi Mistral
     estimate = estimate_mistral_cost([Path("a.pdf"), Path("b.pdf")])
     print(f"{estimate['pages']} pages -> ${estimate['cost_usd']}")
+
+    # Utiliser l'anonymizer directement
+    from src.document import PDFAnonymizer
+    anonymizer = PDFAnonymizer()
+    result = anonymizer.anonymize(pdf_path, "ELEVE_001")
 """
 
 from enum import Enum
@@ -122,6 +128,11 @@ __all__ = [
     "PDFParser",
     # Parsers
     "PdfplumberParser",
+    "MistralOCRParser",
+    # Anonymisation
+    "PDFAnonymizer",
+    "AnonymizationResult",
+    "get_anonymizer",
     # Utilitaires
     "PDFContent",
     "extract_pdf_content",
@@ -129,3 +140,25 @@ __all__ = [
     "count_pdf_pages",
     "estimate_mistral_cost",
 ]
+
+
+# Imports pour les exports
+def __getattr__(name: str):
+    """Lazy imports pour éviter le chargement des modèles au démarrage."""
+    if name == "MistralOCRParser":
+        from src.document.mistral_parser import MistralOCRParser
+
+        return MistralOCRParser
+    if name == "PDFAnonymizer":
+        from src.document.anonymizer import PDFAnonymizer
+
+        return PDFAnonymizer
+    if name == "AnonymizationResult":
+        from src.document.anonymizer import AnonymizationResult
+
+        return AnonymizationResult
+    if name == "get_anonymizer":
+        from src.document.anonymizer import get_anonymizer
+
+        return get_anonymizer
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

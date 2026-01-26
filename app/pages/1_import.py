@@ -4,7 +4,7 @@ import streamlit as st
 
 from app.api_client import ChironAPIClient
 from app.components.sidebar import render_classe_selector, render_new_classe_form
-from app.config import ui_settings
+from app.config import LLM_PROVIDERS, ui_settings
 
 st.set_page_config(
     page_title=f"Import - {ui_settings.page_title}",
@@ -58,8 +58,8 @@ if uploaded_files:
 
     st.divider()
 
-    # Import button
-    col1, col2 = st.columns([1, 3])
+    # Options
+    col1, col2, col3 = st.columns([1, 1, 2])
 
     with col1:
         import_btn = st.button(
@@ -68,16 +68,52 @@ if uploaded_files:
             use_container_width=True,
         )
 
+    with col2:
+        auto_generate = st.checkbox(
+            "Auto-generer syntheses",
+            value=False,
+            help="Generer automatiquement les syntheses apres l'import",
+        )
+
+    # LLM settings for auto-generation (expandable)
+    if auto_generate:
+        with st.expander("Parametres LLM", expanded=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                provider = st.selectbox(
+                    "Provider",
+                    options=list(LLM_PROVIDERS.keys()),
+                    format_func=lambda x: LLM_PROVIDERS[x]["name"],
+                    index=0,
+                    key="import_llm_provider",
+                )
+            with col2:
+                provider_config = LLM_PROVIDERS[provider]
+                model_options = ["(defaut)"] + provider_config["models"]
+                model = st.selectbox(
+                    "Modele",
+                    options=model_options,
+                    index=0,
+                    key="import_llm_model",
+                )
+                if model == "(defaut)":
+                    model = None
+    else:
+        provider = ui_settings.default_provider
+        model = None
+
     if import_btn:
         progress_bar = st.progress(0)
         status_text = st.empty()
 
         results = []
+        imported_eleve_ids = []
         total = len(uploaded_files)
 
+        # Phase 1: Import PDFs
         for i, file in enumerate(uploaded_files):
             status_text.text(f"Import de {file.name}...")
-            progress_bar.progress((i + 1) / total)
+            progress_bar.progress((i + 0.5) / total)
 
             try:
                 content = file.read()
@@ -85,11 +121,11 @@ if uploaded_files:
                 results.append(
                     {"file": file.name, "status": "success", "result": result}
                 )
+                imported_eleve_ids.extend(result.get("eleve_ids", []))
             except Exception as e:
                 results.append({"file": file.name, "status": "error", "error": str(e)})
 
-        progress_bar.empty()
-        status_text.empty()
+            progress_bar.progress((i + 1) / total)
 
         # Results
         st.markdown("### Resultats de l'import")
@@ -111,6 +147,47 @@ if uploaded_files:
                     st.caption(f"IDs: {', '.join(result['eleve_ids'])}")
             else:
                 st.error(f"{r['file']}: {r['error']}")
+
+        # Phase 2: Auto-generate syntheses if enabled
+        if auto_generate and imported_eleve_ids:
+            st.divider()
+            st.markdown("### Generation automatique des syntheses")
+
+            gen_progress = st.progress(0)
+            gen_status = st.empty()
+            gen_success = 0
+            gen_error = 0
+            total_tokens = 0
+
+            for i, eleve_id in enumerate(imported_eleve_ids):
+                gen_status.text(
+                    f"Generation {i + 1}/{len(imported_eleve_ids)}: {eleve_id}..."
+                )
+
+                try:
+                    result = client.generate_synthese(
+                        eleve_id,
+                        trimestre,
+                        provider=provider,
+                        model=model,
+                    )
+                    gen_success += 1
+                    meta = result.get("metadata", {})
+                    total_tokens += meta.get("tokens_total", 0) or 0
+                except Exception:
+                    gen_error += 1
+
+                gen_progress.progress((i + 1) / len(imported_eleve_ids))
+
+            gen_progress.empty()
+            gen_status.empty()
+
+            col1, col2 = st.columns(2)
+            col1.metric("Syntheses generees", gen_success)
+            col2.metric("Tokens utilises", total_tokens)
+
+            if gen_error > 0:
+                st.warning(f"{gen_error} erreur(s) de generation")
 
         st.divider()
 

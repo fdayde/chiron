@@ -2,6 +2,8 @@
 
 > Assistant IA pour la préparation des conseils de classe
 
+> Dernière mise à jour : 2026-01-26
+
 ---
 
 ## Description
@@ -10,27 +12,34 @@ Chiron est un outil destiné aux professeurs principaux pour générer des synth
 
 **Workflow** :
 1. Import des PDF bulletins
-2. Extraction automatique des données (notes, appréciations)
-3. Pseudonymisation des données personnelles (RGPD)
-4. Génération de synthèses par LLM (style adapté via few-shot)
-5. Validation/édition par le professeur
-6. Export pour le conseil de classe
+2. Anonymisation automatique (NER + PyMuPDF) avant envoi cloud
+3. Extraction OCR (Mistral OCR)
+4. Pseudonymisation des données
+5. Génération de synthèses par LLM (style adapté via few-shot)
+6. Validation/édition par le professeur
+7. Export CSV (dépseudonymisé) pour le conseil de classe
 
 **Principes** :
 - Le professeur reste dans la boucle (validation obligatoire)
-- Données pseudonymisées avant tout envoi API externe
-- Style et ton personnalisés via exemples du professeur
+- **Données personnelles jamais envoyées au cloud** (anonymisation PDF avant OCR)
+- Style et ton personnalisés via exemples du professeur (few-shot)
+- Application locale + APIs cloud (OCR, LLM)
 
 ---
 
 ## Stack technique
 
-- **Python 3.11+**
-- **LLM** : OpenAI GPT-4o-mini / Claude (API externe)
-- **Backend** : FastAPI
-- **Frontend** : Streamlit
-- **Base de données** : DuckDB (local)
-- **Parsing PDF** : pdfplumber
+| Composant | Technologie |
+|-----------|-------------|
+| Runtime | Python 3.11+ |
+| LLM Chat | OpenAI GPT-4o-mini / Claude Sonnet |
+| LLM OCR | **Mistral OCR** (mistral-ocr-latest) |
+| NER | **CamemBERT** (Jean-Baptiste/camembert-ner) |
+| PDF manipulation | **PyMuPDF** (fitz) + pdfplumber |
+| Backend | FastAPI |
+| Frontend | Streamlit |
+| Base de données | DuckDB (local) |
+| Validation | Pydantic v2 |
 
 ---
 
@@ -41,12 +50,12 @@ Chiron est un outil destiné aux professeurs principaux pour générer des synth
 git clone https://github.com/[user]/chiron.git
 cd chiron
 
-# Créer environnement virtuel
-python -m venv .venv
+# Créer environnement virtuel (avec uv)
+uv venv
 source .venv/bin/activate  # ou .venv\Scripts\activate sur Windows
 
 # Installer dépendances
-pip install -e .
+uv pip install -e .
 
 # Configurer
 cp .env.example .env
@@ -58,14 +67,20 @@ cp .env.example .env
 ## Configuration (.env)
 
 ```env
-# LLM
+# LLM Providers
 OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...  # optionnel
+ANTHROPIC_API_KEY=sk-ant-...
+MISTRAL_API_KEY=...
+
+# Mistral OCR
+MISTRAL_OCR_API_KEY=...
+MISTRAL_OCR_MODEL=mistral-ocr-latest
+
+# Default LLM
 DEFAULT_LLM_PROVIDER=openai
 DEFAULT_LLM_MODEL=gpt-4o-mini
 
 # API
-API_KEY=chiron-secret-key
 API_HOST=0.0.0.0
 API_PORT=8000
 
@@ -81,7 +96,7 @@ DB_PATH=data/db/chiron.duckdb
 
 ```bash
 # Terminal 1 : Backend API
-python scripts/run_api.py
+uvicorn src.api.main:app --reload --port 8000
 
 # Terminal 2 : Frontend Streamlit
 streamlit run app/main.py
@@ -106,22 +121,69 @@ Ouvrir http://localhost:8501 dans le navigateur.
 chiron/
 ├── src/
 │   ├── llm/              # Abstraction LLM multi-provider
-│   ├── document/         # Parsing PDF bulletins
+│   │   ├── manager.py    # LLMManager avec registry pattern
+│   │   ├── config.py     # Settings + get_pricing()
+│   │   └── clients/      # OpenAI, Anthropic, Mistral
+│   ├── document/         # Parsing PDF (pdfplumber + Mistral OCR)
+│   │   └── anonymizer.py # Anonymisation NER + PyMuPDF
 │   ├── privacy/          # Pseudonymisation RGPD
-│   ├── storage/          # DuckDB
-│   ├── generation/       # Prompts et génération synthèses
-│   ├── api/              # FastAPI routes
+│   ├── storage/          # DuckDB + repositories
+│   │   ├── connection.py # DuckDBConnection base class
+│   │   └── repositories/ # Héritent de DuckDBConnection
+│   ├── generation/       # Prompts et génération synthèses (DI)
+│   ├── api/              # FastAPI routers
 │   └── core/             # Config, models, utils
 ├── app/                  # Streamlit frontend
 │   ├── main.py
-│   └── pages/
+│   ├── pages/            # Import, Review, Export
+│   └── components/       # UI components
 ├── data/
 │   ├── raw/              # PDFs importés
+│   ├── processed/        # PDFs anonymisés
 │   ├── db/               # DuckDB
 │   └── exports/          # CSV
 ├── notebooks/            # Dev notebooks
+│   ├── 01_parser_dev.ipynb
+│   ├── 02_generation_test.ipynb
+│   ├── 03_parser_benchmark.ipynb
+│   ├── 04_production_simulation.ipynb
+│   ├── 05_pdf_anonymization_test.ipynb
+│   └── 06_workflow_complet.ipynb
 ├── tests/
+├── docs/
 └── scripts/
+```
+
+---
+
+## Schémas de données
+
+### Extraction (input)
+
+```python
+class EleveExtraction(BaseModel):
+    eleve_id: str | None        # Après pseudonymisation
+    nom: str | None             # Avant pseudonymisation
+    prenom: str | None
+    genre: Literal["Fille", "Garçon"] | None
+    classe: str | None
+    trimestre: int | None
+    matieres: list[MatiereExtraction]
+    moyenne_generale: float | None
+    engagements: list[str]
+    absences_demi_journees: int | None
+    raw_text: str | None        # Markdown OCR brut
+```
+
+### Génération (output LLM)
+
+```python
+class SyntheseGeneree(BaseModel):
+    synthese_texte: str
+    alertes: list[Alerte]           # Notes < 8, problèmes
+    reussites: list[Reussite]       # Points forts
+    posture_generale: Literal["actif", "passif", "perturbateur", "variable"]
+    axes_travail: list[str]         # Priorités d'amélioration
 ```
 
 ---
@@ -131,113 +193,44 @@ chiron/
 Voir les documents de référence :
 - `docs/01_architecture_technique.md` — Architecture détaillée
 - `docs/02_plan_implementation.md` — Plan d'implémentation par phases
+- `TODO.md` — Suivi d'avancement
 
 ---
 
-## Projet de référence
+## Status actuel
 
-Ce projet s'inspire de l'architecture de **Healstra** (extraction d'informations médicales), dont les composants suivants sont réutilisés :
+| Module | Status |
+|--------|--------|
+| Parser PDF (Mistral OCR) | ✅ Fonctionnel |
+| Anonymisation NER | ✅ Intégré dans MistralOCRParser |
+| Pseudonymisation | ✅ Fonctionnel |
+| Storage DuckDB | ✅ Fonctionnel (architecture DRY avec héritage) |
+| Génération LLM | ✅ Fonctionnel (DI pour testabilité) |
+| API FastAPI | ✅ Endpoint generate connecté |
+| UI Streamlit | ✅ Génération connectée au backend |
+| Packaging .exe | [ ] TODO |
 
-| Composant | Source |
-|-----------|--------|
-| Abstraction LLM | `src/llm/*` |
-| Rate limiting | `src/llm/rate_limiter.py` |
-| Métriques | `src/llm/metrics.py` |
-| Parser PDF | `src/document/parser_v2.py` |
-| Async helpers | `src/utils/async_helpers.py` |
+### Prochaines étapes
 
-Chemin du projet Healstra de référence :
-```
-C:/Users/Florent/Documents/data_science_missions/Healstra/healstra-beonemed-avisct/
-```
+1. Parser structuré (`raw_text` → `EleveExtraction` complet)
+2. Few-shot loader (charger exemples depuis fichiers)
+3. Packaging .exe Windows
+
+---
+
+## Sécurité & RGPD
+
+| Aspect | Mesure |
+|--------|--------|
+| Données élèves | Anonymisées dans le PDF avant envoi cloud |
+| Stockage | DuckDB local, pas de cloud |
+| Mapping identités | Base séparée (`privacy.duckdb`) |
+| OCR cloud | Reçoit uniquement PDFs anonymisés |
+| LLM cloud | Reçoit uniquement données pseudonymisées |
+| Validation | Obligatoire avant export |
 
 ---
 
 ## Licence
 
 Projet privé — Usage non commercial.
-
----
-
-# INSTRUCTIONS POUR CLAUDE CODE
-
-> Cette section sert de contexte pour démarrer une nouvelle session de développement.
-
-## Contexte projet
-
-Tu travailles sur **Chiron**, un assistant IA pour professeurs principaux.
-
-**Objectif** : À partir de PDF de bulletins scolaires PRONOTE, générer des synthèses trimestrielles personnalisées avec insights (alertes, réussites, engagement...).
-
-**Architecture** : Backend FastAPI + Frontend Streamlit + DuckDB local + LLM externe (OpenAI/Claude).
-
-**Contrainte RGPD** : Les données élèves doivent être pseudonymisées avant envoi au LLM.
-
-## Projet de référence à consulter
-
-Le projet **Healstra** contient des composants réutilisables :
-```
-C:/Users/Florent/Documents/data_science_missions/Healstra/healstra-beonemed-avisct/
-```
-
-Composants à copier/adapter :
-- `src/llm/` — Abstraction LLM complète (multi-provider, rate limiting, retry)
-- `src/document/parser_v2.py` — Parser PDF avec pdfplumber
-- `src/storage/db_manager.py` — Gestion DuckDB thread-safe
-- `src/utils/async_helpers.py` — Helpers async
-- `src/core/constants.py`, `logging_config.py` — Config
-
-## Documentation de référence
-
-Consulter ces fichiers pour l'architecture et le plan détaillé :
-- `docs/chiron/01_architecture_technique.md`
-- `docs/chiron/02_plan_implementation.md`
-
-## Format bulletins
-
-- PDF PRONOTE standardisé
-- Tableau 3 colonnes (Matière | Note | Appréciation)
-- ~30 élèves par classe
-- Multi-classes, multi-trimestres
-
-## Outputs attendus par élève
-
-```python
-class SyntheseGeneree(BaseModel):
-    synthese_texte: str              # Rédigée dans le ton du prof
-    alertes: list[Insight]           # Notes < 8, décrochage
-    reussites: list[Insight]         # Points forts
-    engagement_differencie: dict     # matière → posture
-    posture_generale: str            # actif|passif|perturbateur|variable
-    ecart_effort_resultat: str       # equilibre|effort>resultat|resultat>effort
-```
-
-## Priorités MVP
-
-1. Parser PDF fonctionnel sur bulletins réels
-2. Pseudonymisation robuste
-3. Génération synthèses avec few-shot
-4. Interface Streamlit minimaliste mais fonctionnelle
-5. Export CSV
-
-## Comment démarrer
-
-1. Lire les docs de référence (`docs/chiron/`)
-2. Créer la structure du projet
-3. Copier les composants réutilisables depuis Healstra
-4. Suivre le plan d'implémentation phase par phase
-5. Demander un exemple PDF bulletin pour développer le parser
-
-## Questions fréquentes
-
-**Q: Où stocker le mapping de pseudonymisation ?**
-A: Table DuckDB séparée ou fichier JSON local (optionnellement chiffré).
-
-**Q: Quel LLM utiliser ?**
-A: GPT-4o-mini par défaut (bon rapport qualité/coût). Claude en fallback.
-
-**Q: Comment personnaliser le style des synthèses ?**
-A: Few-shot avec 2-3 exemples de synthèses rédigées par le prof, stockées en DB.
-
-**Q: Format d'export ?**
-A: CSV avec colonnes : Élève, Synthèse, Alertes, Réussites, Status, Date validation.

@@ -123,13 +123,9 @@ def calculate_batch_cost(
         model = model_overrides.get(provider) or settings.get_model(provider)
 
         # Récupérer le pricing config pour ce provider
-        if provider == "openai":
-            pricing_config = settings.openai_pricing
-        elif provider == "anthropic":
-            pricing_config = settings.anthropic_pricing
-        elif provider == "mistral":
-            pricing_config = settings.mistral_pricing
-        else:
+        try:
+            pricing_config = settings.get_pricing(provider)
+        except ValueError:
             logger.warning(
                 f"Provider inconnu '{provider}', coût ignoré pour {token_count} tokens"
             )
@@ -151,3 +147,50 @@ def calculate_batch_cost(
         logger.debug(f"[{provider}] {token_count:,} tokens ({model}) = ${cost:.4f}")
 
     return round(total_cost, 2)
+
+
+def estimate_synthese_cost(
+    nb_eleves: int,
+    avg_input_tokens: int = 2000,
+    avg_output_tokens: int = 500,
+    provider: str = "openai",
+    model: str | None = None,
+) -> dict:
+    """Estime le coût de génération de synthèses pour N élèves.
+
+    Args:
+        nb_eleves: Nombre d'élèves à traiter.
+        avg_input_tokens: Tokens moyens en input par élève (défaut: 2000).
+        avg_output_tokens: Tokens moyens en output par élève (défaut: 500).
+        provider: Provider LLM à utiliser.
+        model: Modèle à utiliser (défaut: modèle par défaut du provider).
+
+    Returns:
+        Dict avec 'nb_eleves', 'total_tokens', 'cost_usd', 'cost_per_eleve'.
+    """
+    from src.llm.config import settings
+
+    # Récupérer le modèle et pricing config
+    try:
+        model = model or settings.get_model(provider)
+        pricing_config = settings.get_pricing(provider)
+    except ValueError:
+        return {"error": f"Provider inconnu: {provider}"}
+
+    calculator = PricingCalculator(provider, pricing_config)
+
+    # Calculer pour un élève
+    cost_per_eleve = calculator.calculate(model, avg_input_tokens, avg_output_tokens)
+    total_cost = cost_per_eleve * nb_eleves
+    total_tokens = (avg_input_tokens + avg_output_tokens) * nb_eleves
+
+    return {
+        "nb_eleves": nb_eleves,
+        "provider": provider,
+        "model": model,
+        "avg_input_tokens": avg_input_tokens,
+        "avg_output_tokens": avg_output_tokens,
+        "total_tokens": total_tokens,
+        "cost_per_eleve": round(cost_per_eleve, 6),
+        "cost_usd": round(total_cost, 4),
+    }

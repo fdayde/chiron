@@ -6,7 +6,7 @@ from app.api_client import ChironAPIClient
 from app.components.eleve_card import render_eleve_detail
 from app.components.sidebar import render_classe_selector
 from app.components.synthese_editor import render_synthese_editor
-from app.config import ui_settings
+from app.config import LLM_PROVIDERS, ui_settings
 
 st.set_page_config(
     page_title=f"Review - {ui_settings.page_title}",
@@ -29,6 +29,53 @@ st.sidebar.markdown("*Review Syntheses*")
 st.sidebar.divider()
 
 classe_id, trimestre = render_classe_selector(client, key="review_classe")
+
+# LLM Settings in sidebar
+st.sidebar.divider()
+st.sidebar.markdown("### Parametres LLM")
+
+# Provider selection
+provider_options = list(LLM_PROVIDERS.keys())
+provider_names = [LLM_PROVIDERS[p]["name"] for p in provider_options]
+default_idx = (
+    provider_options.index(ui_settings.default_provider)
+    if ui_settings.default_provider in provider_options
+    else 0
+)
+
+selected_provider = st.sidebar.selectbox(
+    "Provider",
+    options=provider_options,
+    format_func=lambda x: LLM_PROVIDERS[x]["name"],
+    index=default_idx,
+    key="llm_provider",
+)
+
+# Model selection based on provider
+provider_config = LLM_PROVIDERS[selected_provider]
+model_options = ["(defaut)"] + provider_config["models"]
+selected_model = st.sidebar.selectbox(
+    "Modele",
+    options=model_options,
+    index=0,
+    key="llm_model_select",
+)
+# Store actual model value (None for default)
+if selected_model == "(defaut)":
+    st.session_state["llm_model"] = None
+else:
+    st.session_state["llm_model"] = selected_model
+
+# Temperature
+st.sidebar.slider(
+    "Temperature",
+    min_value=0.0,
+    max_value=1.0,
+    value=ui_settings.default_temperature,
+    step=0.1,
+    key="llm_temperature",
+    help="0 = deterministe, 1 = creatif",
+)
 
 # Main content
 st.title("Review des syntheses")
@@ -76,17 +123,52 @@ st.divider()
 st.markdown("### Actions groupees")
 col1, col2 = st.columns(2)
 
+# Get LLM settings for batch generation
+provider = st.session_state.get("llm_provider", ui_settings.default_provider)
+model = st.session_state.get("llm_model")
+temperature = st.session_state.get("llm_temperature", ui_settings.default_temperature)
+
 with col1:
     if st.button("Generer toutes les syntheses", use_container_width=True):
-        progress = st.progress(0)
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        success_count = 0
+        error_count = 0
+        total_tokens = 0
+        total_duration = 0
+
         for i, eleve in enumerate(eleves):
+            eleve_id = eleve["eleve_id"]
+            status_text.text(f"Generation {i + 1}/{len(eleves)}: {eleve_id}...")
+
             try:
-                client.generate_synthese(eleve["eleve_id"], trimestre)
+                result = client.generate_synthese(
+                    eleve_id,
+                    trimestre,
+                    provider=provider,
+                    model=model,
+                    temperature=temperature,
+                )
+                success_count += 1
+                meta = result.get("metadata", {})
+                total_tokens += meta.get("tokens_total", 0) or 0
+                total_duration += meta.get("duration_ms", 0) or 0
             except Exception:
-                pass  # May already exist
-            progress.progress((i + 1) / len(eleves))
-        progress.empty()
-        st.success("Syntheses generees!")
+                error_count += 1
+                # Continue with next student
+
+            progress_bar.progress((i + 1) / len(eleves))
+
+        progress_bar.empty()
+        status_text.empty()
+
+        if success_count > 0:
+            st.success(
+                f"{success_count} syntheses generees "
+                f"({total_tokens} tokens, {total_duration / 1000:.1f}s total)"
+            )
+        if error_count > 0:
+            st.warning(f"{error_count} erreurs (peut-etre deja generes)")
         st.rerun()
 
 with col2:
@@ -94,11 +176,13 @@ with col2:
         # Get all pending and validate
         try:
             pending = client.get_pending_syntheses(classe_id)
+            validated = 0
             for item in pending.get("pending", []):
                 synthese_id = item.get("synthese_id")
                 if synthese_id:
                     client.validate_synthese(synthese_id)
-            st.success("Syntheses validees!")
+                    validated += 1
+            st.success(f"{validated} syntheses validees!")
             st.rerun()
         except Exception as e:
             st.error(f"Erreur: {e}")

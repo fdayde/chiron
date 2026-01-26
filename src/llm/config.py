@@ -42,6 +42,12 @@ class LLMSettings(BaseSettings):
         description="Coût Mistral OCR en USD pour 1000 pages",
     )
 
+    # Anonymization configuration
+    ner_model: str = Field(
+        default="Jean-Baptiste/camembert-ner",
+        description="Modèle HuggingFace NER pour l'anonymisation",
+    )
+
     # Modèles par défaut (production)
     default_openai_model: str = Field(
         default="gpt-5-mini", description="Modèle OpenAI par défaut"
@@ -95,6 +101,11 @@ class LLMSettings(BaseSettings):
         default=16384,
         gt=0,
         description="Max tokens de sortie par défaut (tous modèles)",
+    )
+    synthese_max_tokens: int = Field(
+        default=5000,
+        gt=0,
+        description="Max tokens pour la génération de synthèses",
     )
 
     # Pricing OpenAI (USD par million de tokens) - Input / Output
@@ -177,6 +188,27 @@ class LLMSettings(BaseSettings):
             return self.anthropic_rpm
         elif provider_lower == "mistral":
             return self.mistral_rpm
+        raise ValueError(f"Provider inconnu: {provider}")
+
+    def get_pricing(self, provider: str) -> dict[str, tuple[float, float]]:
+        """Retourne la config de pricing pour un provider.
+
+        Args:
+            provider: Nom du provider (openai/anthropic/mistral)
+
+        Returns:
+            Dict {model: (input_price_per_1M, output_price_per_1M)}
+
+        Raises:
+            ValueError: Si le provider est inconnu
+        """
+        provider_lower = provider.lower()
+        if provider_lower == "openai":
+            return self.openai_pricing
+        elif provider_lower == "anthropic":
+            return self.anthropic_pricing
+        elif provider_lower == "mistral":
+            return self.mistral_pricing
         raise ValueError(f"Provider inconnu: {provider}")
 
 

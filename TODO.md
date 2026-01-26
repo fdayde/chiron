@@ -1,6 +1,6 @@
 # Chiron - Suivi d'avancement
 
-> Dernière mise à jour : 2026-01-23
+> Dernière mise à jour : 2026-01-26
 
 ---
 
@@ -19,12 +19,13 @@
 
 ### Détails par module
 
-- **`src/document/`** : Factory pattern, `PdfplumberParser`, `MistralOCRParser`, estimation coût
+- **`src/document/`** : Factory pattern, `PdfplumberParser`, `MistralOCRParser`, `Anonymizer`, estimation coût
 - **`src/privacy/`** : `Pseudonymizer` avec stockage DuckDB, pseudonymize/depseudonymize text
-- **`src/storage/`** : Connection singleton, repositories CRUD, schemas SQL
-- **`src/generation/`** : `PromptBuilder` (few-shot, system prompt), `SyntheseGenerator` (generate, generate_batch)
-- **`src/api/`** : FastAPI avec routers (classes, eleves, syntheses, exports)
-- **`app/`** : Streamlit avec pages (import, review, export) et composants
+- **`src/storage/`** : `DuckDBConnection` base class, repositories CRUD héritant de la base, schemas SQL
+- **`src/generation/`** : `PromptBuilder` (few-shot, system prompt), `SyntheseGenerator` (generate, generate_batch) avec DI
+- **`src/llm/`** : `LLMManager` avec registry pattern, `PricingCalculator` centralisé, rate limiting
+- **`src/api/`** : FastAPI avec routers (classes, eleves, syntheses, exports), endpoint génération connecté
+- **`app/`** : Streamlit avec pages (import, review, export) et composants, génération connectée
 
 ---
 
@@ -32,9 +33,9 @@
 
 | Composant | Problème | Fichier |
 |-----------|----------|---------|
-| **API /syntheses/generate** | Endpoint existe mais retourne placeholder, pas connecté au `SyntheseGenerator` | `src/api/routers/syntheses.py` |
+| ~~**API /syntheses/generate**~~ | ✅ Connecté au `SyntheseGenerator` | `src/api/routers/syntheses.py` |
 | **Parser → EleveExtraction** | Retourne `raw_text`/`raw_tables` mais pas les champs structurés (matières, notes) | `src/document/pdfplumber_parser.py` |
-| **UI Review** | Layout fait, mais génération pas connectée au backend | `app/pages/2_review.py` |
+| ~~**UI Review**~~ | ✅ Génération connectée au backend | `app/pages/2_review.py` |
 | **Few-shot examples** | Models définis mais pas de mécanisme pour charger les exemples | `src/generation/` |
 
 ---
@@ -43,16 +44,13 @@
 
 ### Priorité haute
 
-- [ ] **Intégrer anonymisation PDF dans MistralOCRParser**
-  - Testé dans `notebooks/05_pdf_anonymization_test.ipynb` ✅
-  - À intégrer dans `src/document/mistral_parser.py`
-  - Utiliser CamemBERT NER (`Jean-Baptiste/camembert-ner`) pour détecter les noms
-  - Anonymiser avec PyMuPDF avant envoi à Mistral OCR
+- [x] ~~**Intégrer anonymisation PDF dans MistralOCRParser**~~ ✅
+  - Intégré dans `src/document/mistral_parser.py`
+  - Module dédié `src/document/anonymizer.py`
 
-- [ ] **Connecter endpoint génération au SyntheseGenerator**
-  - Fichier : `src/api/routers/syntheses.py`
-  - Injecter `SyntheseGenerator` dans les dépendances
-  - Appeler `generator.generate()` au lieu du placeholder
+- [x] ~~**Connecter endpoint génération au SyntheseGenerator**~~ ✅
+  - Endpoint connecté dans `src/api/routers/syntheses.py`
+  - `SyntheseGenerator` injecté via dépendances
 
 - [ ] **Parser données brutes en EleveExtraction structuré**
   - Extraire : nom, classe, trimestre, matières, notes, appréciations
@@ -135,6 +133,7 @@
 | `03_parser_benchmark.ipynb` | ✅ | Comparaison parsers |
 | `04_production_simulation.ipynb` | ✅ | Simulation workflow |
 | `05_pdf_anonymization_test.ipynb` | ✅ | Test anonymisation PDF + NER |
+| `06_workflow_complet.ipynb` | ✅ | Workflow complet avec estimation coûts |
 
 ---
 
@@ -159,8 +158,8 @@ PDF original
     ▼
 ┌─────────────────────────────────────────────┐
 │ 6. Stockage DuckDB (pseudonymisé)           │ ✅
-│ 7. Génération synthèse (LLM + few-shot)     │ ⚠️ API non connectée
-│ 8. Validation par utilisateur               │ ✅ UI existe
+│ 7. Génération synthèse (LLM + few-shot)     │ ✅ API connectée
+│ 8. Validation par utilisateur               │ ✅ UI connectée
 │ 9. Export CSV (dépseudonymisé)              │ ✅
 └─────────────────────────────────────────────┘
 ```
@@ -178,6 +177,11 @@ PDF original
 | Anonymisation | PyMuPDF redaction avant envoi cloud | 2026-01-23 |
 | Stockage | DuckDB (léger, SQL, pas de serveur) | - |
 | LLM | Configurable (OpenAI, Anthropic, Mistral) | - |
+| **Repository pattern** | `DuckDBRepository` hérite de `DuckDBConnection` (DRY) | 2026-01-26 |
+| **LLM clients** | Registry pattern dans `LLMManager` (extensible) | 2026-01-26 |
+| **Pricing** | Centralisé via `settings.get_pricing(provider)` | 2026-01-26 |
+| **Connexions SQL** | Context manager `with` partout (auto-cleanup) | 2026-01-26 |
+| **Generator** | Dependency injection pour `LLMManager` et `PromptBuilder` | 2026-01-26 |
 
 ---
 

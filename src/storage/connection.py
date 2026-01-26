@@ -15,114 +15,58 @@ _SHARED_CONNECTION: "DuckDBConnection | None" = None
 
 
 class DuckDBConnection:
-    """Managed DuckDB connection with schema initialization.
+    """Base class for DuckDB connection management.
 
-    Supports context manager for automatic connection handling.
+    Utilise le context manager `with` pour chaque opération SQL,
+    garantissant la fermeture automatique des connexions.
+
+    Cette classe sert de base pour DuckDBRepository et peut être
+    utilisée directement pour l'initialisation du schéma.
 
     Usage:
         conn = DuckDBConnection()
         conn.ensure_tables()
 
-        # Using context manager (recommended):
-        with conn.cursor() as cur:
+        # Avec context manager:
+        with conn._get_conn() as cur:
             result = cur.execute("SELECT * FROM eleves").fetchall()
-
-        # Direct execute (also supported):
-        result = conn.execute("SELECT * FROM eleves")
     """
 
     def __init__(self, db_path: Path | str | None = None) -> None:
-        """Initialize connection.
+        """Initialize connection manager.
 
         Args:
             db_path: Path to database file. Defaults to config setting.
         """
         self.db_path = Path(db_path) if db_path else storage_settings.db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn: duckdb.DuckDBPyConnection | None = None
 
-    @property
-    def conn(self) -> duckdb.DuckDBPyConnection:
-        """Get or create connection."""
-        if self._conn is None:
-            self._conn = duckdb.connect(str(self.db_path))
-        return self._conn
-
-    def cursor(self) -> duckdb.DuckDBPyConnection:
-        """Get a cursor for context manager usage.
+    def _get_conn(self) -> duckdb.DuckDBPyConnection:
+        """Get a new connection for context manager usage.
 
         Returns:
-            DuckDB connection that can be used as context manager.
+            DuckDB connection that should be used with `with` statement.
         """
         return duckdb.connect(str(self.db_path))
 
-    def execute(self, sql: str, params: list | tuple | None = None) -> list[tuple]:
-        """Execute SQL and return results.
-
-        Args:
-            sql: SQL statement.
-            params: Optional parameters.
-
-        Returns:
-            List of result tuples.
-        """
-        try:
-            if params:
-                result = self.conn.execute(sql, params)
-            else:
-                result = self.conn.execute(sql)
-            return result.fetchall()
-        except Exception as e:
-            raise StorageError(f"SQL execution failed: {e}") from e
-
-    def execute_returning(
-        self, sql: str, params: list | tuple | None = None
-    ) -> tuple | None:
-        """Execute SQL and return single row.
-
-        Args:
-            sql: SQL statement.
-            params: Optional parameters.
-
-        Returns:
-            Single result tuple or None.
-        """
-        results = self.execute(sql, params)
-        return results[0] if results else None
-
-    def executemany(self, sql: str, params_list: list[list | tuple]) -> None:
-        """Execute SQL with multiple parameter sets.
-
-        Args:
-            sql: SQL statement.
-            params_list: List of parameter tuples.
-        """
-        try:
-            self.conn.executemany(sql, params_list)
-        except Exception as e:
-            raise StorageError(f"SQL executemany failed: {e}") from e
-
     def ensure_tables(self) -> None:
         """Create all tables if they don't exist."""
-        for table_name in TABLE_ORDER:
-            sql = TABLES[table_name]
-            try:
-                self.conn.execute(sql)
-                logger.debug(f"Ensured table: {table_name}")
-            except Exception as e:
-                raise StorageError(f"Failed to create table {table_name}: {e}") from e
+        with self._get_conn() as conn:
+            for table_name in TABLE_ORDER:
+                sql = TABLES[table_name]
+                try:
+                    conn.execute(sql)
+                    logger.debug(f"Ensured table: {table_name}")
+                except Exception as e:
+                    raise StorageError(
+                        f"Failed to create table {table_name}: {e}"
+                    ) from e
 
         logger.info(f"Database initialized at {self.db_path}")
 
-    def close(self) -> None:
-        """Close the connection."""
-        if self._conn is not None:
-            self._conn.close()
-            self._conn = None
-
 
 def get_connection() -> DuckDBConnection:
-    """Get shared database connection (singleton pattern).
+    """Get shared database connection manager (singleton pattern).
 
     Returns:
         Shared DuckDBConnection instance.
@@ -135,8 +79,6 @@ def get_connection() -> DuckDBConnection:
 
 
 def reset_connection() -> None:
-    """Reset the shared connection (for testing)."""
+    """Reset the shared connection manager (for testing)."""
     global _SHARED_CONNECTION
-    if _SHARED_CONNECTION is not None:
-        _SHARED_CONNECTION.close()
-        _SHARED_CONNECTION = None
+    _SHARED_CONNECTION = None

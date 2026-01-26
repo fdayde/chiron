@@ -10,35 +10,47 @@ from app.config import ui_settings
 class ChironAPIClient:
     """Client for interacting with the Chiron API."""
 
+    # Timeout for standard requests (seconds)
+    DEFAULT_TIMEOUT = 30.0
+
+    # Extended timeout for LLM generation (can take 30-60s)
+    LLM_TIMEOUT = 120.0
+
     def __init__(self, base_url: str | None = None) -> None:
         self.base_url = base_url or ui_settings.api_base_url
 
-    def _get(self, endpoint: str, params: dict | None = None) -> dict | list:
+    def _get(
+        self, endpoint: str, params: dict | None = None, timeout: float | None = None
+    ) -> dict | list:
         """Make a GET request."""
-        with httpx.Client() as client:
+        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
             response = client.get(f"{self.base_url}{endpoint}", params=params)
             response.raise_for_status()
             return response.json()
 
     def _post(
-        self, endpoint: str, json: dict | None = None, files: dict | None = None
+        self,
+        endpoint: str,
+        json: dict | None = None,
+        files: dict | None = None,
+        timeout: float | None = None,
     ) -> dict:
         """Make a POST request."""
-        with httpx.Client() as client:
+        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
             response = client.post(f"{self.base_url}{endpoint}", json=json, files=files)
             response.raise_for_status()
             return response.json()
 
-    def _patch(self, endpoint: str, json: dict) -> dict:
+    def _patch(self, endpoint: str, json: dict, timeout: float | None = None) -> dict:
         """Make a PATCH request."""
-        with httpx.Client() as client:
+        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
             response = client.patch(f"{self.base_url}{endpoint}", json=json)
             response.raise_for_status()
             return response.json()
 
-    def _delete(self, endpoint: str) -> dict:
+    def _delete(self, endpoint: str, timeout: float | None = None) -> dict:
         """Make a DELETE request."""
-        with httpx.Client() as client:
+        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
             response = client.delete(f"{self.base_url}{endpoint}")
             response.raise_for_status()
             return response.json()
@@ -92,11 +104,39 @@ class ChironAPIClient:
         return self._delete(f"/eleves/{eleve_id}")
 
     # Syntheses
-    def generate_synthese(self, eleve_id: str, trimestre: int) -> dict:
-        """Generate a synthesis for a student."""
+    def generate_synthese(
+        self,
+        eleve_id: str,
+        trimestre: int,
+        provider: str = "openai",
+        model: str | None = None,
+        temperature: float = 0.7,
+    ) -> dict:
+        """Generate a synthesis for a student using LLM.
+
+        Args:
+            eleve_id: Student identifier.
+            trimestre: Trimester number.
+            provider: LLM provider (openai, anthropic, mistral).
+            model: Specific model (None = provider default).
+            temperature: Sampling temperature.
+
+        Returns:
+            Generated synthesis with metadata.
+        """
+        payload = {
+            "eleve_id": eleve_id,
+            "trimestre": trimestre,
+            "provider": provider,
+            "temperature": temperature,
+        }
+        if model:
+            payload["model"] = model
+
         return self._post(
             "/syntheses/generate",
-            json={"eleve_id": eleve_id, "trimestre": trimestre},
+            json=payload,
+            timeout=self.LLM_TIMEOUT,
         )
 
     def update_synthese(

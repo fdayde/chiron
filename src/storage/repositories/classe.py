@@ -4,12 +4,8 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from pathlib import Path
 
-import duckdb
-
-from src.storage.config import storage_settings
-from src.storage.repositories.base import Repository
+from src.storage.repositories.base import DuckDBRepository
 
 
 @dataclass
@@ -19,23 +15,30 @@ class Classe:
     classe_id: str
     nom: str
     niveau: str | None = None
+    etablissement: str | None = None
     annee_scolaire: str = "2024-2025"
 
 
-class ClasseRepository(Repository[Classe]):
+class ClasseRepository(DuckDBRepository[Classe]):
     """Repository for managing classes."""
 
-    def __init__(self, db_path: Path | str | None = None) -> None:
-        """Initialize repository.
+    @property
+    def table_name(self) -> str:
+        return "classes"
 
-        Args:
-            db_path: Path to database. Defaults to config setting.
-        """
-        self.db_path = Path(db_path) if db_path else storage_settings.db_path
+    @property
+    def id_column(self) -> str:
+        return "classe_id"
 
-    def _get_conn(self) -> duckdb.DuckDBPyConnection:
-        """Get a new database connection."""
-        return duckdb.connect(str(self.db_path))
+    def _row_to_entity(self, row: tuple) -> Classe:
+        """Convert database row to Classe."""
+        return Classe(
+            classe_id=row[0],
+            nom=row[1],
+            niveau=row[2],
+            etablissement=row[3] if len(row) > 3 else None,
+            annee_scolaire=row[4] if len(row) > 4 else "2024-2025",
+        )
 
     def create(self, classe: Classe) -> str:
         """Create a new class.
@@ -49,14 +52,19 @@ class ClasseRepository(Repository[Classe]):
         if not classe.classe_id:
             classe.classe_id = str(uuid.uuid4())[:8]
 
-        with self._get_conn() as conn:
-            conn.execute(
-                """
-                INSERT INTO classes (classe_id, nom, niveau, annee_scolaire)
-                VALUES (?, ?, ?, ?)
-                """,
-                [classe.classe_id, classe.nom, classe.niveau, classe.annee_scolaire],
-            )
+        self._execute_write(
+            """
+            INSERT INTO classes (classe_id, nom, niveau, etablissement, annee_scolaire)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            [
+                classe.classe_id,
+                classe.nom,
+                classe.niveau,
+                classe.etablissement,
+                classe.annee_scolaire,
+            ],
+        )
         return classe.classe_id
 
     def get(self, classe_id: str) -> Classe | None:
@@ -68,24 +76,17 @@ class ClasseRepository(Repository[Classe]):
         Returns:
             Classe or None.
         """
-        with self._get_conn() as conn:
-            result = conn.execute(
-                """
-                SELECT classe_id, nom, niveau, annee_scolaire
-                FROM classes
-                WHERE classe_id = ?
-                """,
-                [classe_id],
-            ).fetchone()
-
+        result = self._execute_one(
+            """
+            SELECT classe_id, nom, niveau, etablissement, annee_scolaire
+            FROM classes
+            WHERE classe_id = ?
+            """,
+            [classe_id],
+        )
         if not result:
             return None
-        return Classe(
-            classe_id=result[0],
-            nom=result[1],
-            niveau=result[2],
-            annee_scolaire=result[3],
-        )
+        return self._row_to_entity(result)
 
     def list(self, **filters) -> list[Classe]:
         """List classes with optional filters.
@@ -96,7 +97,9 @@ class ClasseRepository(Repository[Classe]):
         Returns:
             List of classes.
         """
-        sql = "SELECT classe_id, nom, niveau, annee_scolaire FROM classes"
+        sql = (
+            "SELECT classe_id, nom, niveau, etablissement, annee_scolaire FROM classes"
+        )
         conditions = []
         params = []
 
@@ -112,25 +115,15 @@ class ClasseRepository(Repository[Classe]):
 
         sql += " ORDER BY nom"
 
-        with self._get_conn() as conn:
-            results = conn.execute(sql, params if params else None).fetchall()
-
-        return [
-            Classe(
-                classe_id=row[0],
-                nom=row[1],
-                niveau=row[2],
-                annee_scolaire=row[3],
-            )
-            for row in results
-        ]
+        results = self._execute(sql, params if params else None)
+        return [self._row_to_entity(row) for row in results]
 
     def update(self, classe_id: str, **updates) -> bool:
         """Update a class.
 
         Args:
             classe_id: Class identifier.
-            **updates: Fields to update (nom, niveau, annee_scolaire).
+            **updates: Fields to update (nom, niveau, etablissement, annee_scolaire).
 
         Returns:
             True if updated.
@@ -141,7 +134,7 @@ class ClasseRepository(Repository[Classe]):
         set_clauses = []
         params = []
         for key, value in updates.items():
-            if key in ("nom", "niveau", "annee_scolaire"):
+            if key in ("nom", "niveau", "etablissement", "annee_scolaire"):
                 set_clauses.append(f"{key} = ?")
                 params.append(value)
 
@@ -149,27 +142,10 @@ class ClasseRepository(Repository[Classe]):
             return False
 
         params.append(classe_id)
-        with self._get_conn() as conn:
-            conn.execute(
-                f"UPDATE classes SET {', '.join(set_clauses)} WHERE classe_id = ?",
-                params,
-            )
-        return True
-
-    def delete(self, classe_id: str) -> bool:
-        """Delete a class.
-
-        Args:
-            classe_id: Class identifier.
-
-        Returns:
-            True if deleted.
-        """
-        with self._get_conn() as conn:
-            conn.execute(
-                "DELETE FROM classes WHERE classe_id = ?",
-                [classe_id],
-            )
+        self._execute_write(
+            f"UPDATE classes SET {', '.join(set_clauses)} WHERE classe_id = ?",
+            params,
+        )
         return True
 
     def get_or_create(self, nom: str, niveau: str | None = None) -> Classe:
@@ -182,19 +158,13 @@ class ClasseRepository(Repository[Classe]):
         Returns:
             Existing or newly created class.
         """
-        with self._get_conn() as conn:
-            result = conn.execute(
-                "SELECT classe_id, nom, niveau, annee_scolaire FROM classes WHERE nom = ?",
-                [nom],
-            ).fetchone()
+        result = self._execute_one(
+            "SELECT classe_id, nom, niveau, etablissement, annee_scolaire FROM classes WHERE nom = ?",
+            [nom],
+        )
 
         if result:
-            return Classe(
-                classe_id=result[0],
-                nom=result[1],
-                niveau=result[2],
-                annee_scolaire=result[3],
-            )
+            return self._row_to_entity(result)
 
         classe = Classe(
             classe_id=str(uuid.uuid4())[:8],

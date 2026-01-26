@@ -1,12 +1,23 @@
 """Syntheses router."""
 
+import logging
+import time
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from src.api.dependencies import get_eleve_repo, get_synthese_repo
-from src.core.models import Alerte, Reussite, SyntheseGeneree
+from src.api.dependencies import (
+    get_eleve_repo,
+    get_synthese_generator,
+    get_synthese_repo,
+)
+from src.core.models import Alerte, Reussite
+from src.generation.prompts import CURRENT_PROMPT, get_prompt_hash
+from src.llm.config import settings as llm_settings
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -16,6 +27,9 @@ class GenerateRequest(BaseModel):
 
     eleve_id: str
     trimestre: int
+    provider: str = "openai"
+    model: str | None = None
+    temperature: float = llm_settings.default_temperature
 
 
 class SyntheseUpdate(BaseModel):
@@ -38,28 +52,86 @@ def generate_synthese(
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Generate a synthesis for a student.
+    """Generate a synthesis for a student using LLM.
 
-    Note: This is a placeholder. In production, this would call the LLM generator.
+    Args:
+        data: Request with eleve_id, trimestre, and optional LLM config.
+
+    Returns:
+        Generated synthesis ID and metadata.
+
+    Raises:
+        HTTPException: 404 if student not found, 500 on generation error.
     """
+    # 1. Fetch student data
     eleve = eleve_repo.get(data.eleve_id)
     if not eleve:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    # Placeholder synthesis - in production, use the LLM generator
-    synthese = SyntheseGeneree(
-        synthese_texte=f"Synthèse générée pour {data.eleve_id} - Trimestre {data.trimestre}",
-        alertes=[],
-        reussites=[],
-        posture_generale="actif",
-        axes_travail=[],
+    # Set trimestre from request
+    eleve.trimestre = data.trimestre
+
+    # 2. Create generator with requested provider/model
+    generator = get_synthese_generator(
+        provider=data.provider,
+        model=data.model,
     )
 
+    # 3. Generate synthesis with metadata
+    logger.info(
+        f"Generating synthesis for {data.eleve_id} T{data.trimestre} "
+        f"via {data.provider}/{data.model or 'default'}"
+    )
+
+    start_time = time.perf_counter()
+    try:
+        result = generator.generate_with_metadata(
+            eleve=eleve,
+            max_tokens=llm_settings.synthese_max_tokens,
+        )
+        synthese = result.synthese
+        llm_metadata = result.metadata
+    except Exception as e:
+        logger.error(f"Generation failed for {data.eleve_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Synthesis generation failed: {str(e)}",
+        ) from e
+
+    duration_ms = int((time.perf_counter() - start_time) * 1000)
+
+    # 4. Prepare metadata for storage
+    # Get prompt hash for traceability
+    from src.generation.prompt_builder import format_eleve_data
+
+    eleve_data_str = format_eleve_data(eleve)
+    prompt_hash = get_prompt_hash(CURRENT_PROMPT, eleve_data_str)
+
+    metadata = {
+        "llm_provider": llm_metadata.get("llm_provider", data.provider),
+        "llm_model": llm_metadata.get("llm_model", data.model or generator.model),
+        "llm_response_raw": llm_metadata.get("llm_response_raw"),
+        "prompt_template": CURRENT_PROMPT,
+        "prompt_hash": prompt_hash,
+        "tokens_input": llm_metadata.get("tokens_input"),
+        "tokens_output": llm_metadata.get("tokens_output"),
+        "tokens_total": llm_metadata.get("tokens_total"),
+        "llm_duration_ms": duration_ms,
+        "llm_temperature": data.temperature,
+        "retry_count": llm_metadata.get("retry_count", 1),
+    }
+
+    # 5. Store synthesis
     synthese_id = synthese_repo.create(
         eleve_id=data.eleve_id,
         synthese=synthese,
         trimestre=data.trimestre,
-        metadata={"provider": "placeholder", "model": "none"},
+        metadata=metadata,
+    )
+
+    logger.info(
+        f"Synthesis {synthese_id} created for {data.eleve_id} "
+        f"({duration_ms}ms, {len(synthese.synthese_texte)} chars)"
     )
 
     return {
@@ -67,6 +139,20 @@ def generate_synthese(
         "eleve_id": data.eleve_id,
         "trimestre": data.trimestre,
         "status": "generated",
+        "synthese": {
+            "texte": synthese.synthese_texte,
+            "alertes": [a.model_dump() for a in synthese.alertes],
+            "reussites": [r.model_dump() for r in synthese.reussites],
+            "posture_generale": synthese.posture_generale,
+            "axes_travail": synthese.axes_travail,
+        },
+        "metadata": {
+            "provider": metadata["llm_provider"],
+            "model": metadata["llm_model"],
+            "duration_ms": duration_ms,
+            "tokens_total": metadata.get("tokens_total"),
+            "prompt_template": CURRENT_PROMPT,
+        },
     }
 
 

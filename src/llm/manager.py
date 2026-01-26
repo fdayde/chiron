@@ -14,6 +14,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from src.llm.base import LLMClient
 from src.llm.clients.anthropic import AnthropicClient
 from src.llm.clients.mistral import MistralClient
 from src.llm.clients.openai import OpenAIClient
@@ -23,6 +24,13 @@ from src.llm.rate_limiter import get_shared_rate_limiter
 from src.utils.async_helpers import run_async_in_sync_context
 
 logger = logging.getLogger(__name__)
+
+# Registry des clients LLM - ajouter un nouveau provider = 1 ligne
+CLIENT_REGISTRY: dict[str, type[LLMClient]] = {
+    "openai": OpenAIClient,
+    "anthropic": AnthropicClient,
+    "mistral": MistralClient,
+}
 
 
 class LLMManager:
@@ -37,13 +45,10 @@ class LLMManager:
 
     def __init__(self):
         """Initialise le manager avec les clients et rate limiters partagés."""
-        # Clients LLM (lazy initialization)
-        self._openai_client: OpenAIClient | None = None
-        self._anthropic_client: AnthropicClient | None = None
-        self._mistral_client: MistralClient | None = None
+        # Clients LLM (lazy initialization via registry)
+        self._clients: dict[str, LLMClient] = {}
 
         # Rate limiters PARTAGÉS globalement (singleton par provider)
-        # Chaque appel à get_shared_rate_limiter retourne la même instance pour un provider donné
         self.rate_limiters = {
             "openai": get_shared_rate_limiter("openai", rpm=settings.openai_rpm),
             "anthropic": get_shared_rate_limiter(
@@ -54,35 +59,32 @@ class LLMManager:
 
         logger.info("LLMManager initialisé avec rate limiters partagés")
 
-    def _get_openai_client(self) -> OpenAIClient:
-        """Retourne le client OpenAI (lazy init).
+    def _get_client(self, provider: str) -> LLMClient:
+        """Retourne le client pour un provider (lazy init via registry).
+
+        Args:
+            provider: Nom du provider (openai, anthropic, mistral)
 
         Returns:
-            Instance du client OpenAI
+            Instance du client LLM
+
+        Raises:
+            ValueError: Si le provider n'est pas dans le registry
         """
-        if self._openai_client is None:
-            self._openai_client = OpenAIClient()
-        return self._openai_client
+        provider_lower = provider.lower()
 
-    def _get_anthropic_client(self) -> AnthropicClient:
-        """Retourne le client Anthropic (lazy init).
+        if provider_lower not in CLIENT_REGISTRY:
+            available = list(CLIENT_REGISTRY.keys())
+            raise ValueError(
+                f"Provider '{provider}' non implémenté. Disponibles: {available}"
+            )
 
-        Returns:
-            Instance du client Anthropic
-        """
-        if self._anthropic_client is None:
-            self._anthropic_client = AnthropicClient()
-        return self._anthropic_client
+        if provider_lower not in self._clients:
+            client_class = CLIENT_REGISTRY[provider_lower]
+            self._clients[provider_lower] = client_class()
+            logger.debug(f"Client {provider_lower} initialisé")
 
-    def _get_mistral_client(self) -> MistralClient:
-        """Retourne le client Mistral (lazy init).
-
-        Returns:
-            Instance du client Mistral
-        """
-        if self._mistral_client is None:
-            self._mistral_client = MistralClient()
-        return self._mistral_client
+        return self._clients[provider_lower]
 
     @retry(
         stop=stop_after_attempt(settings.max_retries),
@@ -114,17 +116,8 @@ class LLMManager:
         """
         provider_lower = provider.lower()
 
-        # Sélection du client
-        if provider_lower == "openai":
-            client = self._get_openai_client()
-        elif provider_lower == "anthropic":
-            client = self._get_anthropic_client()
-        elif provider_lower == "mistral":
-            client = self._get_mistral_client()
-        else:
-            raise ValueError(
-                f"Provider {provider} non implémenté. Disponibles: openai, anthropic, mistral"
-            )
+        # Sélection du client via registry
+        client = self._get_client(provider_lower)
 
         # Rate limiting : attendre jusqu'à pouvoir faire la requête
         await self.rate_limiters[provider_lower].acquire()

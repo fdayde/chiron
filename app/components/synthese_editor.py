@@ -5,6 +5,21 @@ from __future__ import annotations
 import streamlit as st
 
 from app.api_client import ChironAPIClient
+from app.config import ui_settings
+
+
+def get_llm_settings() -> tuple[str, str | None, float]:
+    """Get LLM settings from session state or defaults.
+
+    Returns:
+        Tuple of (provider, model, temperature).
+    """
+    provider = st.session_state.get("llm_provider", ui_settings.default_provider)
+    model = st.session_state.get("llm_model", ui_settings.default_model) or None
+    temperature = st.session_state.get(
+        "llm_temperature", ui_settings.default_temperature
+    )
+    return provider, model, temperature
 
 
 def render_synthese_editor(
@@ -33,13 +48,25 @@ def render_synthese_editor(
             key=f"gen_{eleve_id}",
             type="primary",
         ):
-            with st.spinner("Generation en cours..."):
+            provider, model, temperature = get_llm_settings()
+            with st.spinner(f"Generation en cours via {provider}..."):
                 try:
-                    client.generate_synthese(eleve_id, trimestre)
-                    st.success("Synthese generee!")
+                    result = client.generate_synthese(
+                        eleve_id,
+                        trimestre,
+                        provider=provider,
+                        model=model,
+                        temperature=temperature,
+                    )
+                    # Show metadata
+                    meta = result.get("metadata", {})
+                    st.success(
+                        f"Synthese generee en {meta.get('duration_ms', 0)}ms "
+                        f"({meta.get('tokens_total', 'N/A')} tokens)"
+                    )
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Erreur: {e}")
+                    st.error(f"Erreur de generation: {e}")
         return
 
     # Display synthesis
@@ -125,13 +152,24 @@ def render_synthese_editor(
             "Regenerer",
             key=f"regen_{eleve_id}",
         ):
-            with st.spinner("Regeneration en cours..."):
+            provider, model, temperature = get_llm_settings()
+            with st.spinner(f"Regeneration en cours via {provider}..."):
                 try:
                     # Delete old and generate new
                     if synthese_id:
                         client.delete_synthese(synthese_id)
-                    client.generate_synthese(eleve_id, trimestre)
-                    st.success("Synthese regeneree!")
+                    result = client.generate_synthese(
+                        eleve_id,
+                        trimestre,
+                        provider=provider,
+                        model=model,
+                        temperature=temperature,
+                    )
+                    meta = result.get("metadata", {})
+                    st.success(
+                        f"Synthese regeneree en {meta.get('duration_ms', 0)}ms "
+                        f"({meta.get('tokens_total', 'N/A')} tokens)"
+                    )
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erreur: {e}")
