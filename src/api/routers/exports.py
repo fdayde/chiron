@@ -1,5 +1,6 @@
 """Import/Export router."""
 
+import csv
 import io
 import tempfile
 from pathlib import Path
@@ -38,23 +39,29 @@ def export_csv(
 
     validated = synthese_repo.get_validated(classe_id, trimestre)
 
-    # Build CSV content
-    lines = ["eleve_id;synthese_texte;posture_generale;alertes;reussites"]
+    # Build CSV content using csv module for proper escaping
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL)
+
+    # Header
+    writer.writerow(
+        ["eleve_id", "synthese_texte", "posture_generale", "alertes", "reussites"]
+    )
+
+    # Data rows
     for item in validated:
         synthese = item["synthese"]
-        # Depseudonymize the text
-        text = pseudonymizer.depseudonymize_text(synthese.synthese_texte)
-        # Escape semicolons and quotes
-        text = text.replace('"', '""')
+        # Depseudonymize the text (scoped by classe_id for security)
+        text = pseudonymizer.depseudonymize_text(synthese.synthese_texte, classe_id)
         alertes = "; ".join(f"{a.matiere}: {a.description}" for a in synthese.alertes)
         reussites = "; ".join(
             f"{r.matiere}: {r.description}" for r in synthese.reussites
         )
-        lines.append(
-            f'"{item["eleve_id"]}";"{text}";"{synthese.posture_generale}";"{alertes}";"{reussites}"'
+        writer.writerow(
+            [item["eleve_id"], text, synthese.posture_generale, alertes, reussites]
         )
 
-    csv_content = "\n".join(lines)
+    csv_content = output.getvalue()
 
     return StreamingResponse(
         io.StringIO(csv_content),
@@ -140,6 +147,7 @@ async def import_pdf_batch(
     total_imported = 0
 
     for file in files:
+        tmp_path = None
         try:
             # Reuse single import logic
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -176,8 +184,6 @@ async def import_pdf_batch(
             )
             total_imported += len(imported)
 
-            tmp_path.unlink(missing_ok=True)
-
         except Exception as e:
             results.append(
                 {
@@ -186,6 +192,10 @@ async def import_pdf_batch(
                     "error": str(e),
                 }
             )
+        finally:
+            # Always cleanup temp file, even if parsing fails
+            if tmp_path is not None:
+                tmp_path.unlink(missing_ok=True)
 
     return {
         "classe_id": classe_id,

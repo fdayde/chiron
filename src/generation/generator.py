@@ -59,7 +59,6 @@ class SyntheseGenerator:
         self.model = model
         self._llm = llm_manager or LLMManager()
         self._prompt_builder = prompt_builder or PromptBuilder()
-        self._last_metadata: dict | None = None
 
     def set_exemples(self, exemples: list[EleveGroundTruth]) -> None:
         """Définit les exemples few-shot.
@@ -87,8 +86,7 @@ class SyntheseGenerator:
             SyntheseGeneree avec texte et insights structurés.
 
         Note:
-            Les métadonnées LLM sont stockées dans self._last_metadata
-            ou utilisez generate_with_metadata() pour les obtenir directement.
+            Use generate_with_metadata() to also get LLM metadata.
         """
         result = self.generate_with_metadata(eleve, classe_info, max_tokens)
         return result.synthese
@@ -141,7 +139,6 @@ class SyntheseGenerator:
             "tokens_total": llm_metadata.get("total_tokens"),
             "retry_count": llm_metadata.get("retry_count", 1),
         }
-        self._last_metadata = metadata
 
         logger.info(
             f"Synthèse générée: {len(synthese.synthese_texte)} chars, "
@@ -151,10 +148,6 @@ class SyntheseGenerator:
         )
 
         return GenerationResult(synthese=synthese, metadata=metadata)
-
-    def get_last_metadata(self) -> dict | None:
-        """Retourne les métadonnées du dernier appel LLM."""
-        return self._last_metadata
 
     def generate_batch(
         self,

@@ -4,7 +4,7 @@ import logging
 import time
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from src.api.dependencies import (
     get_eleve_repo,
@@ -12,6 +12,7 @@ from src.api.dependencies import (
     get_synthese_repo,
 )
 from src.core.models import Alerte, Reussite
+from src.generation.prompt_builder import format_eleve_data
 from src.generation.prompts import CURRENT_PROMPT, get_prompt_hash
 from src.llm.config import settings as llm_settings
 from src.storage.repositories.eleve import EleveRepository
@@ -30,6 +31,31 @@ class GenerateRequest(BaseModel):
     provider: str = "openai"
     model: str | None = None
     temperature: float = llm_settings.default_temperature
+
+    @field_validator("trimestre")
+    @classmethod
+    def validate_trimestre(cls, v: int) -> int:
+        """Validate trimestre is 1, 2, or 3."""
+        if v not in (1, 2, 3):
+            raise ValueError("trimestre must be 1, 2, or 3")
+        return v
+
+    @field_validator("temperature")
+    @classmethod
+    def validate_temperature(cls, v: float) -> float:
+        """Validate temperature is between 0 and 2."""
+        if not 0.0 <= v <= 2.0:
+            raise ValueError("temperature must be between 0.0 and 2.0")
+        return v
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        """Validate provider is supported."""
+        valid_providers = ("openai", "anthropic", "mistral")
+        if v.lower() not in valid_providers:
+            raise ValueError(f"provider must be one of: {', '.join(valid_providers)}")
+        return v.lower()
 
 
 class SyntheseUpdate(BaseModel):
@@ -100,10 +126,15 @@ def generate_synthese(
 
     duration_ms = int((time.perf_counter() - start_time) * 1000)
 
-    # 4. Prepare metadata for storage
-    # Get prompt hash for traceability
-    from src.generation.prompt_builder import format_eleve_data
+    # 4. Delete existing synthesis for this eleve/trimestre (allows regeneration)
+    deleted_count = synthese_repo.delete_for_eleve(data.eleve_id, data.trimestre)
+    if deleted_count > 0:
+        logger.info(
+            f"Deleted {deleted_count} existing synthesis for {data.eleve_id} T{data.trimestre}"
+        )
 
+    # 5. Prepare metadata for storage
+    # Get prompt hash for traceability
     eleve_data_str = format_eleve_data(eleve)
     prompt_hash = get_prompt_hash(CURRENT_PROMPT, eleve_data_str)
 
@@ -121,7 +152,7 @@ def generate_synthese(
         "retry_count": llm_metadata.get("retry_count", 1),
     }
 
-    # 5. Store synthesis
+    # 6. Store synthesis
     synthese_id = synthese_repo.create(
         eleve_id=data.eleve_id,
         synthese=synthese,

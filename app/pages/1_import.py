@@ -2,22 +2,14 @@
 
 import streamlit as st
 
-from app.api_client import ChironAPIClient
 from app.components.sidebar import render_classe_selector, render_new_classe_form
-from app.config import LLM_PROVIDERS, ui_settings
+from app.config import LLM_PROVIDERS, get_api_client, ui_settings
 
 st.set_page_config(
     page_title=f"Import - {ui_settings.page_title}",
     page_icon=ui_settings.page_icon,
     layout="wide",
 )
-
-
-@st.cache_resource
-def get_api_client() -> ChironAPIClient:
-    """Get cached API client."""
-    return ChironAPIClient()
-
 
 client = get_api_client()
 

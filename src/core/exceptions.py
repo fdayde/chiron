@@ -99,3 +99,16 @@ class ConfigurationError(ChironError):
     """
 
     pass
+
+
+class AnonymizationError(ChironError):
+    """Anonymization failed.
+
+    Raised when PDF anonymization fails and sending
+    the original document to cloud would violate RGPD:
+    - Name extraction failed
+    - NER processing error
+    - PDF redaction error
+    """
+
+    pass

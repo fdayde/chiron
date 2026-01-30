@@ -55,9 +55,22 @@ def create_classe(
 def list_classes(
     annee_scolaire: str | None = None,
     niveau: str | None = None,
+    skip: int = 0,
+    limit: int = 100,
     repo: ClasseRepository = Depends(get_classe_repo),
 ) -> list[ClasseResponse]:
-    """List all classes with optional filters."""
+    """List all classes with optional filters and pagination.
+
+    Args:
+        annee_scolaire: Filter by school year.
+        niveau: Filter by level (e.g., "5eme").
+        skip: Number of records to skip (default: 0).
+        limit: Maximum number of records to return (default: 100, max: 1000).
+    """
+    # Clamp limit to prevent excessive queries
+    limit = min(max(1, limit), 1000)
+    skip = max(0, skip)
+
     filters = {}
     if annee_scolaire:
         filters["annee_scolaire"] = annee_scolaire
@@ -65,6 +78,10 @@ def list_classes(
         filters["niveau"] = niveau
 
     classes = repo.list(**filters)
+
+    # Apply pagination
+    paginated = classes[skip : skip + limit]
+
     return [
         ClasseResponse(
             classe_id=c.classe_id,
@@ -72,7 +89,7 @@ def list_classes(
             niveau=c.niveau,
             annee_scolaire=c.annee_scolaire,
         )
-        for c in classes
+        for c in paginated
     ]
 
 

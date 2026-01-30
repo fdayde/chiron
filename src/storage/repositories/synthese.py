@@ -169,6 +169,60 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             return None
         return self._row_to_entity(result)
 
+    def get_for_eleve_with_metadata(
+        self, eleve_id: str, trimestre: int | None = None
+    ) -> dict | None:
+        """Get the latest synthesis for a student with id and status.
+
+        Args:
+            eleve_id: Student identifier.
+            trimestre: Optional trimester filter.
+
+        Returns:
+            Dict with synthese_id, status, and synthese data, or None.
+        """
+        sql = """
+            SELECT id, status, synthese_texte, alertes_json, reussites_json,
+                   posture_generale, axes_travail_json
+            FROM syntheses
+            WHERE eleve_id = ?
+        """
+        params = [eleve_id]
+
+        if trimestre is not None:
+            sql += " AND trimestre = ?"
+            params.append(trimestre)
+
+        sql += " ORDER BY created_at DESC LIMIT 1"
+
+        result = self._execute_one(sql, params)
+        if not result:
+            return None
+
+        return {
+            "synthese_id": result[0],
+            "status": result[1],
+            "synthese": self._row_to_entity(result[2:7]),
+        }
+
+    def delete_for_eleve(self, eleve_id: str, trimestre: int) -> int:
+        """Delete existing syntheses for a student/trimester.
+
+        Used before regeneration to avoid UNIQUE constraint violations.
+
+        Args:
+            eleve_id: Student identifier.
+            trimestre: Trimester number.
+
+        Returns:
+            Number of deleted records.
+        """
+        result = self._execute_write(
+            "DELETE FROM syntheses WHERE eleve_id = ? AND trimestre = ?",
+            [eleve_id, trimestre],
+        )
+        return result.rowcount if hasattr(result, "rowcount") else 0
+
     def list(self, **filters) -> list[SyntheseGeneree]:
         """List syntheses with optional filters.
 

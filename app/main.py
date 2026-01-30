@@ -2,8 +2,7 @@
 
 import streamlit as st
 
-from app.api_client import ChironAPIClient
-from app.config import ui_settings
+from app.config import get_api_client, ui_settings
 
 st.set_page_config(
     page_title=ui_settings.page_title,
@@ -11,12 +10,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-
-@st.cache_resource
-def get_api_client() -> ChironAPIClient:
-    """Get cached API client."""
-    return ChironAPIClient()
 
 
 def check_api_connection() -> bool:

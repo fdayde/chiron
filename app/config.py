@@ -1,7 +1,9 @@
 """UI configuration."""
 
+import streamlit as st
 from pydantic_settings import BaseSettings
 
+from app.api_client import ChironAPIClient
 from src.llm.config import settings as llm_settings
 
 
@@ -49,3 +51,13 @@ def get_llm_providers() -> dict:
 
 # Pour compatibilité avec le code existant
 LLM_PROVIDERS = get_llm_providers()
+
+
+@st.cache_resource
+def get_api_client() -> ChironAPIClient:
+    """Get cached API client.
+
+    Centralized factory for the Chiron API client.
+    Uses Streamlit's cache_resource to maintain a single instance.
+    """
+    return ChironAPIClient()

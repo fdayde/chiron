@@ -214,11 +214,11 @@ class PDFAnonymizer:
         prenom = parts[0] if parts else None
         nom = " ".join(parts[1:]) if len(parts) > 1 else None
 
-        # Extraire le genre si présent
+        # Extraire le genre si présent (format Fille/Garçon pour cohérence avec models.py)
         genre = None
         genre_match = re.search(r"Genre\s*:\s*(Fille|Garçon)", texte, re.IGNORECASE)
         if genre_match:
-            genre = "F" if "fille" in genre_match.group(1).lower() else "M"
+            genre = "Fille" if "fille" in genre_match.group(1).lower() else "Garçon"
 
         # Extraire l'établissement (première ligne souvent)
         etablissement = None

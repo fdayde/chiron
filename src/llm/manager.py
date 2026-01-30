@@ -243,9 +243,7 @@ class LLMManager:
             retry_count = attempt + 1
 
             if attempt > 0:
-                logger.warning(
-                    f"🔄 Retry {retry_count}/{max_retries} pour {context_name}"
-                )
+                logger.warning(f"Retry {retry_count}/{max_retries} pour {context_name}")
 
             try:
                 # Appel LLM (retry réseau déjà géré par @retry decorator)
@@ -283,11 +281,18 @@ class LLMManager:
                 # Succès : sortir de la boucle
                 if retry_count > 1:
                     logger.info(
-                        f"✅ Succès au retry {retry_count}/{max_retries} pour {context_name}"
+                        f"Succès au retry {retry_count}/{max_retries} pour {context_name}"
                     )
 
                 # Ajouter retry_count aux métadonnées
                 response["retry_count"] = retry_count
+
+                # Normalize token field names (different providers use different names)
+                # prompt_tokens -> input_tokens, completion_tokens -> output_tokens
+                if "prompt_tokens" in response and "input_tokens" not in response:
+                    response["input_tokens"] = response["prompt_tokens"]
+                if "completion_tokens" in response and "output_tokens" not in response:
+                    response["output_tokens"] = response["completion_tokens"]
 
                 return parsed_data, response
 

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from src.core.models import EleveExtraction, MatiereExtraction
 from src.storage.repositories.base import DuckDBRepository
+
+logger = logging.getLogger(__name__)
 
 
 class EleveRepository(DuckDBRepository[EleveExtraction]):
@@ -20,21 +23,42 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         return "eleve_id"
 
     def _row_to_entity(self, row: tuple) -> EleveExtraction:
-        """Convert database row to EleveExtraction."""
-        matieres_data = json.loads(row[10]) if row[10] else []
-        matieres = [MatiereExtraction(**m) for m in matieres_data]
+        """Convert database row to EleveExtraction.
+
+        Handles corrupted JSON data gracefully by logging warnings
+        and returning empty lists/defaults instead of crashing.
+        """
+        eleve_id = row[0]
+
+        # Parse matieres with error handling
+        matieres = []
+        try:
+            matieres_data = json.loads(row[10]) if row[10] else []
+            matieres = [MatiereExtraction(**m) for m in matieres_data]
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to parse matieres for {eleve_id}: {e}")
+
+        # Parse other JSON fields with error handling
+        def safe_json_loads(data: str | None, field_name: str) -> list:
+            if not data:
+                return []
+            try:
+                return json.loads(data)
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(f"Failed to parse {field_name} for {eleve_id}: {e}")
+                return []
 
         return EleveExtraction(
-            eleve_id=row[0],
+            eleve_id=eleve_id,
             classe=row[1],
             genre=row[2],
             trimestre=row[3],
             absences_demi_journees=row[4],
             absences_justifiees=row[5],
             retards=row[6],
-            engagements=json.loads(row[7]) if row[7] else [],
-            parcours=json.loads(row[8]) if row[8] else [],
-            evenements=json.loads(row[9]) if row[9] else [],
+            engagements=safe_json_loads(row[7], "engagements"),
+            parcours=safe_json_loads(row[8], "parcours"),
+            evenements=safe_json_loads(row[9], "evenements"),
             matieres=matieres,
         )
 

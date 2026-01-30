@@ -2,24 +2,16 @@
 
 import streamlit as st
 
-from app.api_client import ChironAPIClient
 from app.components.eleve_card import render_eleve_detail
 from app.components.sidebar import render_classe_selector
 from app.components.synthese_editor import render_synthese_editor
-from app.config import LLM_PROVIDERS, ui_settings
+from app.config import LLM_PROVIDERS, get_api_client, ui_settings
 
 st.set_page_config(
     page_title=f"Review - {ui_settings.page_title}",
     page_icon=ui_settings.page_icon,
     layout="wide",
 )
-
-
-@st.cache_resource
-def get_api_client() -> ChironAPIClient:
-    """Get cached API client."""
-    return ChironAPIClient()
-
 
 client = get_api_client()
 

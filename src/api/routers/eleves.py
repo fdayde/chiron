@@ -82,12 +82,20 @@ def get_eleve_synthese(
     if not eleve:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    synthese = synthese_repo.get_for_eleve(eleve_id, trimestre)
-    if not synthese:
-        return {"eleve_id": eleve_id, "synthese": None}
+    result = synthese_repo.get_for_eleve_with_metadata(eleve_id, trimestre)
+    if not result:
+        return {
+            "eleve_id": eleve_id,
+            "synthese": None,
+            "synthese_id": None,
+            "status": None,
+        }
 
+    synthese = result["synthese"]
     return {
         "eleve_id": eleve_id,
+        "synthese_id": result["synthese_id"],
+        "status": result["status"],
         "synthese": {
             "synthese_texte": synthese.synthese_texte,
             "alertes": [a.model_dump() for a in synthese.alertes],

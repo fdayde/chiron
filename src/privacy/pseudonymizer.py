@@ -47,7 +47,7 @@ class Pseudonymizer:
         return duckdb.connect(str(self.db_path))
 
     def _ensure_table(self) -> None:
-        """Ensure the mapping table exists."""
+        """Ensure the mapping table exists with proper constraints."""
         with self._get_connection() as conn:
             conn.execute(f"""
                 CREATE TABLE IF NOT EXISTS {privacy_settings.mapping_table} (
@@ -55,9 +55,18 @@ class Pseudonymizer:
                     nom_original VARCHAR NOT NULL,
                     prenom_original VARCHAR,
                     classe_id VARCHAR NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(nom_original, prenom_original, classe_id)
                 )
             """)
+            # Add unique constraint if table already exists (migration)
+            try:
+                conn.execute(f"""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_eleve_identity
+                    ON {privacy_settings.mapping_table} (nom_original, prenom_original, classe_id)
+                """)
+            except duckdb.CatalogException:
+                pass  # Index already exists
 
     def pseudonymize(
         self,
@@ -67,7 +76,8 @@ class Pseudonymizer:
         """Pseudonymize a student record.
 
         Replaces nom/prenom with a generated eleve_id and stores
-        the mapping in the database.
+        the mapping in the database. Thread-safe: uses atomic INSERT
+        with conflict detection.
 
         Args:
             eleve: Student data with real name.
@@ -82,22 +92,17 @@ class Pseudonymizer:
         if not eleve.nom:
             raise PrivacyError("Cannot pseudonymize: eleve.nom is required")
 
-        # Generate unique eleve_id
-        eleve_id = self._generate_eleve_id(classe_id)
-
-        # Store mapping
-        try:
-            with self._get_connection() as conn:
-                conn.execute(
-                    f"""
-                    INSERT INTO {privacy_settings.mapping_table}
-                    (eleve_id, nom_original, prenom_original, classe_id)
-                    VALUES (?, ?, ?, ?)
-                    """,
-                    [eleve_id, eleve.nom, eleve.prenom, classe_id],
-                )
-        except Exception as e:
-            raise PrivacyError(f"Failed to store mapping: {e}") from e
+        # Check if this student already has a mapping (idempotent)
+        existing = self._get_existing_mapping(eleve.nom, eleve.prenom, classe_id)
+        if existing:
+            eleve_id = existing
+            logger.info(f"Found existing mapping for {eleve.nom} -> {eleve_id}")
+        else:
+            # Generate unique eleve_id atomically
+            eleve_id = self._generate_eleve_id_atomic(
+                classe_id, eleve.nom, eleve.prenom
+            )
+            logger.info(f"Pseudonymized {eleve.nom} -> {eleve_id}")
 
         # Create pseudonymized copy
         data = eleve.model_dump()
@@ -105,8 +110,86 @@ class Pseudonymizer:
         data["nom"] = None
         data["prenom"] = None
 
-        logger.info(f"Pseudonymized {eleve.nom} -> {eleve_id}")
         return EleveExtraction(**data)
+
+    def _get_existing_mapping(
+        self, nom: str, prenom: str | None, classe_id: str
+    ) -> str | None:
+        """Check if a mapping already exists for this student.
+
+        Args:
+            nom: Student's last name.
+            prenom: Student's first name (may be None).
+            classe_id: Class identifier.
+
+        Returns:
+            Existing eleve_id if found, None otherwise.
+        """
+        with self._get_connection() as conn:
+            if prenom:
+                result = conn.execute(
+                    f"""
+                    SELECT eleve_id FROM {privacy_settings.mapping_table}
+                    WHERE nom_original = ? AND prenom_original = ? AND classe_id = ?
+                    """,
+                    [nom, prenom, classe_id],
+                ).fetchone()
+            else:
+                result = conn.execute(
+                    f"""
+                    SELECT eleve_id FROM {privacy_settings.mapping_table}
+                    WHERE nom_original = ? AND prenom_original IS NULL AND classe_id = ?
+                    """,
+                    [nom, classe_id],
+                ).fetchone()
+        return result[0] if result else None
+
+    def _generate_eleve_id_atomic(
+        self, classe_id: str, nom: str, prenom: str | None
+    ) -> str:
+        """Generate a unique eleve_id atomically using INSERT with retry.
+
+        Args:
+            classe_id: Class identifier.
+            nom: Student's last name.
+            prenom: Student's first name.
+
+        Returns:
+            Generated eleve_id.
+
+        Raises:
+            PrivacyError: If ID generation fails after retries.
+        """
+        max_retries = 10
+        for _attempt in range(max_retries):
+            eleve_id = self._generate_eleve_id(classe_id)
+
+            try:
+                with self._get_connection() as conn:
+                    conn.execute(
+                        f"""
+                        INSERT INTO {privacy_settings.mapping_table}
+                        (eleve_id, nom_original, prenom_original, classe_id)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        [eleve_id, nom, prenom, classe_id],
+                    )
+                return eleve_id
+            except Exception as e:
+                error_str = str(e).lower()
+                if "unique" in error_str or "duplicate" in error_str:
+                    # Either eleve_id or (nom, prenom, classe_id) conflict
+                    # Check if it's a duplicate student
+                    existing = self._get_existing_mapping(nom, prenom, classe_id)
+                    if existing:
+                        return existing
+                    # Otherwise, retry with a new ID
+                    continue
+                raise PrivacyError(f"Failed to store mapping: {e}") from e
+
+        raise PrivacyError(
+            f"Failed to generate unique eleve_id after {max_retries} attempts"
+        )
 
     def _generate_eleve_id(self, classe_id: str) -> str:
         """Generate a unique eleve_id.
@@ -197,22 +280,34 @@ class Pseudonymizer:
 
         return text
 
-    def depseudonymize_text(self, text: str) -> str:
+    def depseudonymize_text(self, text: str, classe_id: str | None = None) -> str:
         """Restore original names in a text.
 
         Args:
             text: Text containing pseudonyms.
+            classe_id: Optional class filter to scope depseudonymization.
+                       Recommended for security to avoid cross-class data leaks.
 
         Returns:
             Text with pseudonyms replaced by original names.
         """
         with self._get_connection() as conn:
-            mappings = conn.execute(
-                f"""
-                SELECT eleve_id, nom_original, prenom_original
-                FROM {privacy_settings.mapping_table}
-                """,
-            ).fetchall()
+            if classe_id:
+                mappings = conn.execute(
+                    f"""
+                    SELECT eleve_id, nom_original, prenom_original
+                    FROM {privacy_settings.mapping_table}
+                    WHERE classe_id = ?
+                    """,
+                    [classe_id],
+                ).fetchall()
+            else:
+                mappings = conn.execute(
+                    f"""
+                    SELECT eleve_id, nom_original, prenom_original
+                    FROM {privacy_settings.mapping_table}
+                    """,
+                ).fetchall()
 
         for eleve_id, nom, prenom in mappings:
             if nom:
