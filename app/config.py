@@ -1,9 +1,9 @@
 """UI configuration."""
 
 import streamlit as st
+from api_client import ChironAPIClient
 from pydantic_settings import BaseSettings
 
-from app.api_client import ChironAPIClient
 from src.llm.config import settings as llm_settings
 
 

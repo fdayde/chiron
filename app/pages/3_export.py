@@ -1,9 +1,16 @@
 """Export page."""
 
-import streamlit as st
+import sys
+from pathlib import Path
 
-from app.components.sidebar import render_classe_selector
-from app.config import get_api_client, ui_settings
+# Add project root and app dir to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / "app"))
+
+import streamlit as st
+from components.sidebar import render_classe_selector
+from config import get_api_client, ui_settings
 
 st.set_page_config(
     page_title=f"Export - {ui_settings.page_title}",

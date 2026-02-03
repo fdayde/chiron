@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import httpx
+import os
 
-from app.config import ui_settings
+import httpx
 
 
 class ChironAPIClient:
@@ -17,7 +17,9 @@ class ChironAPIClient:
     LLM_TIMEOUT = 120.0
 
     def __init__(self, base_url: str | None = None) -> None:
-        self.base_url = base_url or ui_settings.api_base_url
+        self.base_url = base_url or os.getenv(
+            "CHIRON_UI_API_BASE_URL", "http://localhost:8000"
+        )
 
     def _get(
         self, endpoint: str, params: dict | None = None, timeout: float | None = None

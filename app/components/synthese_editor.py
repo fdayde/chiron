@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import streamlit as st
-
-from app.api_client import ChironAPIClient
-from app.config import ui_settings
+from api_client import ChironAPIClient
+from config import ui_settings
 
 
 def get_llm_settings() -> tuple[str, str | None, float]:

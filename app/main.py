@@ -1,8 +1,14 @@
 """Chiron - Assistant IA pour les conseils de classe."""
 
-import streamlit as st
+import sys
+from pathlib import Path
 
-from app.config import get_api_client, ui_settings
+# Add project root to path for src imports
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+import streamlit as st
+from config import get_api_client, ui_settings
 
 st.set_page_config(
     page_title=ui_settings.page_title,

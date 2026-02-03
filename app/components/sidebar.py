@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import streamlit as st
-
-from app.api_client import ChironAPIClient
+from api_client import ChironAPIClient
 
 
 def render_classe_selector(

@@ -70,7 +70,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "src/api/routers/*.py" = ["B008"]  # FastAPI Depends() pattern
-"app/pages/*.py" = ["N999"]  # Streamlit numbered pages convention
+"app/pages/*.py" = ["N999", "E402"]  # Streamlit: numbered pages + sys.path before imports
+"app/main.py" = ["E402"]  # sys.path manipulation before imports
 
 [tool.ruff.format]
 quote-style = "double"
