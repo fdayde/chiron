@@ -3,6 +3,10 @@
 from src.core.models import EleveExtraction, EleveGroundTruth, MatiereExtraction
 from src.generation.prompts import CURRENT_PROMPT, get_prompt
 
+# Délimiteurs pour isoler les données utilisateur (prompt injection mitigation)
+DATA_START = "<ELEVE_DATA>"
+DATA_END = "</ELEVE_DATA>"
+
 
 def format_eleve_data(eleve: EleveExtraction) -> str:
     """Formate les données d'un élève pour le prompt.
@@ -115,11 +119,11 @@ class PromptBuilder:
 
         # Few-shot examples
         for exemple in self.exemples:
-            # User message avec données élève
+            # User message avec données élève (wrapped in delimiters)
             messages.append(
                 {
                     "role": "user",
-                    "content": f"Rédige une synthèse pour cet élève :\n\n{format_eleve_data(exemple)}",
+                    "content": f"Rédige une synthèse pour cet élève :\n\n{DATA_START}\n{format_eleve_data(exemple)}\n{DATA_END}",
                 }
             )
             # Assistant response avec synthèse de référence
@@ -130,11 +134,11 @@ class PromptBuilder:
                 }
             )
 
-        # Élève cible
+        # Élève cible (wrapped in delimiters for prompt injection protection)
         messages.append(
             {
                 "role": "user",
-                "content": f"Rédige une synthèse pour cet élève :\n\n{format_eleve_data(eleve)}",
+                "content": f"Rédige une synthèse pour cet élève :\n\n{DATA_START}\n{format_eleve_data(eleve)}\n{DATA_END}",
             }
         )
 

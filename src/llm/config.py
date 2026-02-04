@@ -108,35 +108,27 @@ class LLMSettings(BaseSettings):
         description="Max tokens pour la génération de synthèses",
     )
 
-    # Pricing OpenAI (USD par million de tokens) - Input / Output
-    # Source: https://openai.com/api/pricing/
+    # Pricing (USD par million de tokens) - Input / Output
+    # Estimation par bulletin: ~2000 tokens input, ~500 tokens output
+    #
+    # OpenAI - Source: https://openai.com/api/pricing/ (Feb 2026)
     openai_pricing: dict[str, tuple[float, float]] = {
-        "gpt-5": (1.25, 10.00),
-        "gpt-5-mini": (0.25, 2.00),
-        "gpt-5-nano": (0.05, 0.40),
-        "gpt-5-chat-latest": (1.25, 10.00),
-        "gpt-5-codex": (1.25, 10.00),
-        "gpt-5-pro": (15.00, 120.00),
-        "gpt-4.1": (2.00, 8.00),
-        "gpt-4.1-mini": (0.40, 1.60),
-        "gpt-4.1-nano": (0.10, 0.40),
-        "gpt-4o": (2.50, 10.00),
-        "gpt-4o-mini": (0.15, 0.60),
+        "gpt-5.2": (1.75, 14.00),  # ~$0.011/bulletin - le plus puissant
+        "gpt-5-mini": (0.25, 2.00),  # ~$0.0015/bulletin - défaut
+        "gpt-5-nano": (0.05, 0.40),  # ~$0.0003/bulletin - tests
     }
 
-    # Pricing Anthropic (USD par million de tokens) - Input / Output
-    # Source: https://www.anthropic.com/pricing
+    # Anthropic - Source: https://www.anthropic.com/pricing (Feb 2026)
     anthropic_pricing: dict[str, tuple[float, float]] = {
-        "claude-sonnet-4-5": (3.00, 15.00),
-        "claude-haiku-4-5": (1.00, 5.00),
+        "claude-sonnet-4-5": (3.00, 15.00),  # ~$0.014/bulletin
+        "claude-haiku-4-5": (1.00, 5.00),  # ~$0.005/bulletin
     }
 
-    # Pricing Mistral (USD par million de tokens) - Input / Output
-    # Source: https://mistral.ai/technology/#pricing
+    # Mistral - Source: https://mistral.ai/technology/#pricing (Feb 2026)
     mistral_pricing: dict[str, tuple[float, float]] = {
-        "mistral-large-latest": (2.00, 6.00),
-        "mistral-medium-latest": (2.00, 5.00),
-        "mistral-small-latest": (0.50, 1.50),
+        "mistral-large-latest": (2.00, 6.00),  # ~$0.007/bulletin
+        "mistral-medium-latest": (2.00, 5.00),  # ~$0.007/bulletin
+        "mistral-small-latest": (0.50, 1.50),  # ~$0.002/bulletin
     }
 
     def get_model(self, provider: str) -> str:

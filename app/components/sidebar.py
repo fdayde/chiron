@@ -100,7 +100,7 @@ def render_new_classe_form(client: ChironAPIClient) -> dict | None:
             "Année scolaire", value="2024-2025", key="new_classe_annee"
         )
 
-        if st.button("Créer", key="create_classe_btn", use_container_width=True):
+        if st.button("Créer", key="create_classe_btn", width="stretch"):
             if nom:
                 try:
                     result = client.create_classe(nom, niveau, annee)

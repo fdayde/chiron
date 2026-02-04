@@ -30,7 +30,14 @@ if not classe_id:
     st.warning("Sélectionnez une classe dans la barre latérale.")
     st.stop()
 
-st.markdown(f"**Classe:** {classe_id} | **Trimestre:** T{trimestre}")
+# Get class name
+try:
+    classe_info = client.get_classe(classe_id)
+    classe_nom = classe_info.get("nom", classe_id)
+except Exception:
+    classe_nom = classe_id
+
+st.markdown(f"**Classe:** {classe_nom} | **Trimestre:** T{trimestre}")
 
 st.divider()
 
@@ -133,7 +140,7 @@ with col1:
     if validated_count == 0:
         st.warning("Aucune synthèse validée à exporter.")
     else:
-        if st.button("Télécharger CSV", type="primary", use_container_width=True):
+        if st.button("Télécharger CSV", type="primary", width="stretch"):
             try:
                 csv_content = client.export_csv(classe_id, trimestre)
                 st.download_button(
@@ -149,7 +156,7 @@ with col2:
     st.markdown("#### Presse-papiers")
     st.caption("Copier les synthèses pour coller dans un document")
 
-    if st.button("Copier au presse-papiers", use_container_width=True):
+    if st.button("Copier au presse-papiers", width="stretch"):
         # Build text content
         lines = []
         for item in filtered:

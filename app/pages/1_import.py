@@ -10,7 +10,14 @@ sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
 from components.sidebar import render_sidebar
-from config import LLM_PROVIDERS, get_api_client, ui_settings
+from config import (
+    LLM_PROVIDERS,
+    calculate_actual_cost,
+    estimate_total_cost,
+    format_model_label,
+    get_api_client,
+    ui_settings,
+)
 
 st.set_page_config(
     page_title=f"Import - {ui_settings.page_title}",
@@ -30,9 +37,20 @@ if not classe_id:
     st.warning("Sélectionnez une classe dans la barre latérale.")
     st.stop()
 
-st.markdown(f"**Classe:** {classe_id} | **Trimestre:** T{trimestre}")
+# Get class name
+try:
+    classe_info = client.get_classe(classe_id)
+    classe_nom = classe_info.get("nom", classe_id)
+except Exception:
+    classe_nom = classe_id
+
+st.markdown(f"**Classe:** {classe_nom} | **Trimestre:** T{trimestre}")
 
 st.divider()
+
+# Initialize session state for import results
+if "import_results" not in st.session_state:
+    st.session_state.import_results = None
 
 # File uploader
 uploaded_files = st.file_uploader(
@@ -52,26 +70,95 @@ if uploaded_files:
 
     st.divider()
 
-    # Options
-    col1, col2, col3 = st.columns([1, 1, 2])
+    # Step 1: Import button
+    if st.button("Importer les fichiers", type="primary", width="stretch"):
+        progress_bar = st.progress(0)
+        status_text = st.empty()
 
-    with col1:
-        import_btn = st.button(
-            "Importer",
-            type="primary",
-            use_container_width=True,
+        results = []
+        imported_eleve_ids = []
+        total = len(uploaded_files)
+
+        for i, file in enumerate(uploaded_files):
+            status_text.text(f"Import de {file.name}...")
+            progress_bar.progress((i + 0.5) / total)
+
+            try:
+                content = file.read()
+                result = client.import_pdf(content, file.name, classe_id, trimestre)
+                results.append(
+                    {"file": file.name, "status": "success", "result": result}
+                )
+                # Include both new and existing students
+                imported_eleve_ids.extend(result.get("eleve_ids", []))
+                imported_eleve_ids.extend(result.get("skipped_ids", []))
+            except Exception as e:
+                results.append({"file": file.name, "status": "error", "error": str(e)})
+
+            progress_bar.progress((i + 1) / total)
+
+        progress_bar.empty()
+        status_text.empty()
+
+        # Store results in session state
+        st.session_state.import_results = {
+            "results": results,
+            "eleve_ids": imported_eleve_ids,
+        }
+
+    # Display import results if available
+    if st.session_state.import_results:
+        results = st.session_state.import_results["results"]
+        imported_eleve_ids = st.session_state.import_results["eleve_ids"]
+
+        st.markdown("### Résultats de l'import")
+
+        error_count = sum(1 for r in results if r["status"] == "error")
+        skipped_count = sum(
+            len(r["result"].get("skipped_ids", []))
+            for r in results
+            if r["status"] == "success"
         )
 
-    with col2:
-        auto_generate = st.checkbox(
-            "Auto-générer synthèses",
-            value=False,
-            help="Générer automatiquement les synthèses après l'import",
-        )
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("PDFs traités", len(results))
+        col2.metric("Nouveaux élèves", len(imported_eleve_ids))
+        col3.metric("Déjà existants", skipped_count)
+        col4.metric("Erreurs", error_count)
 
-    # LLM settings for auto-generation (expandable)
-    if auto_generate:
-        with st.expander("Paramètres LLM", expanded=False):
+        # Detail per file
+        with st.expander("Détail par fichier"):
+            for r in results:
+                if r["status"] == "success":
+                    result = r["result"]
+                    eleve_ids = result.get("eleve_ids", [])
+                    skipped_ids = result.get("skipped_ids", [])
+                    parsed = result.get("parsed_count", 0)
+
+                    if eleve_ids:
+                        st.success(f"{r['file']}: {len(eleve_ids)} élève(s) importé(s)")
+                        st.caption(f"IDs anonymisés: {', '.join(eleve_ids)}")
+                    elif skipped_ids:
+                        st.info(
+                            f"{r['file']}: {len(skipped_ids)} élève(s) déjà existant(s)"
+                        )
+                        st.caption(f"IDs: {', '.join(skipped_ids)}")
+                    elif parsed == 0:
+                        st.warning(f"{r['file']}: aucun élève détecté dans le PDF")
+                    else:
+                        st.info(
+                            f"{r['file']}: {parsed} élève(s) parsé(s), tous existants"
+                        )
+                else:
+                    st.error(f"{r['file']}: {r['error']}")
+
+        st.divider()
+
+        # Step 2: Generate syntheses button
+        if imported_eleve_ids:
+            st.markdown("### Génération des synthèses")
+
+            # LLM settings
             col1, col2 = st.columns(2)
             with col1:
                 provider = st.selectbox(
@@ -83,113 +170,74 @@ if uploaded_files:
                 )
             with col2:
                 provider_config = LLM_PROVIDERS[provider]
-                model_options = ["(défaut)"] + provider_config["models"]
+                model_options = provider_config["models"]
                 model = st.selectbox(
                     "Modèle",
                     options=model_options,
+                    format_func=lambda x: format_model_label(provider, x),
                     index=0,
                     key="import_llm_model",
                 )
-                if model == "(défaut)":
-                    model = None
-    else:
-        provider = ui_settings.default_provider
-        model = None
 
-    if import_btn:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+            # Cost estimation
+            nb_eleves = len(imported_eleve_ids)
+            total_cost = estimate_total_cost(provider, model, nb_eleves)
+            st.caption(
+                f"💰 Estimation : **~${total_cost:.4f}** pour {nb_eleves} élève(s)"
+            )
 
-        results = []
-        imported_eleve_ids = []
-        total = len(uploaded_files)
+            if st.button(
+                f"Générer les synthèses ({nb_eleves} élèves)",
+                width="stretch",
+            ):
+                gen_progress = st.progress(0)
+                gen_status = st.empty()
+                gen_success = 0
+                gen_error = 0
+                total_tokens_input = 0
+                total_tokens_output = 0
 
-        # Phase 1: Import PDFs
-        for i, file in enumerate(uploaded_files):
-            status_text.text(f"Import de {file.name}...")
-            progress_bar.progress((i + 0.5) / total)
-
-            try:
-                content = file.read()
-                result = client.import_pdf(content, file.name, classe_id, trimestre)
-                results.append(
-                    {"file": file.name, "status": "success", "result": result}
-                )
-                imported_eleve_ids.extend(result.get("eleve_ids", []))
-            except Exception as e:
-                results.append({"file": file.name, "status": "error", "error": str(e)})
-
-            progress_bar.progress((i + 1) / total)
-
-        progress_bar.empty()
-        status_text.empty()
-
-        # Results
-        st.markdown("### Résultats de l'import")
-
-        success_count = sum(1 for r in results if r["status"] == "success")
-        error_count = sum(1 for r in results if r["status"] == "error")
-
-        col1, col2 = st.columns(2)
-        col1.metric("Succès", success_count)
-        col2.metric("Erreurs", error_count)
-
-        for r in results:
-            if r["status"] == "success":
-                result = r["result"]
-                st.success(
-                    f"{r['file']}: {result.get('imported_count', 0)} élève(s) importé(s)"
-                )
-                if result.get("eleve_ids"):
-                    st.caption(f"IDs: {', '.join(result['eleve_ids'])}")
-            else:
-                st.error(f"{r['file']}: {r['error']}")
-
-        # Phase 2: Auto-generate syntheses if enabled
-        if auto_generate and imported_eleve_ids:
-            st.divider()
-            st.markdown("### Génération automatique des synthèses")
-
-            gen_progress = st.progress(0)
-            gen_status = st.empty()
-            gen_success = 0
-            gen_error = 0
-            total_tokens = 0
-
-            for i, eleve_id in enumerate(imported_eleve_ids):
-                gen_status.text(
-                    f"Génération {i + 1}/{len(imported_eleve_ids)}: {eleve_id}..."
-                )
-
-                try:
-                    result = client.generate_synthese(
-                        eleve_id,
-                        trimestre,
-                        provider=provider,
-                        model=model,
+                for i, eleve_id in enumerate(imported_eleve_ids):
+                    gen_status.text(
+                        f"Génération {i + 1}/{len(imported_eleve_ids)}: {eleve_id}..."
                     )
-                    gen_success += 1
-                    meta = result.get("metadata", {})
-                    total_tokens += meta.get("tokens_total", 0) or 0
-                except Exception:
-                    gen_error += 1
 
-                gen_progress.progress((i + 1) / len(imported_eleve_ids))
+                    try:
+                        result = client.generate_synthese(
+                            eleve_id,
+                            trimestre,
+                            provider=provider,
+                            model=model,
+                        )
+                        gen_success += 1
+                        meta = result.get("metadata", {})
+                        total_tokens_input += meta.get("tokens_input", 0) or 0
+                        total_tokens_output += meta.get("tokens_output", 0) or 0
+                    except Exception:
+                        gen_error += 1
 
-            gen_progress.empty()
-            gen_status.empty()
+                    gen_progress.progress((i + 1) / len(imported_eleve_ids))
 
-            col1, col2 = st.columns(2)
-            col1.metric("Synthèses générées", gen_success)
-            col2.metric("Tokens utilisés", total_tokens)
+                gen_progress.empty()
+                gen_status.empty()
 
-            if gen_error > 0:
-                st.warning(f"{gen_error} erreur(s) de génération")
+                # Calculate actual cost
+                total_tokens = total_tokens_input + total_tokens_output
+                actual_cost = calculate_actual_cost(
+                    provider, model, total_tokens_input, total_tokens_output
+                )
 
-        st.divider()
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Synthèses générées", gen_success)
+                col2.metric("Tokens utilisés", f"{total_tokens:,}")
+                col3.metric("Coût réel", f"${actual_cost:.4f}")
 
-        if st.button("Aller à Review", type="primary"):
-            st.switch_page("pages/2_review.py")
+                if gen_error > 0:
+                    st.warning(f"{gen_error} erreur(s) de génération")
+
+                st.info(
+                    "Rendez-vous sur la page **Review** pour relire et valider les synthèses."
+                )
 
 else:
     st.info("Sélectionnez un ou plusieurs fichiers PDF à importer.")
@@ -200,9 +248,10 @@ else:
             """
 1. Sélectionnez la classe et le trimestre dans la barre latérale
 2. Déposez les fichiers PDF des bulletins ci-dessus
-3. Cliquez sur "Importer"
+3. Cliquez sur **Importer les fichiers**
+4. Vérifiez les résultats (PDFs traités, élèves importés, anonymisation)
+5. Cliquez sur **Générer les synthèses** pour lancer l'IA
 
-Les bulletins seront parsés et les données des élèves extraites automatiquement.
-Les noms sont pseudonymisés pour la conformité RGPD.
+Les noms des élèves sont pseudonymisés automatiquement (conformité RGPD).
         """
         )

@@ -12,7 +12,7 @@ import streamlit as st
 from components.eleve_card import render_eleve_detail
 from components.sidebar import render_sidebar
 from components.synthese_editor import render_synthese_editor
-from config import LLM_PROVIDERS, get_api_client, ui_settings
+from config import get_api_client, ui_settings
 
 st.set_page_config(
     page_title=f"Review - {ui_settings.page_title}",
@@ -25,48 +25,6 @@ client = get_api_client()
 # Global sidebar
 classe_id, trimestre = render_sidebar(client)
 
-# LLM Settings in sidebar
-st.sidebar.divider()
-st.sidebar.markdown("### Paramètres LLM")
-
-provider_options = list(LLM_PROVIDERS.keys())
-default_idx = (
-    provider_options.index(ui_settings.default_provider)
-    if ui_settings.default_provider in provider_options
-    else 0
-)
-
-selected_provider = st.sidebar.selectbox(
-    "Provider",
-    options=provider_options,
-    format_func=lambda x: LLM_PROVIDERS[x]["name"],
-    index=default_idx,
-    key="llm_provider",
-)
-
-provider_config = LLM_PROVIDERS[selected_provider]
-model_options = ["(défaut)"] + provider_config["models"]
-selected_model = st.sidebar.selectbox(
-    "Modèle",
-    options=model_options,
-    index=0,
-    key="llm_model_select",
-)
-if selected_model == "(défaut)":
-    st.session_state["llm_model"] = None
-else:
-    st.session_state["llm_model"] = selected_model
-
-st.sidebar.slider(
-    "Température",
-    min_value=0.0,
-    max_value=1.0,
-    value=ui_settings.default_temperature,
-    step=0.1,
-    key="llm_temperature",
-    help="0 = déterministe, 1 = créatif",
-)
-
 # Main content
 st.title("Review des synthèses")
 
@@ -74,7 +32,14 @@ if not classe_id:
     st.warning("Sélectionnez une classe dans la barre latérale.")
     st.stop()
 
-st.markdown(f"**Classe:** {classe_id} | **Trimestre:** T{trimestre}")
+# Get class name
+try:
+    classe_info = client.get_classe(classe_id)
+    classe_nom = classe_info.get("nom", classe_id)
+except Exception:
+    classe_nom = classe_id
+
+st.markdown(f"**Classe:** {classe_nom} | **Trimestre:** T{trimestre}")
 
 st.divider()
 
@@ -110,63 +75,20 @@ st.divider()
 
 # Batch actions
 st.markdown("### Actions groupées")
-col1, col2 = st.columns(2)
 
-provider = st.session_state.get("llm_provider", ui_settings.default_provider)
-model = st.session_state.get("llm_model")
-temperature = st.session_state.get("llm_temperature", ui_settings.default_temperature)
-
-with col1:
-    if st.button("Générer toutes les synthèses", use_container_width=True):
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        success_count = 0
-        error_count = 0
-        total_tokens = 0
-
-        for i, eleve in enumerate(eleves):
-            eleve_id = eleve["eleve_id"]
-            status_text.text(f"Génération {i + 1}/{len(eleves)}: {eleve_id}...")
-
-            try:
-                result = client.generate_synthese(
-                    eleve_id,
-                    trimestre,
-                    provider=provider,
-                    model=model,
-                    temperature=temperature,
-                )
-                success_count += 1
-                meta = result.get("metadata", {})
-                total_tokens += meta.get("tokens_total", 0) or 0
-            except Exception:
-                error_count += 1
-
-            progress_bar.progress((i + 1) / len(eleves))
-
-        progress_bar.empty()
-        status_text.empty()
-
-        if success_count > 0:
-            st.success(f"{success_count} synthèses générées ({total_tokens} tokens)")
-        if error_count > 0:
-            st.warning(f"{error_count} erreur(s)")
+if st.button("Valider toutes les synthèses", width="stretch"):
+    try:
+        pending = client.get_pending_syntheses(classe_id)
+        validated = 0
+        for item in pending.get("pending", []):
+            synthese_id = item.get("synthese_id")
+            if synthese_id:
+                client.validate_synthese(synthese_id)
+                validated += 1
+        st.success(f"{validated} synthèses validées!")
         st.rerun()
-
-with col2:
-    if st.button("Valider toutes les synthèses", use_container_width=True):
-        try:
-            pending = client.get_pending_syntheses(classe_id)
-            validated = 0
-            for item in pending.get("pending", []):
-                synthese_id = item.get("synthese_id")
-                if synthese_id:
-                    client.validate_synthese(synthese_id)
-                    validated += 1
-            st.success(f"{validated} synthèses validées!")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Erreur: {e}")
+    except Exception as e:
+        st.error(f"Erreur: {e}")
 
 st.divider()
 

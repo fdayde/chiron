@@ -136,7 +136,7 @@ if classes:
     if table_data:
         st.dataframe(
             table_data,
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
     else:

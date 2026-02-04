@@ -6,6 +6,10 @@ from pydantic_settings import BaseSettings
 
 from src.llm.config import settings as llm_settings
 
+# Estimation tokens par bulletin (basé sur ground truth)
+TOKENS_INPUT_PER_BULLETIN = 2000
+TOKENS_OUTPUT_PER_BULLETIN = 500
+
 
 class UISettings(BaseSettings):
     """Settings for the Streamlit UI."""
@@ -51,6 +55,86 @@ def get_llm_providers() -> dict:
 
 # Pour compatibilité avec le code existant
 LLM_PROVIDERS = get_llm_providers()
+
+
+def estimate_cost_per_bulletin(provider: str, model: str) -> float:
+    """Estime le coût par bulletin pour un modèle donné.
+
+    Args:
+        provider: Provider LLM (openai, anthropic, mistral).
+        model: Nom du modèle.
+
+    Returns:
+        Coût estimé en USD par bulletin.
+    """
+    pricing = llm_settings.get_pricing(provider)
+    if model not in pricing:
+        return 0.0
+
+    input_price, output_price = pricing[model]
+    # Prix par million de tokens -> prix par token -> prix par bulletin
+    cost = (TOKENS_INPUT_PER_BULLETIN * input_price / 1_000_000) + (
+        TOKENS_OUTPUT_PER_BULLETIN * output_price / 1_000_000
+    )
+    return cost
+
+
+def format_model_label(provider: str, model: str) -> str:
+    """Formate le label du modèle avec le coût estimé.
+
+    Args:
+        provider: Provider LLM.
+        model: Nom du modèle.
+
+    Returns:
+        Label formaté, ex: "gpt-5-mini (~$0.002/élève)"
+    """
+    cost = estimate_cost_per_bulletin(provider, model)
+    if cost >= 0.01:
+        return f"{model} (~${cost:.3f}/élève)"
+    elif cost >= 0.001:
+        return f"{model} (~${cost:.4f}/élève)"
+    else:
+        return f"{model} (~${cost:.5f}/élève)"
+
+
+def estimate_total_cost(provider: str, model: str, nb_eleves: int) -> float:
+    """Estime le coût total pour N élèves.
+
+    Args:
+        provider: Provider LLM.
+        model: Nom du modèle.
+        nb_eleves: Nombre d'élèves.
+
+    Returns:
+        Coût total estimé en USD.
+    """
+    return estimate_cost_per_bulletin(provider, model) * nb_eleves
+
+
+def calculate_actual_cost(
+    provider: str, model: str, tokens_input: int, tokens_output: int
+) -> float:
+    """Calcule le coût réel basé sur les tokens utilisés.
+
+    Args:
+        provider: Provider LLM.
+        model: Nom du modèle.
+        tokens_input: Nombre de tokens en entrée.
+        tokens_output: Nombre de tokens en sortie.
+
+    Returns:
+        Coût réel en USD.
+    """
+    pricing = llm_settings.get_pricing(provider)
+    if model not in pricing:
+        return 0.0
+
+    input_price, output_price = pricing[model]
+    cost = (tokens_input * input_price / 1_000_000) + (
+        tokens_output * output_price / 1_000_000
+    )
+    return cost
 
 
 @st.cache_resource

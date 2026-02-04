@@ -171,8 +171,11 @@ class PdfplumberParser:
 
         raw_text = content.text or ""
 
+        logger.info(f"Raw text (first 500 chars): {raw_text[:500]}")
+
         # Extraire les champs structurés du texte
         eleve_str = extract_key_value(raw_text, r"[ÉE]l[èe]ve")
+        logger.info(f"Extracted eleve_str: {eleve_str}")
         nom = None
         prenom = None
         if eleve_str:

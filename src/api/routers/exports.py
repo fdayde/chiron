@@ -2,6 +2,7 @@
 
 import csv
 import io
+import logging
 import tempfile
 from pathlib import Path
 
@@ -19,6 +20,8 @@ from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.classe import ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -101,7 +104,14 @@ async def import_pdf(
         parser = get_parser()
         eleves = parser.parse(tmp_path)
 
+        logger.info(f"Parser returned {len(eleves)} eleve(s) from {file.filename}")
+        for i, e in enumerate(eleves):
+            logger.info(
+                f"  [{i}] nom={e.nom}, prenom={e.prenom}, raw_text_len={len(e.raw_text or '')}"
+            )
+
         imported = []
+        skipped = []
         for eleve in eleves:
             # Set trimestre and classe
             eleve.trimestre = trimestre
@@ -112,20 +122,25 @@ async def import_pdf(
                 eleve_pseudo = pseudonymizer.pseudonymize(eleve, classe_id)
             else:
                 eleve_pseudo = eleve
-                eleve_pseudo.eleve_id = f"ELEVE_{len(imported) + 1:03d}"
+                eleve_pseudo.eleve_id = f"ELEVE_{len(imported) + len(skipped) + 1:03d}"
 
             # Save to database (check by eleve_id AND trimestre)
             if not eleve_repo.exists(eleve_pseudo.eleve_id, trimestre):
                 eleve_repo.create(eleve_pseudo)
                 imported.append(eleve_pseudo.eleve_id)
+            else:
+                skipped.append(eleve_pseudo.eleve_id)
 
         return {
             "status": "success",
             "filename": file.filename,
             "classe_id": classe_id,
             "trimestre": trimestre,
+            "parsed_count": len(eleves),
             "imported_count": len(imported),
+            "skipped_count": len(skipped),
             "eleve_ids": imported,
+            "skipped_ids": skipped,
         }
 
     finally:
