@@ -146,28 +146,94 @@ else:
 
 st.divider()
 
-# Guide
-st.subheader("Comment utiliser Chiron ?")
+# Workflow visuel
+st.subheader("Comment ça marche ?")
 
+# Schéma en 3 étapes avec colonnes
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown(
+        """
+        <div style="text-align: center; padding: 1rem; border-radius: 10px; border: 2px solid #4CAF50; background: rgba(76, 175, 80, 0.1);">
+            <div style="font-size: 2.5rem;">📄</div>
+            <h3 style="margin: 0.5rem 0;">1. Import</h3>
+            <p style="font-size: 0.9rem; color: #666; margin: 0;">
+                Déposez vos bulletins PDF<br/>
+                <strong>→ Extraction automatique</strong><br/>
+                <strong>→ Anonymisation RGPD</strong>
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col2:
+    st.markdown(
+        """
+        <div style="text-align: center; padding: 1rem; border-radius: 10px; border: 2px solid #2196F3; background: rgba(33, 150, 243, 0.1);">
+            <div style="font-size: 2.5rem;">🤖</div>
+            <h3 style="margin: 0.5rem 0;">2. Review</h3>
+            <p style="font-size: 0.9rem; color: #666; margin: 0;">
+                L'IA génère les synthèses<br/>
+                <strong>→ Relecture & correction</strong><br/>
+                <strong>→ Validation par l'enseignant</strong>
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col3:
+    st.markdown(
+        """
+        <div style="text-align: center; padding: 1rem; border-radius: 10px; border: 2px solid #FF9800; background: rgba(255, 152, 0, 0.1);">
+            <div style="font-size: 2.5rem;">📤</div>
+            <h3 style="margin: 0.5rem 0;">3. Export</h3>
+            <p style="font-size: 0.9rem; color: #666; margin: 0;">
+                Téléchargez le CSV final<br/>
+                <strong>→ Noms réels restaurés</strong><br/>
+                <strong>→ Prêt pour le conseil</strong>
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Flèches entre les étapes
 st.markdown(
     """
-**1. Import** — Déposez les bulletins PDF des élèves
-- Sélectionnez une classe et un trimestre dans la barre latérale
-- Allez sur la page **Import** et déposez vos fichiers PDF
-- Les données sont extraites et pseudonymisées automatiquement
+    <div style="display: flex; justify-content: space-around; margin: -1rem 0 1rem 0;">
+        <div style="flex: 1;"></div>
+        <div style="font-size: 1.5rem; color: #888;">→</div>
+        <div style="flex: 1;"></div>
+        <div style="font-size: 1.5rem; color: #888;">→</div>
+        <div style="flex: 1;"></div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-**2. Review** — Générez et validez les synthèses
-- Sur la page **Review**, générez les synthèses avec l'IA
-- Relisez et modifiez si nécessaire
-- Validez chaque synthèse
-
-**3. Export** — Récupérez vos synthèses
-- Sur la page **Export**, téléchargez le CSV
-- Les noms réels sont restaurés automatiquement
-"""
+# Encart sécurité
+st.info(
+    "🔒 **Confidentialité garantie** : Les noms des élèves sont pseudonymisés avant tout traitement IA. "
+    "Les données personnelles restent sur votre machine."
 )
 
 st.divider()
-st.caption(
-    "Les données personnelles (noms) sont stockées localement et ne quittent jamais votre machine."
-)
+
+# Quick actions
+st.markdown("### Démarrer")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if st.button("📄 Importer des bulletins", width="stretch"):
+        st.switch_page("pages/1_import.py")
+
+with col2:
+    if st.button("🤖 Revoir les synthèses", width="stretch"):
+        st.switch_page("pages/2_review.py")
+
+with col3:
+    if st.button("📤 Exporter", width="stretch"):
+        st.switch_page("pages/3_Export.py")

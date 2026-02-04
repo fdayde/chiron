@@ -2,8 +2,22 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 import streamlit as st
 from api_client import ChironAPIClient
+
+
+def _get_current_school_year() -> str:
+    """Return current school year in format '2024-2025'.
+
+    School year runs from September to August.
+    """
+    today = date.today()
+    if today.month >= 9:  # September onwards = new school year
+        return f"{today.year}-{today.year + 1}"
+    else:  # January to August = previous year's school year
+        return f"{today.year - 1}-{today.year}"
 
 
 def init_session_state():
@@ -90,29 +104,33 @@ def render_new_classe_form(client: ChironAPIClient) -> dict | None:
         Created class dict or None
     """
     with st.sidebar.expander("➕ Nouvelle classe"):
-        nom = st.text_input("Nom", placeholder="5eme A", key="new_classe_nom")
-        niveau = st.selectbox(
-            "Niveau",
-            options=["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "Terminale"],
-            key="new_classe_niveau",
-        )
-        annee = st.text_input(
-            "Année scolaire", value="2024-2025", key="new_classe_annee"
-        )
+        with st.form("new_classe_form"):
+            niveau = st.selectbox(
+                "Niveau",
+                options=["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "Terminale"],
+            )
+            groupe = st.text_input("Groupe", placeholder="A")
+            annee = st.text_input("Année scolaire", value=_get_current_school_year())
 
-        if st.button("Créer", key="create_classe_btn", width="stretch"):
-            if nom:
+            st.caption("Format : `{niveau}{groupe}_{année}` (ex: 3A_2024-2025)")
+
+            submitted = st.form_submit_button("Créer", use_container_width=True)
+
+            if submitted:
+                # Build class name with format: "3A_2024-2025"
+                if groupe:
+                    nom = f"{niveau[0]}{groupe}_{annee}"
+                else:
+                    nom = f"{niveau}_{annee}"
+
                 try:
                     result = client.create_classe(nom, niveau, annee)
                     st.success(f"Classe {nom} créée!")
-                    # Select the new class
                     st.session_state.classe_id = result["classe_id"]
                     st.rerun()
                     return result
                 except Exception as e:
                     st.error(f"Erreur: {e}")
-            else:
-                st.warning("Nom requis")
 
     return None
 

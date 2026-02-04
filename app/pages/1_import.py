@@ -68,10 +68,23 @@ if uploaded_files:
         for f in uploaded_files:
             st.caption(f"- {f.name} ({f.size / 1024:.1f} Ko)")
 
+    # Check for existing students
+    try:
+        existing_eleves = client.get_eleves(classe_id, trimestre)
+        existing_count = len(existing_eleves)
+    except Exception:
+        existing_count = 0
+
+    if existing_count > 0:
+        st.warning(
+            f"**{existing_count} élève(s) existant(s)** pour cette classe/trimestre. "
+            "Les données seront écrasées (élèves + synthèses)."
+        )
+
     st.divider()
 
     # Step 1: Import button
-    if st.button("Importer les fichiers", type="primary", width="stretch"):
+    if st.button("Importer les fichiers", type="primary", use_container_width=True):
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -114,16 +127,16 @@ if uploaded_files:
         st.markdown("### Résultats de l'import")
 
         error_count = sum(1 for r in results if r["status"] == "error")
-        skipped_count = sum(
-            len(r["result"].get("skipped_ids", []))
+        overwritten_count = sum(
+            r["result"].get("overwritten_count", 0)
             for r in results
             if r["status"] == "success"
         )
 
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("PDFs traités", len(results))
-        col2.metric("Nouveaux élèves", len(imported_eleve_ids))
-        col3.metric("Déjà existants", skipped_count)
+        col2.metric("Élèves importés", len(imported_eleve_ids))
+        col3.metric("Écrasés", overwritten_count)
         col4.metric("Erreurs", error_count)
 
         # Detail per file
@@ -132,23 +145,17 @@ if uploaded_files:
                 if r["status"] == "success":
                     result = r["result"]
                     eleve_ids = result.get("eleve_ids", [])
-                    skipped_ids = result.get("skipped_ids", [])
+                    overwritten_ids = result.get("overwritten_ids", [])
                     parsed = result.get("parsed_count", 0)
 
-                    if eleve_ids:
+                    if overwritten_ids:
+                        st.info(f"{r['file']}: {len(eleve_ids)} élève(s) écrasé(s)")
+                        st.caption(f"IDs: {', '.join(eleve_ids)}")
+                    elif eleve_ids:
                         st.success(f"{r['file']}: {len(eleve_ids)} élève(s) importé(s)")
                         st.caption(f"IDs anonymisés: {', '.join(eleve_ids)}")
-                    elif skipped_ids:
-                        st.info(
-                            f"{r['file']}: {len(skipped_ids)} élève(s) déjà existant(s)"
-                        )
-                        st.caption(f"IDs: {', '.join(skipped_ids)}")
                     elif parsed == 0:
                         st.warning(f"{r['file']}: aucun élève détecté dans le PDF")
-                    else:
-                        st.info(
-                            f"{r['file']}: {parsed} élève(s) parsé(s), tous existants"
-                        )
                 else:
                     st.error(f"{r['file']}: {r['error']}")
 
@@ -236,7 +243,8 @@ if uploaded_files:
                     st.warning(f"{gen_error} erreur(s) de génération")
 
                 st.info(
-                    "Rendez-vous sur la page **Review** pour relire et valider les synthèses."
+                    "Rendez-vous sur la page **Review** pour relire et "
+                    "valider les synthèses."
                 )
 
 else:

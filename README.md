@@ -185,10 +185,8 @@ chiron/
 
 ## Documentation
 
-- **[docs/01_architecture_technique.md](docs/01_architecture_technique.md)** - Architecture détaillée + workflow
-- **[docs/02_plan_implementation.md](docs/02_plan_implementation.md)** - Plan d'implémentation par phases
-- **[docs/03_README_chiron.md](docs/03_README_chiron.md)** - Documentation projet
-- **[todo.md](todo.md)** - Suivi d'avancement et décisions
+- **[docs/architecture.md](docs/architecture.md)** - Architecture, flux de données, RGPD
+- **[todo.md](todo.md)** - Suivi d'avancement
 
 ## Notebooks de validation
 

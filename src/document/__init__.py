@@ -2,35 +2,38 @@
 
 Supporte deux backends :
 - pdfplumber : extraction mécanique (rapide, gratuit)
-- mistral_ocr : vision model cloud (précis, payant) + anonymisation automatique
+- mistral_ocr : vision model cloud (précis, payant)
+
+Le flux d'import unifié :
+1. extract_eleve_name() - extrait le nom depuis le PDF
+2. anonymize_pdf() - remplace les noms par l'eleve_id
+3. get_parser().parse() - extrait les données structurées
 
 Usage:
-    from src.document import get_parser, ParserType, estimate_mistral_cost
+    from src.document import (
+        extract_eleve_name,
+        anonymize_pdf,
+        get_parser,
+        ParserType,
+    )
 
-    # Utiliser le parser configuré dans .env (PDF_PARSER_TYPE)
-    parser = get_parser()
-    result = parser.parse("bulletin.pdf")
+    # 1. Extraire le nom
+    identity = extract_eleve_name(pdf_path)
+    # {"nom": "Dupont", "prenom": "Marie", "genre": "Fille"}
 
-    # Ou forcer un parser spécifique avec anonymisation (défaut)
-    parser = get_parser(ParserType.MISTRAL_OCR)
-    result = parser.parse("bulletin.pdf", eleve_id="ELEVE_001")
+    # 2. Anonymiser (après avoir créé l'eleve_id via pseudonymizer)
+    pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
 
-    # Estimer le coût avant envoi Mistral
-    estimate = estimate_mistral_cost([Path("a.pdf"), Path("b.pdf")])
-    print(f"{estimate['pages']} pages -> ${estimate['cost_usd']}")
-
-    # Utiliser l'anonymizer directement
-    from src.document import PDFAnonymizer
-    anonymizer = PDFAnonymizer()
-    result = anonymizer.anonymize(pdf_path, "ELEVE_001")
+    # 3. Parser
+    parser = get_parser()  # ou get_parser(ParserType.MISTRAL_OCR)
+    eleve = parser.parse(pdf_bytes, eleve_id, genre=identity.get("genre"))
 """
 
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
-import pdfplumber
-
+from src.document.anonymizer import anonymize_pdf, extract_eleve_name
 from src.document.parser import PDFContent, clean_text, extract_pdf_content
 from src.document.pdfplumber_parser import PdfplumberParser
 from src.llm.config import settings
@@ -49,14 +52,19 @@ class ParserType(Enum):
 class PDFParser(Protocol):
     """Interface commune pour les parsers PDF."""
 
-    def parse(self, pdf_path: str | Path) -> list["EleveExtraction"]: ...
+    def parse(
+        self,
+        pdf_data: bytes | str | Path,
+        eleve_id: str,
+        genre: str | None = None,
+    ) -> "EleveExtraction": ...
 
 
 def get_parser(parser_type: ParserType | None = None) -> PDFParser:
     """Factory pour obtenir le parser PDF configuré.
 
     Args:
-        parser_type: Type de parser à utiliser. Si None, utilise PDF_PARSER_TYPE de .env.
+        parser_type: Type de parser. Si None, utilise PDF_PARSER_TYPE de .env.
 
     Returns:
         Instance du parser demandé.
@@ -83,82 +91,28 @@ def get_parser(parser_type: ParserType | None = None) -> PDFParser:
     return PdfplumberParser()
 
 
-def count_pdf_pages(pdf_path: str | Path) -> int:
-    """Compte le nombre de pages d'un PDF.
-
-    Args:
-        pdf_path: Chemin vers le fichier PDF.
-
-    Returns:
-        Nombre de pages.
-    """
-    with pdfplumber.open(pdf_path) as pdf:
-        return len(pdf.pages)
-
-
-def estimate_mistral_cost(
-    pdf_paths: list[Path] | list[str],
-    cost_per_1000_pages: float | None = None,
-) -> dict:
-    """Estime le coût Mistral OCR pour une liste de PDFs.
-
-    Args:
-        pdf_paths: Liste des chemins vers les fichiers PDF.
-        cost_per_1000_pages: Coût en USD pour 1000 pages.
-            Si None, utilise MISTRAL_OCR_COST_PER_1000_PAGES de .env.
-
-    Returns:
-        Dict avec 'pages' (total) et 'cost_usd' (estimation).
-    """
-    if cost_per_1000_pages is None:
-        cost_per_1000_pages = settings.mistral_ocr_cost_per_1000_pages
-
-    total_pages = sum(count_pdf_pages(p) for p in pdf_paths)
-
-    return {
-        "pages": total_pages,
-        "cost_usd": round(total_pages / 1000 * cost_per_1000_pages, 4),
-    }
-
-
 __all__ = [
+    # Flux d'import
+    "extract_eleve_name",
+    "anonymize_pdf",
     # Factory et types
     "get_parser",
     "ParserType",
     "PDFParser",
     # Parsers
     "PdfplumberParser",
-    "MistralOCRParser",
-    # Anonymisation
-    "PDFAnonymizer",
-    "AnonymizationResult",
-    "get_anonymizer",
     # Utilitaires
     "PDFContent",
     "extract_pdf_content",
     "clean_text",
-    "count_pdf_pages",
-    "estimate_mistral_cost",
 ]
 
 
-# Imports pour les exports
+# Lazy import pour MistralOCRParser
 def __getattr__(name: str):
     """Lazy imports pour éviter le chargement des modèles au démarrage."""
     if name == "MistralOCRParser":
         from src.document.mistral_parser import MistralOCRParser
 
         return MistralOCRParser
-    if name == "PDFAnonymizer":
-        from src.document.anonymizer import PDFAnonymizer
-
-        return PDFAnonymizer
-    if name == "AnonymizationResult":
-        from src.document.anonymizer import AnonymizationResult
-
-        return AnonymizationResult
-    if name == "get_anonymizer":
-        from src.document.anonymizer import get_anonymizer
-
-        return get_anonymizer
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

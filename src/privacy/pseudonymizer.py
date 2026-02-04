@@ -68,6 +68,41 @@ class Pseudonymizer:
             except duckdb.CatalogException:
                 pass  # Index already exists
 
+    def create_eleve_id(
+        self,
+        nom: str,
+        prenom: str | None,
+        classe_id: str,
+    ) -> str:
+        """Crée un eleve_id et stocke le mapping nom/prenom -> eleve_id.
+
+        Idempotent: retourne l'ID existant si le mapping existe déjà.
+
+        Args:
+            nom: Nom de famille de l'élève.
+            prenom: Prénom de l'élève (optionnel).
+            classe_id: Identifiant de la classe.
+
+        Returns:
+            eleve_id généré ou existant (ex: "ELEVE_001").
+
+        Raises:
+            PrivacyError: Si le nom est vide ou si la génération échoue.
+        """
+        if not nom:
+            raise PrivacyError("Cannot create eleve_id: nom is required")
+
+        # Check if mapping already exists (idempotent)
+        existing = self._get_existing_mapping(nom, prenom, classe_id)
+        if existing:
+            logger.info(f"Found existing mapping for {nom} -> {existing}")
+            return existing
+
+        # Generate new eleve_id and store mapping
+        eleve_id = self._generate_eleve_id_atomic(classe_id, nom, prenom)
+        logger.info(f"Created mapping: {nom} {prenom or ''} -> {eleve_id}")
+        return eleve_id
+
     def pseudonymize(
         self,
         eleve: EleveExtraction,

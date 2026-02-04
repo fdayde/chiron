@@ -1,7 +1,7 @@
 """Parser PDF utilisant pdfplumber avec extraction de données structurées.
 
-Extrait les données brutes ET les champs structurés (nom, genre, notes, etc.)
-à partir du texte et des tableaux.
+Extrait les données structurées (notes, appréciations, absences, etc.)
+à partir d'un PDF déjà anonymisé.
 """
 
 import logging
@@ -149,81 +149,78 @@ def parse_engagements(text: str | None) -> list[str]:
 class PdfplumberParser:
     """Parser PDF utilisant pdfplumber - extraction mécanique avec interprétation."""
 
-    def parse(self, pdf_path: str | Path) -> list[EleveExtraction]:
-        """Parse PDF et extrait les données structurées.
+    def parse(
+        self,
+        pdf_path: str | Path,
+        eleve_id: str,
+        genre: str | None = None,
+    ) -> EleveExtraction:
+        """Parse un PDF anonymisé et extrait les données structurées.
 
         Args:
-            pdf_path: Path to PDF file.
+            pdf_path: Chemin vers le fichier PDF (anonymisé).
+            eleve_id: Identifiant de l'élève (fourni par le flux d'import).
+            genre: Genre de l'élève si connu (extrait en amont).
 
         Returns:
-            List with one EleveExtraction containing structured data.
+            EleveExtraction avec les données structurées, nom=None.
         """
         pdf_path = Path(pdf_path)
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
-        logger.info(f"Parsing: {pdf_path.name}")
+        logger.info(f"Parsing: {pdf_path.name} (eleve_id={eleve_id})")
 
         content = extract_pdf_content(pdf_path)
 
         if not content.tables and not content.text:
-            return []
+            return EleveExtraction(eleve_id=eleve_id, nom=None, prenom=None)
 
         raw_text = content.text or ""
 
-        logger.info(f"Raw text (first 500 chars): {raw_text[:500]}")
-
         # Extraire les champs structurés du texte
-        eleve_str = extract_key_value(raw_text, r"[ÉE]l[èe]ve")
-        logger.info(f"Extracted eleve_str: {eleve_str}")
-        nom = None
-        prenom = None
-        if eleve_str:
-            # Format attendu: "Prénom Nom" ou "Nom"
-            parts = eleve_str.split()
-            if len(parts) >= 2:
-                prenom = parts[0]
-                nom = " ".join(parts[1:])
-            else:
-                nom = eleve_str
+        # Note: nom/prenom sont déjà anonymisés, on ne les extrait pas
 
-        genre_str = extract_key_value(raw_text, "Genre")
-        genre = None
-        if genre_str:
-            genre_lower = genre_str.lower()
-            if "fille" in genre_lower or "f" == genre_lower:
-                genre = "Fille"
-            elif (
-                "garçon" in genre_lower or "garcon" in genre_lower or "m" == genre_lower
-            ):
-                genre = "Garçon"
+        # Genre (peut être passé en paramètre ou extrait du texte)
+        if not genre:
+            genre_str = extract_key_value(raw_text, "Genre")
+            if genre_str:
+                genre_lower = genre_str.lower()
+                if "fille" in genre_lower or "f" == genre_lower:
+                    genre = "Fille"
+                elif "garçon" in genre_lower or "garcon" in genre_lower:
+                    genre = "Garçon"
+                elif genre_lower == "m":
+                    genre = "Garçon"
 
+        # Absences
         absences_str = extract_key_value(raw_text, r"Absences?")
         absences = int(n) if (n := extract_number(absences_str)) else None
         absences_justifiees = None
         if absences_str and "justifi" in absences_str.lower():
             absences_justifiees = True
 
+        # Engagements
         engagements_str = extract_key_value(raw_text, r"Engagements?")
         engagements = parse_engagements(engagements_str)
 
+        # Moyenne générale
         moyenne_gen_str = extract_key_value(raw_text, r"Moyenne\s+g[ée]n[ée]rale")
         moyenne_generale = extract_number(moyenne_gen_str)
 
-        # Extraire les matières des tables
+        # Matières (depuis les tables)
         matieres = parse_raw_tables(content.tables)
 
-        return [
-            EleveExtraction(
-                nom=nom,
-                prenom=prenom,
-                genre=genre,
-                absences_demi_journees=absences,
-                absences_justifiees=absences_justifiees,
-                engagements=engagements,
-                moyenne_generale=moyenne_generale,
-                matieres=matieres,
-                raw_text=raw_text,
-                raw_tables=content.tables,
-            )
-        ]
+        return EleveExtraction(
+            eleve_id=eleve_id,
+            nom=None,  # Anonymisé
+            prenom=None,  # Anonymisé
+            genre=genre,
+            absences_demi_journees=absences,
+            absences_justifiees=absences_justifiees,
+            engagements=engagements,
+            moyenne_generale=moyenne_generale,
+            matieres=matieres,
+            raw_text=raw_text,
+            raw_tables=content.tables,
+        )

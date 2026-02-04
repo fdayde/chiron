@@ -15,7 +15,9 @@ from src.api.dependencies import (
     get_pseudonymizer,
     get_synthese_repo,
 )
-from src.document import get_parser
+from src.document import ParserType, get_parser
+from src.document.anonymizer import anonymize_pdf, extract_eleve_name
+from src.llm.config import settings
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.classe import ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
@@ -70,9 +72,96 @@ def export_csv(
         io.StringIO(csv_content),
         media_type="text/csv",
         headers={
-            "Content-Disposition": f"attachment; filename=syntheses_{classe_id}_T{trimestre}.csv"
+            "Content-Disposition": (
+                f"attachment; filename=syntheses_{classe_id}_T{trimestre}.csv"
+            )
         },
     )
+
+
+def _import_single_pdf(
+    pdf_path: Path,
+    classe_id: str,
+    trimestre: int,
+    pseudonymizer: Pseudonymizer,
+    eleve_repo: EleveRepository,
+    synthese_repo: SyntheseRepository,
+    eleve_count: int = 0,
+) -> dict:
+    """Import a single PDF with the unified flow.
+
+    Args:
+        pdf_path: Path to the PDF file.
+        classe_id: Class identifier.
+        trimestre: Trimester number.
+        pseudonymizer: Pseudonymizer instance.
+        eleve_repo: Eleve repository.
+        eleve_count: Current count for fallback ID generation.
+
+    Returns:
+        Dict with import results.
+    """
+    # 1. Extract student name from PDF (local, fast)
+    identity = extract_eleve_name(pdf_path)
+
+    if identity and identity.get("nom"):
+        nom = identity["nom"]
+        prenom = identity.get("prenom")
+        genre = identity.get("genre")
+
+        # 2. Create eleve_id and store mapping
+        eleve_id = pseudonymizer.create_eleve_id(nom, prenom, classe_id)
+        logger.info(f"Created/found eleve_id: {eleve_id} for {prenom} {nom}")
+
+        # 3. Anonymize PDF
+        pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
+        logger.info(f"PDF anonymized ({len(pdf_bytes)} bytes)")
+
+    else:
+        # Fallback: no name found, generate generic ID
+        eleve_id = f"ELEVE_{eleve_count + 1:03d}"
+        genre = None
+        logger.warning(f"No name found in PDF, using fallback ID: {eleve_id}")
+
+        # Use original PDF (can't anonymize without a name)
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+    # 4. Parse PDF (pdfplumber or Mistral OCR)
+    parser_type = ParserType(settings.pdf_parser_type.lower())
+    parser = get_parser(parser_type)
+
+    if parser_type == ParserType.MISTRAL_OCR:
+        # Mistral OCR accepts bytes directly
+        eleve = parser.parse(pdf_bytes, eleve_id, genre=genre)
+    else:
+        # pdfplumber needs a file path, save anonymized PDF temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(pdf_bytes)
+            tmp_anon_path = Path(tmp.name)
+
+        try:
+            eleve = parser.parse(tmp_anon_path, eleve_id, genre=genre)
+        finally:
+            tmp_anon_path.unlink(missing_ok=True)
+
+    # 5. Set trimestre and classe
+    eleve.trimestre = trimestre
+    eleve.classe = classe_id
+
+    # 6. Store in database (overwrite if exists)
+    was_overwritten = False
+    if eleve_repo.exists(eleve_id, trimestre):
+        eleve_repo.delete(eleve_id, trimestre)
+        synthese_repo.delete_for_eleve(eleve_id, trimestre)
+        was_overwritten = True
+        logger.info(f"Overwriting existing data for {eleve_id} T{trimestre}")
+
+    eleve_repo.create(eleve)
+    return {
+        "status": "overwritten" if was_overwritten else "imported",
+        "eleve_id": eleve_id,
+    }
 
 
 @router.post("/import/pdf")
@@ -82,6 +171,7 @@ async def import_pdf(
     file: UploadFile = File(...),
     classe_repo: ClasseRepository = Depends(get_classe_repo),
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
+    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Import a PDF bulletin and extract student data."""
@@ -100,48 +190,32 @@ async def import_pdf(
         tmp_path = Path(tmp.name)
 
     try:
-        # Parse PDF
-        parser = get_parser()
-        eleves = parser.parse(tmp_path)
+        result = _import_single_pdf(
+            pdf_path=tmp_path,
+            classe_id=classe_id,
+            trimestre=trimestre,
+            pseudonymizer=pseudonymizer,
+            eleve_repo=eleve_repo,
+            synthese_repo=synthese_repo,
+            eleve_count=0,
+        )
 
-        logger.info(f"Parser returned {len(eleves)} eleve(s) from {file.filename}")
-        for i, e in enumerate(eleves):
-            logger.info(
-                f"  [{i}] nom={e.nom}, prenom={e.prenom}, raw_text_len={len(e.raw_text or '')}"
-            )
-
-        imported = []
-        skipped = []
-        for eleve in eleves:
-            # Set trimestre and classe
-            eleve.trimestre = trimestre
-            eleve.classe = classe_id
-
-            # Pseudonymize
-            if eleve.nom:
-                eleve_pseudo = pseudonymizer.pseudonymize(eleve, classe_id)
-            else:
-                eleve_pseudo = eleve
-                eleve_pseudo.eleve_id = f"ELEVE_{len(imported) + len(skipped) + 1:03d}"
-
-            # Save to database (check by eleve_id AND trimestre)
-            if not eleve_repo.exists(eleve_pseudo.eleve_id, trimestre):
-                eleve_repo.create(eleve_pseudo)
-                imported.append(eleve_pseudo.eleve_id)
-            else:
-                skipped.append(eleve_pseudo.eleve_id)
-
+        was_overwritten = result["status"] == "overwritten"
         return {
             "status": "success",
             "filename": file.filename,
             "classe_id": classe_id,
             "trimestre": trimestre,
-            "parsed_count": len(eleves),
-            "imported_count": len(imported),
-            "skipped_count": len(skipped),
-            "eleve_ids": imported,
-            "skipped_ids": skipped,
+            "parsed_count": 1,
+            "imported_count": 1,
+            "overwritten_count": 1 if was_overwritten else 0,
+            "eleve_ids": [result["eleve_id"]],
+            "overwritten_ids": [result["eleve_id"]] if was_overwritten else [],
         }
+
+    except Exception as e:
+        logger.error(f"Error importing {file.filename}: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     finally:
         # Cleanup temp file
@@ -155,52 +229,56 @@ async def import_pdf_batch(
     files: list[UploadFile] = File(...),
     classe_repo: ClasseRepository = Depends(get_classe_repo),
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
+    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Import multiple PDF bulletins."""
+    # Validate class exists or create it
+    classe = classe_repo.get(classe_id)
+    if not classe:
+        from src.storage.repositories.classe import Classe
+
+        classe = Classe(classe_id=classe_id, nom=classe_id)
+        classe_repo.create(classe)
+
     results = []
     total_imported = 0
+    total_overwritten = 0
 
-    for file in files:
+    for i, file in enumerate(files):
         tmp_path = None
         try:
-            # Reuse single import logic
+            # Save uploaded file temporarily
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                 content = await file.read()
                 tmp.write(content)
                 tmp_path = Path(tmp.name)
 
-            parser = get_parser()
-            eleves = parser.parse(tmp_path)
+            result = _import_single_pdf(
+                pdf_path=tmp_path,
+                classe_id=classe_id,
+                trimestre=trimestre,
+                pseudonymizer=pseudonymizer,
+                eleve_repo=eleve_repo,
+                synthese_repo=synthese_repo,
+                eleve_count=total_imported + i,
+            )
 
-            imported = []
-            for eleve in eleves:
-                eleve.trimestre = trimestre
-                eleve.classe = classe_id
-
-                if eleve.nom:
-                    eleve_pseudo = pseudonymizer.pseudonymize(eleve, classe_id)
-                else:
-                    eleve_pseudo = eleve
-                    eleve_pseudo.eleve_id = (
-                        f"ELEVE_{total_imported + len(imported) + 1:03d}"
-                    )
-
-                # Check by eleve_id AND trimestre
-                if not eleve_repo.exists(eleve_pseudo.eleve_id, trimestre):
-                    eleve_repo.create(eleve_pseudo)
-                    imported.append(eleve_pseudo.eleve_id)
+            was_overwritten = result["status"] == "overwritten"
+            total_imported += 1
+            if was_overwritten:
+                total_overwritten += 1
 
             results.append(
                 {
                     "filename": file.filename,
-                    "status": "success",
-                    "imported_count": len(imported),
+                    "status": "overwritten" if was_overwritten else "imported",
+                    "eleve_id": result["eleve_id"],
                 }
             )
-            total_imported += len(imported)
 
         except Exception as e:
+            logger.error(f"Error importing {file.filename}: {e}")
             results.append(
                 {
                     "filename": file.filename,
@@ -208,8 +286,8 @@ async def import_pdf_batch(
                     "error": str(e),
                 }
             )
+
         finally:
-            # Always cleanup temp file, even if parsing fails
             if tmp_path is not None:
                 tmp_path.unlink(missing_ok=True)
 
@@ -217,5 +295,6 @@ async def import_pdf_batch(
         "classe_id": classe_id,
         "trimestre": trimestre,
         "total_imported": total_imported,
+        "total_overwritten": total_overwritten,
         "files": results,
     }
