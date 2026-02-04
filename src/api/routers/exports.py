@@ -114,8 +114,8 @@ async def import_pdf(
                 eleve_pseudo = eleve
                 eleve_pseudo.eleve_id = f"ELEVE_{len(imported) + 1:03d}"
 
-            # Save to database
-            if not eleve_repo.exists(eleve_pseudo.eleve_id):
+            # Save to database (check by eleve_id AND trimestre)
+            if not eleve_repo.exists(eleve_pseudo.eleve_id, trimestre):
                 eleve_repo.create(eleve_pseudo)
                 imported.append(eleve_pseudo.eleve_id)
 
@@ -171,7 +171,8 @@ async def import_pdf_batch(
                         f"ELEVE_{total_imported + len(imported) + 1:03d}"
                     )
 
-                if not eleve_repo.exists(eleve_pseudo.eleve_id):
+                # Check by eleve_id AND trimestre
+                if not eleve_repo.exists(eleve_pseudo.eleve_id, trimestre):
                     eleve_repo.create(eleve_pseudo)
                     imported.append(eleve_pseudo.eleve_id)
 

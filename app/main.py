@@ -8,6 +8,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import streamlit as st
+from components.sidebar import render_sidebar
 from config import get_api_client, ui_settings
 
 st.set_page_config(
@@ -28,81 +29,145 @@ def check_api_connection() -> bool:
         return False
 
 
-# Sidebar
-st.sidebar.title("Chiron")
-st.sidebar.markdown("*Assistant Conseil de Classe*")
-st.sidebar.divider()
-
-# API Status
+# Check API
 api_ok = check_api_connection()
+client = get_api_client()
+
+# Sidebar (global)
+render_sidebar(client)
+
+# API status in sidebar
 if api_ok:
-    st.sidebar.success("API connectee")
+    st.sidebar.success("API connectée", icon="✅")
 else:
     st.sidebar.error("API non disponible")
     st.sidebar.caption(f"URL: {ui_settings.api_base_url}")
 
-st.sidebar.divider()
-st.sidebar.markdown("### Navigation")
-st.sidebar.page_link("main.py", label="Accueil", icon="🏠")
-st.sidebar.page_link("pages/1_import.py", label="Import PDF", icon="📄")
-st.sidebar.page_link("pages/2_review.py", label="Review", icon="✏️")
-st.sidebar.page_link("pages/3_export.py", label="Export", icon="📤")
-
 # Main content
 st.title("Chiron")
-st.markdown("### Assistant IA pour la preparation des conseils de classe")
-
-st.divider()
+st.caption("Assistant IA pour la préparation des conseils de classe")
 
 if not api_ok:
-    st.warning(
+    st.error(
         "L'API n'est pas disponible. Lancez le serveur avec:\n\n"
         "```bash\npython -m uvicorn src.api.main:app --port 8000\n```"
     )
     st.stop()
 
-# Dashboard
-col1, col2, col3 = st.columns(3)
+st.divider()
 
-client = get_api_client()
+# Dashboard - État des lieux
+st.subheader("État des lieux")
 
-# Classes count
+# Fetch data
 try:
     classes = client.list_classes()
-    col1.metric("Classes", len(classes))
 except Exception:
-    col1.metric("Classes", "?")
+    classes = []
 
-# Pending syntheses
+# Metrics row
+col1, col2, col3 = st.columns(3)
+
+total_eleves = 0
+total_syntheses = 0
+total_pending = 0
+
+# Calculate totals
+for classe in classes:
+    try:
+        eleves = client.get_eleves(classe["classe_id"])
+        total_eleves += len(eleves)
+    except Exception:
+        pass
+
 try:
     pending = client.get_pending_syntheses()
-    col2.metric("Syntheses en attente", pending.get("count", 0))
+    total_pending = pending.get("count", 0)
 except Exception:
-    col2.metric("Syntheses en attente", "?")
+    pass
 
-col3.metric("Trimestre actuel", "1")
+col1.metric("Classes", len(classes))
+col2.metric("Élèves importés", total_eleves)
+col3.metric("Synthèses en attente", total_pending)
+
+# Classes table
+if classes:
+    st.markdown("#### Détail par classe")
+
+    table_data = []
+    for classe in classes:
+        classe_id = classe["classe_id"]
+        nom = classe["nom"]
+
+        # Get eleves for each trimester
+        for trimestre in [1, 2, 3]:
+            try:
+                eleves = client.get_eleves(classe_id, trimestre)
+                if not eleves:
+                    continue
+
+                # Count syntheses
+                syntheses_count = 0
+                validated_count = 0
+                for eleve in eleves:
+                    try:
+                        data = client.get_eleve_synthese(eleve["eleve_id"], trimestre)
+                        if data.get("synthese"):
+                            syntheses_count += 1
+                            if data.get("status") == "validated":
+                                validated_count += 1
+                    except Exception:
+                        pass
+
+                table_data.append(
+                    {
+                        "Classe": nom,
+                        "Trimestre": f"T{trimestre}",
+                        "Élèves": len(eleves),
+                        "Synthèses": f"{syntheses_count}/{len(eleves)}",
+                        "Validées": f"{validated_count}/{syntheses_count}"
+                        if syntheses_count
+                        else "-",
+                    }
+                )
+            except Exception:
+                pass
+
+    if table_data:
+        st.dataframe(
+            table_data,
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.info("Aucune donnée importée pour le moment.")
+else:
+    st.info("Aucune classe créée. Utilisez le formulaire dans la barre latérale.")
 
 st.divider()
 
-# Quick actions
-st.markdown("### Actions rapides")
+# Guide
+st.subheader("Comment utiliser Chiron ?")
 
-col1, col2, col3 = st.columns(3)
+st.markdown(
+    """
+**1. Import** — Déposez les bulletins PDF des élèves
+- Sélectionnez une classe et un trimestre dans la barre latérale
+- Allez sur la page **Import** et déposez vos fichiers PDF
+- Les données sont extraites et pseudonymisées automatiquement
 
-with col1:
-    st.markdown("#### 1. Importer")
-    st.markdown("Importez les bulletins PDF des eleves")
-    if st.button("Importer des PDFs", type="primary", use_container_width=True):
-        st.switch_page("pages/1_import.py")
+**2. Review** — Générez et validez les synthèses
+- Sur la page **Review**, générez les synthèses avec l'IA
+- Relisez et modifiez si nécessaire
+- Validez chaque synthèse
 
-with col2:
-    st.markdown("#### 2. Generer & Valider")
-    st.markdown("Generez et validez les syntheses")
-    if st.button("Review syntheses", type="primary", use_container_width=True):
-        st.switch_page("pages/2_review.py")
+**3. Export** — Récupérez vos synthèses
+- Sur la page **Export**, téléchargez le CSV
+- Les noms réels sont restaurés automatiquement
+"""
+)
 
-with col3:
-    st.markdown("#### 3. Exporter")
-    st.markdown("Exportez les syntheses validees")
-    if st.button("Exporter CSV", type="primary", use_container_width=True):
-        st.switch_page("pages/3_export.py")
+st.divider()
+st.caption(
+    "Les données personnelles (noms) sont stockées localement et ne quittent jamais votre machine."
+)

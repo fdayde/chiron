@@ -39,10 +39,16 @@ class EleveResponse(BaseModel):
 @router.get("/{eleve_id}", response_model=EleveResponse)
 def get_eleve(
     eleve_id: str,
+    trimestre: int | None = None,
     repo: EleveRepository = Depends(get_eleve_repo),
 ) -> EleveResponse:
-    """Get a student by ID."""
-    eleve = repo.get(eleve_id)
+    """Get a student by ID and optionally trimester.
+
+    Args:
+        eleve_id: Student identifier.
+        trimestre: Optional trimester. If not provided, returns latest.
+    """
+    eleve = repo.get(eleve_id, trimestre)
     if not eleve:
         raise HTTPException(status_code=404, detail="Student not found")
 
@@ -78,9 +84,13 @@ def get_eleve_synthese(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
     """Get the current synthesis for a student."""
-    eleve = eleve_repo.get(eleve_id)
+    eleve = eleve_repo.get(eleve_id, trimestre)
     if not eleve:
         raise HTTPException(status_code=404, detail="Student not found")
+
+    # Use eleve's trimester if not specified
+    if trimestre is None:
+        trimestre = eleve.trimestre
 
     result = synthese_repo.get_for_eleve_with_metadata(eleve_id, trimestre)
     if not result:
@@ -109,11 +119,20 @@ def get_eleve_synthese(
 @router.delete("/{eleve_id}")
 def delete_eleve(
     eleve_id: str,
+    trimestre: int | None = None,
     repo: EleveRepository = Depends(get_eleve_repo),
 ):
-    """Delete a student."""
-    eleve = repo.get(eleve_id)
+    """Delete a student record.
+
+    Args:
+        eleve_id: Student identifier.
+        trimestre: Optional trimester. If not provided, deletes ALL records for this student.
+    """
+    eleve = repo.get(eleve_id, trimestre)
     if not eleve:
         raise HTTPException(status_code=404, detail="Student not found")
-    repo.delete(eleve_id)
-    return {"status": "deleted", "eleve_id": eleve_id}
+    repo.delete(eleve_id, trimestre)
+
+    if trimestre:
+        return {"status": "deleted", "eleve_id": eleve_id, "trimestre": trimestre}
+    return {"status": "deleted", "eleve_id": eleve_id, "all_trimesters": True}

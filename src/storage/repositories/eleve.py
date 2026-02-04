@@ -1,4 +1,8 @@
-"""Repository for student (eleve) data."""
+"""Repository for student (eleve) data.
+
+Gère le stockage des données élèves avec clé composite (eleve_id, trimestre).
+Un même élève peut avoir plusieurs enregistrements, un par trimestre.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class EleveRepository(DuckDBRepository[EleveExtraction]):
-    """Repository for managing students."""
+    """Repository for managing students.
+
+    Note: La clé primaire est (eleve_id, trimestre), pas eleve_id seul.
+    Utiliser exists(eleve_id, trimestre) pour vérifier l'existence.
+    """
 
     @property
     def table_name(self) -> str:
@@ -25,6 +33,12 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
     def _row_to_entity(self, row: tuple) -> EleveExtraction:
         """Convert database row to EleveExtraction.
 
+        Expected row format from SELECT:
+            0: eleve_id, 1: classe_id, 2: trimestre,
+            3: raw_text, 4: moyenne_generale,
+            5: genre, 6: absences_demi_journees, 7: absences_justifiees, 8: retards,
+            9: engagements, 10: parcours, 11: evenements, 12: matieres
+
         Handles corrupted JSON data gracefully by logging warnings
         and returning empty lists/defaults instead of crashing.
         """
@@ -33,7 +47,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         # Parse matieres with error handling
         matieres = []
         try:
-            matieres_data = json.loads(row[10]) if row[10] else []
+            matieres_data = json.loads(row[12]) if row[12] else []
             matieres = [MatiereExtraction(**m) for m in matieres_data]
         except (json.JSONDecodeError, TypeError, ValueError) as e:
             logger.warning(f"Failed to parse matieres for {eleve_id}: {e}")
@@ -51,46 +65,53 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         return EleveExtraction(
             eleve_id=eleve_id,
             classe=row[1],
-            genre=row[2],
-            trimestre=row[3],
-            absences_demi_journees=row[4],
-            absences_justifiees=row[5],
-            retards=row[6],
-            engagements=safe_json_loads(row[7], "engagements"),
-            parcours=safe_json_loads(row[8], "parcours"),
-            evenements=safe_json_loads(row[9], "evenements"),
+            trimestre=row[2],
+            raw_text=row[3],
+            moyenne_generale=row[4],
+            genre=row[5],
+            absences_demi_journees=row[6],
+            absences_justifiees=row[7],
+            retards=row[8],
+            engagements=safe_json_loads(row[9], "engagements"),
+            parcours=safe_json_loads(row[10], "parcours"),
+            evenements=safe_json_loads(row[11], "evenements"),
             matieres=matieres,
         )
 
     def create(self, eleve: EleveExtraction) -> str:
-        """Create a new student record.
+        """Create a new student record for a specific trimester.
 
         Args:
-            eleve: Student data to store.
+            eleve: Student data to store (must have eleve_id and trimestre).
 
         Returns:
             eleve_id of created student.
 
         Raises:
-            ValueError: If eleve_id is not set.
+            ValueError: If eleve_id or trimestre is not set.
         """
         if not eleve.eleve_id:
             raise ValueError("eleve_id is required")
+        if eleve.trimestre is None:
+            raise ValueError("trimestre is required")
 
         self._execute_write(
             """
             INSERT INTO eleves (
-                eleve_id, classe_id, genre, trimestre,
-                absences_demi_journees, absences_justifiees, retards,
+                eleve_id, classe_id, trimestre,
+                raw_text, moyenne_generale,
+                genre, absences_demi_journees, absences_justifiees, retards,
                 engagements, parcours, evenements, matieres
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 eleve.eleve_id,
                 eleve.classe,
-                eleve.genre,
                 eleve.trimestre,
+                eleve.raw_text,
+                eleve.moyenne_generale,
+                eleve.genre,
                 eleve.absences_demi_journees,
                 eleve.absences_justifiees,
                 eleve.retards,
@@ -102,28 +123,70 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         )
         return eleve.eleve_id
 
-    def get(self, eleve_id: str) -> EleveExtraction | None:
-        """Get a student by ID.
+    def get(
+        self, eleve_id: str, trimestre: int | None = None
+    ) -> EleveExtraction | None:
+        """Get a student by ID and optionally trimester.
 
         Args:
             eleve_id: Student identifier.
+            trimestre: Trimester number. If None, returns the latest.
 
         Returns:
             EleveExtraction or None.
         """
-        result = self._execute_one(
-            """
-            SELECT eleve_id, classe_id, genre, trimestre,
-                   absences_demi_journees, absences_justifiees, retards,
-                   engagements, parcours, evenements, matieres
-            FROM eleves
-            WHERE eleve_id = ?
-            """,
-            [eleve_id],
-        )
+        if trimestre is not None:
+            result = self._execute_one(
+                """
+                SELECT eleve_id, classe_id, trimestre,
+                       raw_text, moyenne_generale,
+                       genre, absences_demi_journees, absences_justifiees, retards,
+                       engagements, parcours, evenements, matieres
+                FROM eleves
+                WHERE eleve_id = ? AND trimestre = ?
+                """,
+                [eleve_id, trimestre],
+            )
+        else:
+            # Return the latest trimester
+            result = self._execute_one(
+                """
+                SELECT eleve_id, classe_id, trimestre,
+                       raw_text, moyenne_generale,
+                       genre, absences_demi_journees, absences_justifiees, retards,
+                       engagements, parcours, evenements, matieres
+                FROM eleves
+                WHERE eleve_id = ?
+                ORDER BY trimestre DESC
+                LIMIT 1
+                """,
+                [eleve_id],
+            )
         if not result:
             return None
         return self._row_to_entity(result)
+
+    def exists(self, eleve_id: str, trimestre: int | None = None) -> bool:
+        """Check if a student record exists.
+
+        Args:
+            eleve_id: Student identifier.
+            trimestre: Trimester number. If None, checks if any record exists.
+
+        Returns:
+            True if exists.
+        """
+        if trimestre is not None:
+            result = self._execute_one(
+                "SELECT 1 FROM eleves WHERE eleve_id = ? AND trimestre = ?",
+                [eleve_id, trimestre],
+            )
+        else:
+            result = self._execute_one(
+                "SELECT 1 FROM eleves WHERE eleve_id = ?",
+                [eleve_id],
+            )
+        return result is not None
 
     def list(self, **filters) -> list[EleveExtraction]:
         """List students with optional filters.
@@ -135,8 +198,9 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             List of students.
         """
         sql = """
-            SELECT eleve_id, classe_id, genre, trimestre,
-                   absences_demi_journees, absences_justifiees, retards,
+            SELECT eleve_id, classe_id, trimestre,
+                   raw_text, moyenne_generale,
+                   genre, absences_demi_journees, absences_justifiees, retards,
                    engagements, parcours, evenements, matieres
             FROM eleves
         """
@@ -153,7 +217,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
 
-        sql += " ORDER BY eleve_id"
+        sql += " ORDER BY eleve_id, trimestre"
 
         results = self._execute(sql, params if params else None)
         return [self._row_to_entity(row) for row in results]
@@ -175,11 +239,12 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             filters["trimestre"] = trimestre
         return self.list(**filters)
 
-    def update(self, eleve_id: str, **updates) -> bool:
+    def update(self, eleve_id: str, trimestre: int, **updates) -> bool:
         """Update a student record.
 
         Args:
             eleve_id: Student identifier.
+            trimestre: Trimester number.
             **updates: Fields to update.
 
         Returns:
@@ -188,17 +253,18 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         if not updates:
             return False
 
-        set_clauses = []
+        set_clauses = ["updated_at = CURRENT_TIMESTAMP"]
         params = []
 
         for key, value in updates.items():
             if key in (
                 "genre",
-                "trimestre",
                 "absences_demi_journees",
                 "absences_justifiees",
                 "retards",
                 "classe_id",
+                "raw_text",
+                "moyenne_generale",
             ):
                 set_clauses.append(f"{key} = ?")
                 params.append(value)
@@ -216,12 +282,35 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
                 else:
                     params.append(json.dumps(value))
 
-        if not set_clauses:
+        if len(set_clauses) == 1:  # Only updated_at
             return False
 
-        params.append(eleve_id)
+        params.extend([eleve_id, trimestre])
         self._execute_write(
-            f"UPDATE eleves SET {', '.join(set_clauses)} WHERE eleve_id = ?",
+            f"UPDATE eleves SET {', '.join(set_clauses)} WHERE eleve_id = ? AND trimestre = ?",
             params,
         )
+        return True
+
+    def delete(self, eleve_id: str, trimestre: int | None = None) -> bool:
+        """Delete a student record.
+
+        Args:
+            eleve_id: Student identifier.
+            trimestre: Trimester number. If None, deletes ALL records for this student.
+
+        Returns:
+            True if deleted.
+        """
+        if trimestre is not None:
+            self._execute_write(
+                "DELETE FROM eleves WHERE eleve_id = ? AND trimestre = ?",
+                [eleve_id, trimestre],
+            )
+        else:
+            # Delete all trimesters for this student
+            self._execute_write(
+                "DELETE FROM eleves WHERE eleve_id = ?",
+                [eleve_id],
+            )
         return True

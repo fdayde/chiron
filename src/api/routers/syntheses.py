@@ -89,13 +89,13 @@ def generate_synthese(
     Raises:
         HTTPException: 404 if student not found, 500 on generation error.
     """
-    # 1. Fetch student data
-    eleve = eleve_repo.get(data.eleve_id)
+    # 1. Fetch student data for the specific trimester
+    eleve = eleve_repo.get(data.eleve_id, data.trimestre)
     if not eleve:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    # Set trimestre from request
-    eleve.trimestre = data.trimestre
+        raise HTTPException(
+            status_code=404,
+            detail=f"Student {data.eleve_id} not found for trimester {data.trimestre}",
+        )
 
     # 2. Create generator with requested provider/model
     generator = get_synthese_generator(

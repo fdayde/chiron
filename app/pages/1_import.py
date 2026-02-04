@@ -9,7 +9,7 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
-from components.sidebar import render_classe_selector, render_new_classe_form
+from components.sidebar import render_sidebar
 from config import LLM_PROVIDERS, get_api_client, ui_settings
 
 st.set_page_config(
@@ -20,38 +20,33 @@ st.set_page_config(
 
 client = get_api_client()
 
-# Sidebar
-st.sidebar.title("Chiron")
-st.sidebar.markdown("*Import PDF*")
-st.sidebar.divider()
-
-classe_id, trimestre = render_classe_selector(client, key="import_classe")
-render_new_classe_form(client)
+# Global sidebar
+classe_id, trimestre = render_sidebar(client)
 
 # Main content
 st.title("Import des bulletins PDF")
 
 if not classe_id:
-    st.warning("Selectionnez ou creez une classe dans la barre laterale.")
+    st.warning("Sélectionnez une classe dans la barre latérale.")
     st.stop()
 
-st.markdown(f"**Classe:** {classe_id} | **Trimestre:** {trimestre}")
+st.markdown(f"**Classe:** {classe_id} | **Trimestre:** T{trimestre}")
 
 st.divider()
 
 # File uploader
 uploaded_files = st.file_uploader(
-    "Deposez les fichiers PDF des bulletins",
+    "Déposez les fichiers PDF des bulletins",
     type=["pdf"],
     accept_multiple_files=True,
     key="pdf_uploader",
 )
 
 if uploaded_files:
-    st.markdown(f"### {len(uploaded_files)} fichier(s) selectionne(s)")
+    st.markdown(f"### {len(uploaded_files)} fichier(s) sélectionné(s)")
 
     # Preview
-    with st.expander("Apercu des fichiers"):
+    with st.expander("Aperçu des fichiers"):
         for f in uploaded_files:
             st.caption(f"- {f.name} ({f.size / 1024:.1f} Ko)")
 
@@ -69,14 +64,14 @@ if uploaded_files:
 
     with col2:
         auto_generate = st.checkbox(
-            "Auto-generer syntheses",
+            "Auto-générer synthèses",
             value=False,
-            help="Generer automatiquement les syntheses apres l'import",
+            help="Générer automatiquement les synthèses après l'import",
         )
 
     # LLM settings for auto-generation (expandable)
     if auto_generate:
-        with st.expander("Parametres LLM", expanded=False):
+        with st.expander("Paramètres LLM", expanded=False):
             col1, col2 = st.columns(2)
             with col1:
                 provider = st.selectbox(
@@ -88,14 +83,14 @@ if uploaded_files:
                 )
             with col2:
                 provider_config = LLM_PROVIDERS[provider]
-                model_options = ["(defaut)"] + provider_config["models"]
+                model_options = ["(défaut)"] + provider_config["models"]
                 model = st.selectbox(
-                    "Modele",
+                    "Modèle",
                     options=model_options,
                     index=0,
                     key="import_llm_model",
                 )
-                if model == "(defaut)":
+                if model == "(défaut)":
                     model = None
     else:
         provider = ui_settings.default_provider
@@ -126,21 +121,24 @@ if uploaded_files:
 
             progress_bar.progress((i + 1) / total)
 
+        progress_bar.empty()
+        status_text.empty()
+
         # Results
-        st.markdown("### Resultats de l'import")
+        st.markdown("### Résultats de l'import")
 
         success_count = sum(1 for r in results if r["status"] == "success")
         error_count = sum(1 for r in results if r["status"] == "error")
 
         col1, col2 = st.columns(2)
-        col1.metric("Succes", success_count)
+        col1.metric("Succès", success_count)
         col2.metric("Erreurs", error_count)
 
         for r in results:
             if r["status"] == "success":
                 result = r["result"]
                 st.success(
-                    f"{r['file']}: {result.get('imported_count', 0)} eleve(s) importe(s)"
+                    f"{r['file']}: {result.get('imported_count', 0)} élève(s) importé(s)"
                 )
                 if result.get("eleve_ids"):
                     st.caption(f"IDs: {', '.join(result['eleve_ids'])}")
@@ -150,7 +148,7 @@ if uploaded_files:
         # Phase 2: Auto-generate syntheses if enabled
         if auto_generate and imported_eleve_ids:
             st.divider()
-            st.markdown("### Generation automatique des syntheses")
+            st.markdown("### Génération automatique des synthèses")
 
             gen_progress = st.progress(0)
             gen_status = st.empty()
@@ -160,7 +158,7 @@ if uploaded_files:
 
             for i, eleve_id in enumerate(imported_eleve_ids):
                 gen_status.text(
-                    f"Generation {i + 1}/{len(imported_eleve_ids)}: {eleve_id}..."
+                    f"Génération {i + 1}/{len(imported_eleve_ids)}: {eleve_id}..."
                 )
 
                 try:
@@ -182,28 +180,29 @@ if uploaded_files:
             gen_status.empty()
 
             col1, col2 = st.columns(2)
-            col1.metric("Syntheses generees", gen_success)
-            col2.metric("Tokens utilises", total_tokens)
+            col1.metric("Synthèses générées", gen_success)
+            col2.metric("Tokens utilisés", total_tokens)
 
             if gen_error > 0:
-                st.warning(f"{gen_error} erreur(s) de generation")
+                st.warning(f"{gen_error} erreur(s) de génération")
 
         st.divider()
 
-        if st.button("Aller a la page Review", type="primary"):
+        if st.button("Aller à Review", type="primary"):
             st.switch_page("pages/2_review.py")
 
 else:
-    st.info("Selectionnez un ou plusieurs fichiers PDF a importer.")
+    st.info("Sélectionnez un ou plusieurs fichiers PDF à importer.")
 
     # Instructions
     with st.expander("Instructions"):
-        st.markdown("""
-        1. Selectionnez la classe cible dans la barre laterale
-        2. Choisissez le trimestre
-        3. Deposez les fichiers PDF des bulletins
-        4. Cliquez sur "Importer"
+        st.markdown(
+            """
+1. Sélectionnez la classe et le trimestre dans la barre latérale
+2. Déposez les fichiers PDF des bulletins ci-dessus
+3. Cliquez sur "Importer"
 
-        Les bulletins seront parses et les donnees des eleves extraites automatiquement.
-        Les noms sont pseudonymises pour la conformite RGPD.
-        """)
+Les bulletins seront parsés et les données des élèves extraites automatiquement.
+Les noms sont pseudonymisés pour la conformité RGPD.
+        """
+        )

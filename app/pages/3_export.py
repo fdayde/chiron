@@ -9,7 +9,7 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
-from components.sidebar import render_classe_selector
+from components.sidebar import render_sidebar
 from config import get_api_client, ui_settings
 
 st.set_page_config(
@@ -20,21 +20,17 @@ st.set_page_config(
 
 client = get_api_client()
 
-# Sidebar
-st.sidebar.title("Chiron")
-st.sidebar.markdown("*Export*")
-st.sidebar.divider()
-
-classe_id, trimestre = render_classe_selector(client, key="export_classe")
+# Global sidebar
+classe_id, trimestre = render_sidebar(client)
 
 # Main content
-st.title("Export des syntheses")
+st.title("Export des synthèses")
 
 if not classe_id:
-    st.warning("Selectionnez une classe dans la barre laterale.")
+    st.warning("Sélectionnez une classe dans la barre latérale.")
     st.stop()
 
-st.markdown(f"**Classe:** {classe_id} | **Trimestre:** {trimestre}")
+st.markdown(f"**Classe:** {classe_id} | **Trimestre:** T{trimestre}")
 
 st.divider()
 
@@ -58,39 +54,39 @@ for eleve in eleves:
                 {
                     "eleve_id": eleve["eleve_id"],
                     "synthese": synthese,
-                    "status": synthese.get("status", "unknown"),
+                    "status": data.get("status", "unknown"),
                 }
             )
-            if synthese.get("status") == "validated":
+            if data.get("status") == "validated":
                 validated_count += 1
     except Exception:
         pass
 
 # Statistics
 col1, col2, col3 = st.columns(3)
-col1.metric("Total eleves", len(eleves))
-col2.metric("Syntheses generees", len(syntheses_data))
-col3.metric("Syntheses validees", validated_count)
+col1.metric("Total élèves", len(eleves))
+col2.metric("Synthèses générées", len(syntheses_data))
+col3.metric("Synthèses validées", validated_count)
 
 st.divider()
 
 # Preview
-st.markdown("### Apercu")
+st.markdown("### Aperçu")
 
 if syntheses_data:
     # Filter options
     filter_status = st.selectbox(
-        "Filtrer par status",
-        options=["Toutes", "Validees uniquement", "En attente uniquement"],
+        "Filtrer par statut",
+        options=["Toutes", "Validées uniquement", "En attente uniquement"],
     )
 
     filtered = syntheses_data
-    if filter_status == "Validees uniquement":
+    if filter_status == "Validées uniquement":
         filtered = [s for s in syntheses_data if s["status"] == "validated"]
     elif filter_status == "En attente uniquement":
         filtered = [s for s in syntheses_data if s["status"] != "validated"]
 
-    st.caption(f"{len(filtered)} synthese(s)")
+    st.caption(f"{len(filtered)} synthèse(s)")
 
     # Table preview
     for item in filtered[:10]:  # Show first 10
@@ -111,15 +107,15 @@ if syntheses_data:
                 alertes = synthese.get("alertes", [])
                 reussites = synthese.get("reussites", [])
                 if alertes or reussites:
-                    st.caption(f"Alertes: {len(alertes)} | Reussites: {len(reussites)}")
+                    st.caption(f"Alertes: {len(alertes)} | Réussites: {len(reussites)}")
 
     if len(filtered) > 10:
         st.caption(f"... et {len(filtered) - 10} autre(s)")
 
 else:
-    st.info("Aucune synthese a exporter.")
-    st.markdown("Generez des syntheses depuis la page **Review**.")
-    if st.button("Aller a Review"):
+    st.info("Aucune synthèse à exporter.")
+    st.markdown("Générez des synthèses depuis la page **Review**.")
+    if st.button("Aller à Review"):
         st.switch_page("pages/2_review.py")
     st.stop()
 
@@ -132,12 +128,12 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("#### CSV")
-    st.caption("Export des syntheses validees au format CSV")
+    st.caption("Export des synthèses validées au format CSV")
 
     if validated_count == 0:
-        st.warning("Aucune synthese validee a exporter.")
+        st.warning("Aucune synthèse validée à exporter.")
     else:
-        if st.button("Telecharger CSV", type="primary", use_container_width=True):
+        if st.button("Télécharger CSV", type="primary", use_container_width=True):
             try:
                 csv_content = client.export_csv(classe_id, trimestre)
                 st.download_button(
@@ -151,7 +147,7 @@ with col1:
 
 with col2:
     st.markdown("#### Presse-papiers")
-    st.caption("Copier les syntheses pour coller dans un document")
+    st.caption("Copier les synthèses pour coller dans un document")
 
     if st.button("Copier au presse-papiers", use_container_width=True):
         # Build text content

@@ -1,8 +1,19 @@
 """Database schema definitions for DuckDB.
 
-Deux bases de données :
-- chiron.duckdb : données pseudonymisées (peut être synchronisé/backupé)
-- privacy.duckdb : mapping nom ↔ eleve_id (reste en local uniquement)
+Architecture à deux bases de données (séparation RGPD) :
+
+┌─────────────────────────────────────────────────────────────────┐
+│  data/db/chiron.duckdb - Données pseudonymisées                 │
+│  ✓ Peut être synchronisé, backupé, partagé                      │
+│  Tables: classes, eleves, syntheses, exemples_fewshot           │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  data/db/privacy.duckdb - Mapping identités (CONFIDENTIEL)      │
+│  ✗ NE JAMAIS partager, synchroniser ou backuper sur le cloud    │
+│  Table: mapping_identites (eleve_id ↔ nom/prénom réels)         │
+│  Géré par: src/privacy/pseudonymizer.py                         │
+└─────────────────────────────────────────────────────────────────┘
 """
 
 # ============================================================================
@@ -23,16 +34,15 @@ TABLES = {
     """,
     "eleves": """
         CREATE TABLE IF NOT EXISTS eleves (
-            eleve_id VARCHAR PRIMARY KEY,
+            eleve_id VARCHAR NOT NULL,
             classe_id VARCHAR REFERENCES classes(classe_id),
-            trimestre INTEGER,
+            trimestre INTEGER NOT NULL,
 
             -- Données extraites (ANONYMISÉES)
-            raw_text_ocr TEXT,
-            raw_text_anonymise TEXT,
-            donnees_json JSON,
+            raw_text TEXT,
+            moyenne_generale FLOAT,
 
-            -- Champs structurés (extraits de donnees_json)
+            -- Champs structurés
             genre VARCHAR,
             absences_demi_journees INTEGER,
             absences_justifiees BOOLEAN,
@@ -49,14 +59,17 @@ TABLES = {
             ocr_duration_ms INTEGER,
 
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+            -- Clé primaire composite : un élève peut avoir plusieurs trimestres
+            PRIMARY KEY (eleve_id, trimestre)
         )
     """,
     "syntheses": """
         CREATE TABLE IF NOT EXISTS syntheses (
             id VARCHAR PRIMARY KEY,
-            eleve_id VARCHAR REFERENCES eleves(eleve_id),
-            trimestre INTEGER,
+            eleve_id VARCHAR NOT NULL,
+            trimestre INTEGER NOT NULL,
             status VARCHAR DEFAULT 'draft',
 
             -- Contenu généré
