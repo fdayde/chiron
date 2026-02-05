@@ -12,6 +12,12 @@ def fetch_classes(_client: ChironAPIClient) -> list[dict]:
     return _client.list_classes()
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def fetch_classe(_client: ChironAPIClient, classe_id: str) -> dict:
+    """Fetch a single class, cached for 60 seconds."""
+    return _client.get_classe(classe_id)
+
+
 @st.cache_data(ttl=30, show_spinner=False)
 def fetch_eleves_with_syntheses(
     _client: ChironAPIClient, classe_id: str, trimestre: int

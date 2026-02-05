@@ -29,10 +29,12 @@ class UISettings(BaseSettings):
 ui_settings = UISettings()
 
 
+@st.cache_data
 def get_llm_providers() -> dict:
     """Retourne les providers LLM disponibles avec leurs modèles.
 
     Les modèles sont extraits de src/llm/config.py pour éviter la duplication.
+    Cached to avoid rebuilding on every import.
     """
     return {
         "openai": {
@@ -53,7 +55,7 @@ def get_llm_providers() -> dict:
     }
 
 
-# Pour compatibilité avec le code existant
+# Pour compatibilité avec le code existant (cached)
 LLM_PROVIDERS = get_llm_providers()
 
 

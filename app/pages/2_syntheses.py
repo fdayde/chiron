@@ -9,9 +9,11 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
+from api_client import ChironAPIClient
 from components.appreciations_view import render_appreciations, render_eleve_header
 from components.data_helpers import (
     clear_eleves_cache,
+    fetch_classe,
     fetch_eleve,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
@@ -43,9 +45,9 @@ if not classe_id:
     st.warning("Sélectionnez une classe dans la barre latérale.")
     st.stop()
 
-# Get class name
+# Get class name (cached)
 try:
-    classe_info = client.get_classe(classe_id)
+    classe_info = fetch_classe(client, classe_id)
     classe_nom = classe_info.get("nom", classe_id)
 except Exception:
     classe_nom = classe_id
@@ -130,33 +132,44 @@ with st.expander("🤖 Génération batch", expanded=counts["missing"] > 0):
     with col2:
         render_cost_estimate(provider, model, counts["total"])
 
-        if st.button("Tout régénérer", width="stretch"):
-            st.warning("Cette action va régénérer toutes les synthèses existantes.")
+        @st.dialog("Confirmer la régénération")
+        def confirm_regen_all():
+            st.warning(
+                f"Cette action va régénérer **toutes les {counts['total']} synthèses**."
+            )
+            st.caption("Les synthèses existantes seront supprimées et recréées.")
 
-            if st.button("Confirmer", key="confirm_regen_all"):
-                all_ids = [e["eleve_id"] for e in eleves_data]
-                progress = st.progress(0)
-                status = st.empty()
+            col_cancel, col_confirm = st.columns(2)
+            with col_cancel:
+                if st.button("Annuler", key="cancel_regen"):
+                    st.rerun()
+            with col_confirm:
+                if st.button("Confirmer", key="do_regen", type="primary"):
+                    all_ids = [e["eleve_id"] for e in eleves_data]
+                    progress = st.progress(0)
+                    status = st.empty()
 
-                for i, eleve_id in enumerate(all_ids):
-                    status.text(f"Régénération {i + 1}/{len(all_ids)}")
-                    try:
-                        # Delete existing if any
-                        synth_data = eleves_data[i]
-                        if synth_data.get("synthese_id"):
-                            client.delete_synthese(synth_data["synthese_id"])
-                        client.generate_synthese(
-                            eleve_id, trimestre, provider=provider, model=model
-                        )
-                    except Exception:
-                        pass
-                    progress.progress((i + 1) / len(all_ids))
+                    for i, eid in enumerate(all_ids):
+                        status.text(f"Régénération {i + 1}/{len(all_ids)}")
+                        try:
+                            synth_data = eleves_data[i]
+                            if synth_data.get("synthese_id"):
+                                client.delete_synthese(synth_data["synthese_id"])
+                            client.generate_synthese(
+                                eid, trimestre, provider=provider, model=model
+                            )
+                        except Exception:
+                            pass
+                        progress.progress((i + 1) / len(all_ids))
 
-                progress.empty()
-                status.empty()
-                clear_eleves_cache()
-                st.success("Régénération terminée")
-                st.rerun()
+                    progress.empty()
+                    status.empty()
+                    clear_eleves_cache()
+                    st.success("Régénération terminée")
+                    st.rerun()
+
+        if st.button("Tout régénérer", key="regen_all_btn"):
+            confirm_regen_all()
 
 st.divider()
 
@@ -212,100 +225,119 @@ if "current_index" not in st.session_state:
 if st.session_state.current_index >= len(filtered):
     st.session_state.current_index = 0
 
-# Navigation controls
-col1, col2, col3 = st.columns([1, 2, 1])
-
-with col1:
-    if st.button(
-        "◀ Précédent", disabled=st.session_state.current_index == 0, width="stretch"
-    ):
-        st.session_state.current_index -= 1
-        st.rerun()
-
-with col2:
-    current_pos = st.session_state.current_index + 1
-    st.markdown(
-        f"<h3 style='text-align: center;'>{current_pos} / {len(filtered)}</h3>",
-        unsafe_allow_html=True,
-    )
-
-with col3:
-    if st.button(
-        "Suivant ▶",
-        disabled=st.session_state.current_index >= len(filtered) - 1,
-        width="stretch",
-    ):
-        st.session_state.current_index += 1
-        st.rerun()
-
-st.divider()
 
 # =============================================================================
-# SECTION: SIDE-BY-SIDE CONTENT
+# SECTION: STUDENT VIEW (Fragment - only this reruns on navigation)
 # =============================================================================
+@st.fragment
+def render_student_view(
+    filtered_eleves: list,
+    client_ref: ChironAPIClient,
+    trimestre_val: int,
+    provider_val: str,
+    model_val: str,
+):
+    """Render student navigation and details as a fragment.
 
-current = filtered[st.session_state.current_index]
-eleve_id = current["eleve_id"]
+    This fragment reruns independently, avoiding full page reload on navigation.
+    """
+    # Navigation controls
+    col1, col2, col3 = st.columns([1, 2, 1])
 
-# Fetch full student data (with matieres) and synthese - cached
-try:
-    eleve_full = fetch_eleve(client, eleve_id)
-except Exception as e:
-    st.error(f"Erreur chargement élève: {e}")
-    eleve_full = None
+    with col1:
+        if st.button(
+            "◀ Précédent",
+            disabled=st.session_state.current_index == 0,
+            key="nav_prev",
+        ):
+            st.session_state.current_index -= 1
+            st.rerun(scope="fragment")
 
-try:
-    synthese_data = fetch_eleve_synthese(client, eleve_id, trimestre)
-    synthese = synthese_data.get("synthese")
-    synthese_id = synthese_data.get("synthese_id")
-except Exception:
-    synthese = None
-    synthese_id = None
+    with col2:
+        current_pos = st.session_state.current_index + 1
+        st.markdown(
+            f"<h3 style='text-align: center;'>{current_pos} / {len(filtered_eleves)}</h3>",
+            unsafe_allow_html=True,
+        )
 
-# Student header with real name
-status_badge = ""
-if current.get("synthese_status") == "validated":
-    status_badge = " ✅"
-elif current.get("has_synthese"):
-    status_badge = " ⏳"
+    with col3:
+        if st.button(
+            "Suivant ▶",
+            disabled=st.session_state.current_index >= len(filtered_eleves) - 1,
+            key="nav_next",
+        ):
+            st.session_state.current_index += 1
+            st.rerun(scope="fragment")
 
-# Display real name if available
-if eleve_full:
-    prenom = eleve_full.get("prenom_reel") or ""
-    nom = eleve_full.get("nom_reel") or ""
-    nom_complet = f"{prenom} {nom}".strip()
-    display_name = nom_complet if nom_complet else eleve_id
-else:
-    display_name = eleve_id
+    st.divider()
 
-st.markdown(f"### {display_name}{status_badge}")
-st.caption(f"ID: {eleve_id}")
+    # Current student
+    current = filtered_eleves[st.session_state.current_index]
+    eleve_id = current["eleve_id"]
 
-# Two columns: Appreciations | Synthese
-col_left, col_right = st.columns(2)
+    # Fetch full student data (with matieres) and synthese - cached
+    try:
+        eleve_full = fetch_eleve(client_ref, eleve_id)
+    except Exception as e:
+        st.error(f"Erreur chargement élève: {e}")
+        eleve_full = None
 
-with col_left:
-    st.markdown("#### Appréciations")
+    try:
+        synthese_data = fetch_eleve_synthese(client_ref, eleve_id, trimestre_val)
+        synthese = synthese_data.get("synthese")
+        synthese_id = synthese_data.get("synthese_id")
+    except Exception:
+        synthese = None
+        synthese_id = None
+
+    # Student header with real name
+    status_badge = ""
+    if current.get("synthese_status") == "validated":
+        status_badge = " ✅"
+    elif current.get("has_synthese"):
+        status_badge = " ⏳"
+
+    # Display real name if available
     if eleve_full:
-        render_eleve_header(eleve_full)
-        render_appreciations(eleve_full)
+        prenom = eleve_full.get("prenom_reel") or ""
+        nom = eleve_full.get("nom_reel") or ""
+        nom_complet = f"{prenom} {nom}".strip()
+        display_name = nom_complet if nom_complet else eleve_id
     else:
-        st.warning("Données élève non disponibles")
+        display_name = eleve_id
 
-with col_right:
-    st.markdown("#### Synthèse")
-    action_done = render_synthese_editor(
-        client=client,
-        eleve_id=eleve_id,
-        synthese=synthese,
-        synthese_id=synthese_id,
-        trimestre=trimestre,
-        provider=provider,
-        model=model,
-    )
+    st.markdown(f"### {display_name}{status_badge}")
+    st.caption(f"ID: {eleve_id}")
 
-    if action_done:
-        st.rerun()
+    # Two columns: Appreciations | Synthese
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        st.markdown("#### Appréciations")
+        if eleve_full:
+            render_eleve_header(eleve_full)
+            render_appreciations(eleve_full)
+        else:
+            st.warning("Données élève non disponibles")
+
+    with col_right:
+        st.markdown("#### Synthèse")
+        action_done = render_synthese_editor(
+            client=client_ref,
+            eleve_id=eleve_id,
+            synthese=synthese,
+            synthese_id=synthese_id,
+            trimestre=trimestre_val,
+            provider=provider_val,
+            model=model_val,
+        )
+
+        if action_done:
+            st.rerun(scope="fragment")
+
+
+# Render the fragment
+render_student_view(filtered, client, trimestre, provider, model)
 
 # =============================================================================
 # FOOTER: PROGRESS & NAVIGATION

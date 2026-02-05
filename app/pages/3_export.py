@@ -10,6 +10,7 @@ sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
 from components.data_helpers import (
+    fetch_classe,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
     fetch_export_csv,
@@ -39,9 +40,9 @@ if not classe_id:
     st.warning("Sélectionnez une classe dans la barre latérale.")
     st.stop()
 
-# Get class name
+# Get class name (cached)
 try:
-    classe_info = client.get_classe(classe_id)
+    classe_info = fetch_classe(client, classe_id)
     classe_nom = classe_info.get("nom", classe_id)
 except Exception:
     classe_nom = classe_id
