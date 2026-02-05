@@ -73,25 +73,6 @@ col4.metric("Trimestre", f"T{trimestre}")
 
 st.divider()
 
-# Batch actions
-st.markdown("### Actions groupées")
-
-if st.button("Valider toutes les synthèses", width="stretch"):
-    try:
-        pending = client.get_pending_syntheses(classe_id)
-        validated = 0
-        for item in pending.get("pending", []):
-            synthese_id = item.get("synthese_id")
-            if synthese_id:
-                client.validate_synthese(synthese_id)
-                validated += 1
-        st.success(f"{validated} synthèses validées!")
-        st.rerun()
-    except Exception as e:
-        st.error(f"Erreur: {e}")
-
-st.divider()
-
 # Student list
 st.markdown("### Élèves")
 
