@@ -13,9 +13,8 @@ def render_eleve_header(eleve: dict) -> None:
     """
     col1, col2, col3, col4 = st.columns(4)
 
-    genre = eleve.get("genre", "?")
-    genre_icon = "👦" if genre == "M" else "👧" if genre == "F" else "?"
-    col1.metric("Genre", genre_icon)
+    genre = eleve.get("genre") or "?"
+    col1.metric("Genre", genre)
 
     absences = eleve.get("absences_demi_journees", 0) or 0
     col2.metric("Absences", absences)

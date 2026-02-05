@@ -19,8 +19,7 @@ def render_eleve_card(eleve: dict, synthese: dict | None = None) -> None:
         with col1:
             st.markdown(f"### {eleve['eleve_id']}")
             if eleve.get("genre"):
-                genre_icon = "👦" if eleve["genre"] == "M" else "👧"
-                st.caption(f"{genre_icon} {eleve.get('classe', 'N/A')}")
+                st.caption(f"{eleve['genre']} - {eleve.get('classe', 'N/A')}")
 
         with col2:
             absences = eleve.get("absences_demi_journees", 0) or 0

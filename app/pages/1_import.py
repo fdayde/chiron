@@ -205,11 +205,7 @@ else:
         rows.append(
             {
                 "Élève": e["eleve_id"],
-                "Genre": "👦"
-                if e.get("genre") == "M"
-                else "👧"
-                if e.get("genre") == "F"
-                else "?",
+                "Genre": e.get("genre") or "?",
                 "Abs.": e.get("absences_demi_journees", 0) or 0,
                 "Synthèse": "✓" if e.get("has_synthese") else "-",
                 "Statut": e.get("synthese_status", "-") or "-",
