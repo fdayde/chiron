@@ -181,6 +181,8 @@ def generate_synthese(
             "provider": metadata["llm_provider"],
             "model": metadata["llm_model"],
             "duration_ms": duration_ms,
+            "tokens_input": metadata.get("tokens_input"),
+            "tokens_output": metadata.get("tokens_output"),
             "tokens_total": metadata.get("tokens_total"),
             "prompt_template": CURRENT_PROMPT,
         },

@@ -16,6 +16,9 @@ class ChironAPIClient:
     # Extended timeout for LLM generation (can take 30-60s)
     LLM_TIMEOUT = 120.0
 
+    # Extended timeout for PDF import (NER model loading can take 60s+ first time)
+    IMPORT_TIMEOUT = 300.0
+
     def __init__(self, base_url: str | None = None) -> None:
         self.base_url = base_url or os.getenv(
             "CHIRON_UI_API_BASE_URL", "http://localhost:8000"
@@ -181,7 +184,7 @@ class ChironAPIClient:
         self, file_content: bytes, filename: str, classe_id: str, trimestre: int
     ) -> dict:
         """Import a PDF bulletin."""
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.IMPORT_TIMEOUT) as client:
             response = client.post(
                 f"{self.base_url}/import/pdf",
                 params={"classe_id": classe_id, "trimestre": trimestre},
@@ -197,7 +200,7 @@ class ChironAPIClient:
         trimestre: int,
     ) -> dict:
         """Import multiple PDF bulletins."""
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.IMPORT_TIMEOUT) as client:
             files_data = [
                 ("files", (name, content, "application/pdf")) for name, content in files
             ]

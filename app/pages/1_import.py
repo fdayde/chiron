@@ -68,18 +68,28 @@ if uploaded_files:
         for f in uploaded_files:
             st.caption(f"- {f.name} ({f.size / 1024:.1f} Ko)")
 
-    # Check for existing students
+    # Check for existing students and syntheses
     try:
         existing_eleves = client.get_eleves(classe_id, trimestre)
         existing_count = len(existing_eleves)
+        # Count how many have syntheses
+        syntheses_count = 0
+        for eleve in existing_eleves:
+            try:
+                synth = client.get_eleve_synthese(eleve["eleve_id"], trimestre)
+                if synth and synth.get("synthese"):
+                    syntheses_count += 1
+            except Exception:
+                pass
     except Exception:
         existing_count = 0
+        syntheses_count = 0
 
     if existing_count > 0:
-        st.warning(
-            f"**{existing_count} élève(s) existant(s)** pour cette classe/trimestre. "
-            "Les données seront écrasées (élèves + synthèses)."
-        )
+        details = f"**{existing_count} élève(s)** (bulletins)"
+        if syntheses_count > 0:
+            details += f" dont **{syntheses_count}** avec synthèse"
+        st.warning(f"{details} seront écrasés.")
 
     st.divider()
 

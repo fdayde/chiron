@@ -117,20 +117,20 @@ def render_new_classe_form(client: ChironAPIClient) -> dict | None:
             submitted = st.form_submit_button("Créer", use_container_width=True)
 
             if submitted:
-                # Build class name with format: "3A_2024-2025"
-                if groupe:
-                    nom = f"{niveau[0]}{groupe}_{annee}"
+                if not groupe:
+                    st.error("Le groupe est requis (ex: A, B, 1...)")
                 else:
-                    nom = f"{niveau}_{annee}"
+                    # Build class name with format: "3A_2024-2025"
+                    nom = f"{niveau[0]}{groupe}_{annee}"
 
-                try:
-                    result = client.create_classe(nom, niveau, annee)
-                    st.success(f"Classe {nom} créée!")
-                    st.session_state.classe_id = result["classe_id"]
-                    st.rerun()
-                    return result
-                except Exception as e:
-                    st.error(f"Erreur: {e}")
+                    try:
+                        result = client.create_classe(nom, niveau, annee)
+                        st.success(f"Classe {nom} créée!")
+                        st.session_state.classe_id = result["classe_id"]
+                        st.rerun()
+                        return result
+                    except Exception as e:
+                        st.error(f"Erreur: {e}")
 
     return None
 

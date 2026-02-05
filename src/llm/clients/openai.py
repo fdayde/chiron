@@ -91,6 +91,13 @@ class OpenAIClient(LLMClient):
         success = False
         error_type = None
 
+        # Debug: log les paramètres envoyés
+        logger.info(
+            f"OpenAI API call: model={model}, "
+            f"max_completion_tokens={kwargs.get('max_completion_tokens')}, "
+            f"response_format={kwargs.get('response_format')}"
+        )
+
         try:
             # Appel API
             response = await self._client.chat.completions.create(
