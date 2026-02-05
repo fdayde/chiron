@@ -228,4 +228,4 @@ else:
         st.info(f"⏳ {counts['pending']} synthèse(s) en attente de validation")
 
     if st.button("Générer et revoir les synthèses →", type="primary", width="stretch"):
-        st.switch_page("pages/2_review.py")
+        st.switch_page("pages/2_syntheses.py")

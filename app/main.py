@@ -231,8 +231,8 @@ with col1:
         st.switch_page("pages/1_import.py")
 
 with col2:
-    if st.button("🤖 Revoir les synthèses", width="stretch"):
-        st.switch_page("pages/2_review.py")
+    if st.button("🤖 Synthèses", width="stretch"):
+        st.switch_page("pages/2_syntheses.py")
 
 with col3:
     if st.button("📤 Exporter", width="stretch"):

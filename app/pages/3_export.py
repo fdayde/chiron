@@ -93,7 +93,7 @@ if counts["missing"] > 0:
         if len(missing_ids) > 10:
             st.caption(f"... et {len(missing_ids) - 10} autre(s)")
         if st.button("Aller générer →"):
-            st.switch_page("pages/2_review.py")
+            st.switch_page("pages/2_syntheses.py")
 
 if counts["pending"] > 0:
     pending_ids = [
@@ -116,7 +116,7 @@ if counts["total"] == 0:
 if counts["validated"] == 0:
     st.warning("Aucune synthèse validée à exporter.")
     if st.button("Aller valider →"):
-        st.switch_page("pages/2_review.py")
+        st.switch_page("pages/2_syntheses.py")
     st.stop()
 
 st.divider()
