@@ -6,6 +6,7 @@ from datetime import date
 
 import streamlit as st
 from api_client import ChironAPIClient
+from components.data_helpers import clear_classes_cache, fetch_classes
 
 
 def _get_current_school_year() -> str:
@@ -54,9 +55,9 @@ def render_sidebar(client: ChironAPIClient) -> tuple[str | None, int]:
 
 def _render_classe_selector(client: ChironAPIClient):
     """Render class and trimester selector, storing values in session state."""
-    # Get classes
+    # Get classes (cached)
     try:
-        classes = client.list_classes()
+        classes = fetch_classes(client)
     except Exception:
         classes = []
 
@@ -127,6 +128,7 @@ def render_new_classe_form(client: ChironAPIClient) -> dict | None:
                         result = client.create_classe(nom, niveau, annee)
                         st.success(f"Classe {nom} créée!")
                         st.session_state.classe_id = result["classe_id"]
+                        clear_classes_cache()
                         st.rerun()
                         return result
                     except Exception as e:

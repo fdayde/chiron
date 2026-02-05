@@ -23,15 +23,20 @@ class ChironAPIClient:
         self.base_url = base_url or os.getenv(
             "CHIRON_UI_API_BASE_URL", "http://localhost:8000"
         )
+        # Persistent client for connection reuse (avoids TCP handshake overhead)
+        self._client = httpx.Client(timeout=self.DEFAULT_TIMEOUT)
 
     def _get(
         self, endpoint: str, params: dict | None = None, timeout: float | None = None
     ) -> dict | list:
         """Make a GET request."""
-        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
-            response = client.get(f"{self.base_url}{endpoint}", params=params)
-            response.raise_for_status()
-            return response.json()
+        response = self._client.get(
+            f"{self.base_url}{endpoint}",
+            params=params,
+            timeout=timeout or self.DEFAULT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def _post(
         self,
@@ -41,24 +46,33 @@ class ChironAPIClient:
         timeout: float | None = None,
     ) -> dict:
         """Make a POST request."""
-        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
-            response = client.post(f"{self.base_url}{endpoint}", json=json, files=files)
-            response.raise_for_status()
-            return response.json()
+        response = self._client.post(
+            f"{self.base_url}{endpoint}",
+            json=json,
+            files=files,
+            timeout=timeout or self.DEFAULT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def _patch(self, endpoint: str, json: dict, timeout: float | None = None) -> dict:
         """Make a PATCH request."""
-        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
-            response = client.patch(f"{self.base_url}{endpoint}", json=json)
-            response.raise_for_status()
-            return response.json()
+        response = self._client.patch(
+            f"{self.base_url}{endpoint}",
+            json=json,
+            timeout=timeout or self.DEFAULT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def _delete(self, endpoint: str, timeout: float | None = None) -> dict:
         """Make a DELETE request."""
-        with httpx.Client(timeout=timeout or self.DEFAULT_TIMEOUT) as client:
-            response = client.delete(f"{self.base_url}{endpoint}")
-            response.raise_for_status()
-            return response.json()
+        response = self._client.delete(
+            f"{self.base_url}{endpoint}",
+            timeout=timeout or self.DEFAULT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
 
     # Classes
     def list_classes(
@@ -198,14 +212,14 @@ class ChironAPIClient:
         self, file_content: bytes, filename: str, classe_id: str, trimestre: int
     ) -> dict:
         """Import a PDF bulletin."""
-        with httpx.Client(timeout=self.IMPORT_TIMEOUT) as client:
-            response = client.post(
-                f"{self.base_url}/import/pdf",
-                params={"classe_id": classe_id, "trimestre": trimestre},
-                files={"file": (filename, file_content, "application/pdf")},
-            )
-            response.raise_for_status()
-            return response.json()
+        response = self._client.post(
+            f"{self.base_url}/import/pdf",
+            params={"classe_id": classe_id, "trimestre": trimestre},
+            files={"file": (filename, file_content, "application/pdf")},
+            timeout=self.IMPORT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def import_pdf_batch(
         self,
@@ -214,27 +228,26 @@ class ChironAPIClient:
         trimestre: int,
     ) -> dict:
         """Import multiple PDF bulletins."""
-        with httpx.Client(timeout=self.IMPORT_TIMEOUT) as client:
-            files_data = [
-                ("files", (name, content, "application/pdf")) for name, content in files
-            ]
-            response = client.post(
-                f"{self.base_url}/import/pdf/batch",
-                params={"classe_id": classe_id, "trimestre": trimestre},
-                files=files_data,
-            )
-            response.raise_for_status()
-            return response.json()
+        files_data = [
+            ("files", (name, content, "application/pdf")) for name, content in files
+        ]
+        response = self._client.post(
+            f"{self.base_url}/import/pdf/batch",
+            params={"classe_id": classe_id, "trimestre": trimestre},
+            files=files_data,
+            timeout=self.IMPORT_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def export_csv(self, classe_id: str, trimestre: int) -> bytes:
         """Export validated syntheses as CSV."""
-        with httpx.Client() as client:
-            response = client.get(
-                f"{self.base_url}/export/csv",
-                params={"classe_id": classe_id, "trimestre": trimestre},
-            )
-            response.raise_for_status()
-            return response.content
+        response = self._client.get(
+            f"{self.base_url}/export/csv",
+            params={"classe_id": classe_id, "trimestre": trimestre},
+        )
+        response.raise_for_status()
+        return response.content
 
     # Health
     def health(self) -> dict:

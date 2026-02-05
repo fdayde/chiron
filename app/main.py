@@ -8,6 +8,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import streamlit as st
+from components.data_helpers import fetch_classes
 from components.sidebar import render_sidebar
 from config import get_api_client, ui_settings
 
@@ -59,33 +60,52 @@ st.divider()
 # Dashboard - État des lieux
 st.subheader("État des lieux")
 
-# Fetch data
+# Fetch data (cached)
 try:
-    classes = client.list_classes()
+    classes = fetch_classes(client)
 except Exception:
     classes = []
 
-# Metrics row
-col1, col2, col3 = st.columns(3)
-
+# Build stats table using get_classe_stats (optimized: ~15 calls instead of ~450)
+table_data = []
 total_eleves = 0
-total_syntheses = 0
+total_validated = 0
 total_pending = 0
 
-# Calculate totals
 for classe in classes:
-    try:
-        eleves = client.get_eleves(classe["classe_id"])
-        total_eleves += len(eleves)
-    except Exception:
-        pass
+    classe_id = classe["classe_id"]
+    nom = classe["nom"]
 
-try:
-    pending = client.get_pending_syntheses()
-    total_pending = pending.get("count", 0)
-except Exception:
-    pass
+    for trimestre in [1, 2, 3]:
+        try:
+            stats = client.get_classe_stats(classe_id, trimestre)
+            eleve_count = stats.get("eleve_count", 0)
+            if eleve_count == 0:
+                continue
 
+            synthese_count = stats.get("synthese_count", 0)
+            validated_count = stats.get("validated_count", 0)
+
+            total_eleves += eleve_count
+            total_validated += validated_count
+            total_pending += synthese_count - validated_count
+
+            table_data.append(
+                {
+                    "Classe": nom,
+                    "Trimestre": f"T{trimestre}",
+                    "Élèves": eleve_count,
+                    "Synthèses": f"{synthese_count}/{eleve_count}",
+                    "Validées": f"{validated_count}/{synthese_count}"
+                    if synthese_count
+                    else "-",
+                }
+            )
+        except Exception:
+            pass
+
+# Metrics row
+col1, col2, col3 = st.columns(3)
 col1.metric("Classes", len(classes))
 col2.metric("Élèves importés", total_eleves)
 col3.metric("Synthèses en attente", total_pending)
@@ -93,45 +113,6 @@ col3.metric("Synthèses en attente", total_pending)
 # Classes table
 if classes:
     st.markdown("#### Détail par classe")
-
-    table_data = []
-    for classe in classes:
-        classe_id = classe["classe_id"]
-        nom = classe["nom"]
-
-        # Get eleves for each trimester
-        for trimestre in [1, 2, 3]:
-            try:
-                eleves = client.get_eleves(classe_id, trimestre)
-                if not eleves:
-                    continue
-
-                # Count syntheses
-                syntheses_count = 0
-                validated_count = 0
-                for eleve in eleves:
-                    try:
-                        data = client.get_eleve_synthese(eleve["eleve_id"], trimestre)
-                        if data.get("synthese"):
-                            syntheses_count += 1
-                            if data.get("status") == "validated":
-                                validated_count += 1
-                    except Exception:
-                        pass
-
-                table_data.append(
-                    {
-                        "Classe": nom,
-                        "Trimestre": f"T{trimestre}",
-                        "Élèves": len(eleves),
-                        "Synthèses": f"{syntheses_count}/{len(eleves)}",
-                        "Validées": f"{validated_count}/{syntheses_count}"
-                        if syntheses_count
-                        else "-",
-                    }
-                )
-            except Exception:
-                pass
 
     if table_data:
         st.dataframe(

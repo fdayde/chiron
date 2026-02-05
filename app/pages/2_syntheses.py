@@ -12,6 +12,8 @@ import streamlit as st
 from components.appreciations_view import render_appreciations, render_eleve_header
 from components.data_helpers import (
     clear_eleves_cache,
+    fetch_eleve,
+    fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
     get_status_counts,
 )
@@ -245,15 +247,15 @@ st.divider()
 current = filtered[st.session_state.current_index]
 eleve_id = current["eleve_id"]
 
-# Fetch full student data (with matieres) and synthese
+# Fetch full student data (with matieres) and synthese - cached
 try:
-    eleve_full = client.get_eleve(eleve_id)
+    eleve_full = fetch_eleve(client, eleve_id)
 except Exception as e:
     st.error(f"Erreur chargement élève: {e}")
     eleve_full = None
 
 try:
-    synthese_data = client.get_eleve_synthese(eleve_id, trimestre)
+    synthese_data = fetch_eleve_synthese(client, eleve_id, trimestre)
     synthese = synthese_data.get("synthese")
     synthese_id = synthese_data.get("synthese_id")
 except Exception:

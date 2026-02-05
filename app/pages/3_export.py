@@ -9,7 +9,12 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
-from components.data_helpers import fetch_eleves_with_syntheses, get_status_counts
+from components.data_helpers import (
+    fetch_eleve_synthese,
+    fetch_eleves_with_syntheses,
+    fetch_export_csv,
+    get_status_counts,
+)
 from components.sidebar import render_sidebar
 from config import get_api_client, ui_settings
 
@@ -127,13 +132,13 @@ st.divider()
 
 st.markdown("### 👁️ Aperçu")
 
-# Get full syntheses for preview
+# Get full syntheses for preview (using cached function)
 syntheses_data = []
 for eleve in eleves_data:
     if not eleve.get("has_synthese"):
         continue
     try:
-        data = client.get_eleve_synthese(eleve["eleve_id"], trimestre)
+        data = fetch_eleve_synthese(client, eleve["eleve_id"], trimestre)
         synthese = data.get("synthese")
         if synthese:
             syntheses_data.append(
@@ -203,7 +208,7 @@ with col1:
         st.warning("Aucune synthèse validée")
     else:
         try:
-            csv_content = client.export_csv(classe_id, trimestre)
+            csv_content = fetch_export_csv(client, classe_id, trimestre)
             st.download_button(
                 label=f"Télécharger CSV ({counts['validated']} synthèses)",
                 data=csv_content,
