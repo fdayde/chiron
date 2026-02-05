@@ -8,6 +8,7 @@ from pydantic import BaseModel, field_validator
 
 from src.api.dependencies import (
     get_eleve_repo,
+    get_pseudonymizer,
     get_synthese_generator,
     get_synthese_repo,
 )
@@ -15,6 +16,7 @@ from src.core.models import Alerte, Reussite
 from src.generation.prompt_builder import format_eleve_data
 from src.generation.prompts import CURRENT_PROMPT, get_prompt_hash
 from src.llm.config import settings as llm_settings
+from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
 
@@ -77,6 +79,7 @@ def generate_synthese(
     data: GenerateRequest,
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
+    pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Generate a synthesis for a student using LLM.
 
@@ -125,6 +128,13 @@ def generate_synthese(
         ) from e
 
     duration_ms = int((time.perf_counter() - start_time) * 1000)
+
+    # 3b. Depseudonymize synthesis text (replace ELEVE_XXX with real name)
+    classe_id = eleve.classe
+    if classe_id:
+        synthese.synthese_texte = pseudonymizer.depseudonymize_text(
+            synthese.synthese_texte, classe_id
+        )
 
     # 4. Delete existing synthesis for this eleve/trimestre (allows regeneration)
     deleted_count = synthese_repo.delete_for_eleve(data.eleve_id, data.trimestre)

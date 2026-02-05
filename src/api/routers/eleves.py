@@ -3,7 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from src.api.dependencies import get_eleve_repo, get_synthese_repo
+from src.api.dependencies import get_eleve_repo, get_pseudonymizer, get_synthese_repo
+from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
 
@@ -24,6 +25,8 @@ class EleveResponse(BaseModel):
     """Response model for a student."""
 
     eleve_id: str
+    nom_reel: str | None = None
+    prenom_reel: str | None = None
     classe: str | None
     genre: str | None
     trimestre: int | None
@@ -41,6 +44,7 @@ def get_eleve(
     eleve_id: str,
     trimestre: int | None = None,
     repo: EleveRepository = Depends(get_eleve_repo),
+    pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ) -> EleveResponse:
     """Get a student by ID and optionally trimester.
 
@@ -52,8 +56,32 @@ def get_eleve(
     if not eleve:
         raise HTTPException(status_code=404, detail="Student not found")
 
+    # Get real name from privacy database
+    mapping = pseudonymizer.depseudonymize(eleve_id)
+    nom_reel = mapping.get("nom_original") if mapping else None
+    prenom_reel = mapping.get("prenom_original") if mapping else None
+
+    # Depseudonymize appreciations in matieres
+    classe_id = eleve.classe
+    matieres_depseudo = []
+    for m in eleve.matieres:
+        appreciation = m.appreciation
+        if classe_id and appreciation:
+            appreciation = pseudonymizer.depseudonymize_text(appreciation, classe_id)
+        matieres_depseudo.append(
+            MatiereResponse(
+                nom=m.nom,
+                professeur=m.professeur,
+                moyenne_eleve=m.moyenne_eleve,
+                moyenne_classe=m.moyenne_classe,
+                appreciation=appreciation,
+            )
+        )
+
     return EleveResponse(
         eleve_id=eleve.eleve_id,
+        nom_reel=nom_reel,
+        prenom_reel=prenom_reel,
         classe=eleve.classe,
         genre=eleve.genre,
         trimestre=eleve.trimestre,
@@ -63,16 +91,7 @@ def get_eleve(
         engagements=eleve.engagements,
         parcours=eleve.parcours,
         evenements=eleve.evenements,
-        matieres=[
-            MatiereResponse(
-                nom=m.nom,
-                professeur=m.professeur,
-                moyenne_eleve=m.moyenne_eleve,
-                moyenne_classe=m.moyenne_classe,
-                appreciation=m.appreciation,
-            )
-            for m in eleve.matieres
-        ],
+        matieres=matieres_depseudo,
     )
 
 

@@ -256,14 +256,24 @@ except Exception:
     synthese = None
     synthese_id = None
 
-# Student ID header
+# Student header with real name
 status_badge = ""
 if current.get("synthese_status") == "validated":
     status_badge = " ✅"
 elif current.get("has_synthese"):
     status_badge = " ⏳"
 
-st.markdown(f"### {eleve_id}{status_badge}")
+# Display real name if available
+if eleve_full:
+    prenom = eleve_full.get("prenom_reel") or ""
+    nom = eleve_full.get("nom_reel") or ""
+    nom_complet = f"{prenom} {nom}".strip()
+    display_name = nom_complet if nom_complet else eleve_id
+else:
+    display_name = eleve_id
+
+st.markdown(f"### {display_name}{status_badge}")
+st.caption(f"ID: {eleve_id}")
 
 # Two columns: Appreciations | Synthese
 col_left, col_right = st.columns(2)
