@@ -74,12 +74,16 @@ col4.metric("En attente", counts["pending"])
 st.divider()
 
 # =============================================================================
+# SECTION: LLM CONFIG (always visible)
+# =============================================================================
+
+provider, model = render_llm_selector("syntheses")
+
+# =============================================================================
 # SECTION: BATCH GENERATION
 # =============================================================================
 
 with st.expander("🤖 Génération batch", expanded=counts["missing"] > 0):
-    provider, model = render_llm_selector("review")
-
     col1, col2 = st.columns(2)
 
     with col1:
