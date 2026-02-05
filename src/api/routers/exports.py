@@ -68,9 +68,12 @@ def export_csv(
 
     csv_content = output.getvalue()
 
+    # Add UTF-8 BOM for Excel compatibility
+    csv_bytes = ("\ufeff" + csv_content).encode("utf-8")
+
     return StreamingResponse(
-        io.StringIO(csv_content),
-        media_type="text/csv",
+        io.BytesIO(csv_bytes),
+        media_type="text/csv; charset=utf-8",
         headers={
             "Content-Disposition": (
                 f"attachment; filename=syntheses_{classe_id}_T{trimestre}.csv"
