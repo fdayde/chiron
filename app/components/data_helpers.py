@@ -19,6 +19,27 @@ def fetch_classe(_client: ChironAPIClient, classe_id: str) -> dict:
 
 
 @st.cache_data(ttl=30, show_spinner=False)
+def fetch_classe_stats(
+    _client: ChironAPIClient, classe_id: str, trimestre: int
+) -> dict | None:
+    """Fetch class stats, cached for 30 seconds. Returns None on error."""
+    try:
+        return _client.get_classe_stats(classe_id, trimestre)
+    except Exception:
+        return None
+
+
+@st.cache_data(ttl=10, show_spinner=False)
+def check_api_health(_client: ChironAPIClient) -> bool:
+    """Check API health, cached for 10 seconds."""
+    try:
+        _client.health()
+        return True
+    except Exception:
+        return False
+
+
+@st.cache_data(ttl=30, show_spinner=False)
 def fetch_eleves_with_syntheses(
     _client: ChironAPIClient, classe_id: str, trimestre: int
 ) -> list[dict]:

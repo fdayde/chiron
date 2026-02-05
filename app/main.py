@@ -8,7 +8,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import streamlit as st
-from components.data_helpers import fetch_classes
+from components.data_helpers import check_api_health, fetch_classe_stats, fetch_classes
 from components.sidebar import render_sidebar
 from config import get_api_client, ui_settings
 
@@ -20,19 +20,9 @@ st.set_page_config(
 )
 
 
-def check_api_connection() -> bool:
-    """Check if API is available."""
-    try:
-        client = get_api_client()
-        client.health()
-        return True
-    except Exception:
-        return False
-
-
-# Check API
-api_ok = check_api_connection()
+# Get API client and check connection (cached)
 client = get_api_client()
+api_ok = check_api_health(client)
 
 # Sidebar (global)
 render_sidebar(client)
@@ -66,7 +56,7 @@ try:
 except Exception:
     classes = []
 
-# Build stats table using get_classe_stats (optimized: ~15 calls instead of ~450)
+# Build stats table using cached get_classe_stats
 table_data = []
 total_eleves = 0
 total_validated = 0
@@ -77,32 +67,32 @@ for classe in classes:
     nom = classe["nom"]
 
     for trimestre in [1, 2, 3]:
-        try:
-            stats = client.get_classe_stats(classe_id, trimestre)
-            eleve_count = stats.get("eleve_count", 0)
-            if eleve_count == 0:
-                continue
+        stats = fetch_classe_stats(client, classe_id, trimestre)
+        if not stats:
+            continue
 
-            synthese_count = stats.get("synthese_count", 0)
-            validated_count = stats.get("validated_count", 0)
+        eleve_count = stats.get("eleve_count", 0)
+        if eleve_count == 0:
+            continue
 
-            total_eleves += eleve_count
-            total_validated += validated_count
-            total_pending += synthese_count - validated_count
+        synthese_count = stats.get("synthese_count", 0)
+        validated_count = stats.get("validated_count", 0)
 
-            table_data.append(
-                {
-                    "Classe": nom,
-                    "Trimestre": f"T{trimestre}",
-                    "Élèves": eleve_count,
-                    "Synthèses": f"{synthese_count}/{eleve_count}",
-                    "Validées": f"{validated_count}/{synthese_count}"
-                    if synthese_count
-                    else "-",
-                }
-            )
-        except Exception:
-            pass
+        total_eleves += eleve_count
+        total_validated += validated_count
+        total_pending += synthese_count - validated_count
+
+        table_data.append(
+            {
+                "Classe": nom,
+                "Trimestre": f"T{trimestre}",
+                "Élèves": eleve_count,
+                "Synthèses": f"{synthese_count}/{eleve_count}",
+                "Validées": f"{validated_count}/{synthese_count}"
+                if synthese_count
+                else "-",
+            }
+        )
 
 # Metrics row
 col1, col2, col3 = st.columns(3)
