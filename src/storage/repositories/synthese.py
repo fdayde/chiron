@@ -410,3 +410,54 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             }
             for row in results
         ]
+
+    def get_stats(self, classe_id: str, trimestre: int) -> dict:
+        """Get aggregated statistics for a class and trimester.
+
+        Args:
+            classe_id: Class identifier.
+            trimestre: Trimester number.
+
+        Returns:
+            Dict with aggregated stats (count, tokens, cost, etc.)
+        """
+        result = self._execute_one(
+            """
+            SELECT
+                COUNT(*) as count,
+                SUM(COALESCE(tokens_input, 0)) as total_tokens_input,
+                SUM(COALESCE(tokens_output, 0)) as total_tokens_output,
+                SUM(COALESCE(tokens_total, 0)) as total_tokens,
+                SUM(COALESCE(llm_cost, 0)) as total_cost,
+                COUNT(CASE WHEN status = 'validated' THEN 1 END) as validated_count,
+                COUNT(CASE WHEN status = 'generated' THEN 1 END) as generated_count,
+                COUNT(CASE WHEN status = 'edited' THEN 1 END) as edited_count
+            FROM syntheses s
+            JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
+            WHERE e.classe_id = ? AND s.trimestre = ?
+            """,
+            [classe_id, trimestre],
+        )
+
+        if not result:
+            return {
+                "count": 0,
+                "tokens_input": 0,
+                "tokens_output": 0,
+                "tokens_total": 0,
+                "cost_usd": 0.0,
+                "validated_count": 0,
+                "generated_count": 0,
+                "edited_count": 0,
+            }
+
+        return {
+            "count": result[0] or 0,
+            "tokens_input": result[1] or 0,
+            "tokens_output": result[2] or 0,
+            "tokens_total": result[3] or 0,
+            "cost_usd": round(result[4] or 0, 4),
+            "validated_count": result[5] or 0,
+            "generated_count": result[6] or 0,
+            "edited_count": result[7] or 0,
+        }

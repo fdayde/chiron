@@ -238,14 +238,22 @@ if uploaded_files:
                 gen_progress.empty()
                 gen_status.empty()
 
-                # Calculate actual cost
-                total_tokens = total_tokens_input + total_tokens_output
-                actual_cost = calculate_actual_cost(
-                    provider, model, total_tokens_input, total_tokens_output
-                )
+                # Get stats from database (persistent data)
+                try:
+                    stats = client.get_classe_stats(classe_id, trimestre)
+                    total_tokens = stats.get("tokens_total", 0)
+                    actual_cost = stats.get("cost_usd", 0)
+                    synthese_count = stats.get("synthese_count", gen_success)
+                except Exception:
+                    # Fallback to in-memory calculation
+                    total_tokens = total_tokens_input + total_tokens_output
+                    actual_cost = calculate_actual_cost(
+                        provider, model, total_tokens_input, total_tokens_output
+                    )
+                    synthese_count = gen_success
 
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Synthèses générées", gen_success)
+                col1.metric("Synthèses générées", synthese_count)
                 col2.metric("Tokens utilisés", f"{total_tokens:,}")
                 col3.metric("Coût réel", f"${actual_cost:.4f}")
 

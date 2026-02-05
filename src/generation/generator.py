@@ -137,6 +137,7 @@ class SyntheseGenerator:
             "tokens_input": llm_metadata.get("input_tokens"),
             "tokens_output": llm_metadata.get("output_tokens"),
             "tokens_total": llm_metadata.get("total_tokens"),
+            "cost_usd": llm_metadata.get("cost_usd"),
             "retry_count": llm_metadata.get("retry_count", 1),
         }
 

@@ -89,6 +89,10 @@ class ChironAPIClient:
         """Delete a class."""
         return self._delete(f"/classes/{classe_id}")
 
+    def get_classe_stats(self, classe_id: str, trimestre: int) -> dict:
+        """Get aggregated statistics for a class and trimester."""
+        return self._get(f"/classes/{classe_id}/stats", {"trimestre": trimestre})
+
     # Eleves
     def get_eleves(self, classe_id: str, trimestre: int | None = None) -> list[dict]:
         """Get students for a class."""

@@ -3,9 +3,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from src.api.dependencies import get_classe_repo, get_eleve_repo
+from src.api.dependencies import get_classe_repo, get_eleve_repo, get_synthese_repo
 from src.storage.repositories.classe import Classe, ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
+from src.storage.repositories.synthese import SyntheseRepository
 
 router = APIRouter()
 
@@ -133,6 +134,44 @@ def get_classe_eleves(
         }
         for e in eleves
     ]
+
+
+@router.get("/{classe_id}/stats")
+def get_classe_stats(
+    classe_id: str,
+    trimestre: int,
+    classe_repo: ClasseRepository = Depends(get_classe_repo),
+    eleve_repo: EleveRepository = Depends(get_eleve_repo),
+    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
+):
+    """Get aggregated statistics for a class and trimester.
+
+    Returns counts, tokens, and cost for all syntheses.
+    """
+    classe = classe_repo.get(classe_id)
+    if not classe:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    # Get student count
+    eleves = eleve_repo.get_by_classe(classe_id, trimestre)
+    eleve_count = len(eleves)
+
+    # Get synthesis stats
+    stats = synthese_repo.get_stats(classe_id, trimestre)
+
+    return {
+        "classe_id": classe_id,
+        "trimestre": trimestre,
+        "eleve_count": eleve_count,
+        "synthese_count": stats["count"],
+        "validated_count": stats["validated_count"],
+        "generated_count": stats["generated_count"],
+        "edited_count": stats["edited_count"],
+        "tokens_input": stats["tokens_input"],
+        "tokens_output": stats["tokens_output"],
+        "tokens_total": stats["tokens_total"],
+        "cost_usd": stats["cost_usd"],
+    }
 
 
 @router.delete("/{classe_id}")

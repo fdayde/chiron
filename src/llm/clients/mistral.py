@@ -153,6 +153,11 @@ class MistralClient(LLMClient):
                 f"{latency_ms:.0f}ms - Content length: {len(content)} chars"
             )
 
+            # Calculer le coût
+            cost_usd = self.pricing_calc.calculate(
+                model, prompt_tokens, completion_tokens
+            )
+
             # Collecter métriques
             metric = LLMCallMetrics(
                 provider=self.provider_name,
@@ -163,9 +168,7 @@ class MistralClient(LLMClient):
                 latency_ms=latency_ms,
                 success=success,
                 error_type=None,
-                cost_usd=self.pricing_calc.calculate(
-                    model, prompt_tokens, completion_tokens
-                ),
+                cost_usd=cost_usd,
             )
             metrics_collector.collect(metric)
 
@@ -175,6 +178,7 @@ class MistralClient(LLMClient):
                 "completion_tokens": completion_tokens,
                 "total_tokens": total_tokens,
                 "model": model,
+                "cost_usd": cost_usd,
             }
 
         except Exception as e:

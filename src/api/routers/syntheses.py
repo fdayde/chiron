@@ -147,6 +147,7 @@ def generate_synthese(
         "tokens_input": llm_metadata.get("tokens_input"),
         "tokens_output": llm_metadata.get("tokens_output"),
         "tokens_total": llm_metadata.get("tokens_total"),
+        "llm_cost": llm_metadata.get("cost_usd"),
         "llm_duration_ms": duration_ms,
         "llm_temperature": data.temperature,
         "retry_count": llm_metadata.get("retry_count", 1),
