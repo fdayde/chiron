@@ -87,16 +87,14 @@ class OpenAIClient(LLMClient):
         if max_tokens_key not in kwargs:
             kwargs[max_tokens_key] = settings.default_max_tokens
 
+        # GPT-5 Nano nécessite plus de tokens pour le raisonnement interne
+        # Sans ça, il retourne un contenu vide (finish_reason: length)
+        if "nano" in model.lower() and kwargs.get(max_tokens_key, 0) < 16000:
+            kwargs[max_tokens_key] = 16000
+
         start_time = time.time()
         success = False
         error_type = None
-
-        # Debug: log les paramètres envoyés
-        logger.info(
-            f"OpenAI API call: model={model}, "
-            f"max_completion_tokens={kwargs.get('max_completion_tokens')}, "
-            f"response_format={kwargs.get('response_format')}"
-        )
 
         try:
             # Appel API
