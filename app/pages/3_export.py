@@ -9,6 +9,7 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
+from components.data_helpers import fetch_eleves_with_syntheses, get_status_counts
 from components.sidebar import render_sidebar
 from config import get_api_client, ui_settings
 
@@ -23,8 +24,11 @@ client = get_api_client()
 # Global sidebar
 classe_id, trimestre = render_sidebar(client)
 
-# Main content
-st.title("Export des synthèses")
+# =============================================================================
+# HEADER
+# =============================================================================
+
+st.title("Export & Bilan")
 
 if not classe_id:
     st.warning("Sélectionnez une classe dans la barre latérale.")
@@ -41,18 +45,93 @@ st.markdown(f"**Classe:** {classe_nom} | **Trimestre:** T{trimestre}")
 
 st.divider()
 
-# Get students and syntheses
+# =============================================================================
+# SECTION: RÉCAPITULATIF
+# =============================================================================
+
+st.markdown("### 📊 Récapitulatif")
+
+# Fetch data
 try:
-    eleves = client.get_eleves(classe_id, trimestre)
+    eleves_data = fetch_eleves_with_syntheses(client, classe_id, trimestre)
+    counts = get_status_counts(eleves_data)
 except Exception as e:
     st.error(f"Erreur: {e}")
-    eleves = []
+    st.stop()
 
-# Count validated syntheses
-validated_count = 0
+# Stats élèves
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Élèves", counts["total"])
+col2.metric("Synthèses générées", counts["with_synthese"])
+col3.metric("Synthèses validées", counts["validated"])
+col4.metric("En attente", counts["pending"])
+
+# Stats coûts LLM
+try:
+    stats = client.get_classe_stats(classe_id, trimestre)
+
+    st.markdown("### 💰 Coûts de génération")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Tokens entrée", f"{stats.get('tokens_input', 0):,}")
+    col2.metric("Tokens sortie", f"{stats.get('tokens_output', 0):,}")
+    col3.metric("Tokens total", f"{stats.get('tokens_total', 0):,}")
+    col4.metric("Coût total", f"${stats.get('cost_usd', 0):.4f}")
+except Exception:
+    pass  # Stats non disponibles, on skip silencieusement
+
+st.divider()
+
+# =============================================================================
+# SECTION: WARNINGS
+# =============================================================================
+
+if counts["missing"] > 0:
+    missing_ids = [e["eleve_id"] for e in eleves_data if not e.get("has_synthese")]
+    with st.container(border=True):
+        st.warning(f"⚠️ **{counts['missing']} élève(s) sans synthèse**")
+        st.caption(f"IDs: {', '.join(missing_ids[:10])}")
+        if len(missing_ids) > 10:
+            st.caption(f"... et {len(missing_ids) - 10} autre(s)")
+        if st.button("Aller générer →"):
+            st.switch_page("pages/2_review.py")
+
+if counts["pending"] > 0:
+    pending_ids = [
+        e["eleve_id"]
+        for e in eleves_data
+        if e.get("has_synthese") and e.get("synthese_status") != "validated"
+    ]
+    with st.container(border=True):
+        st.info(f"ℹ️ **{counts['pending']} synthèse(s) non validée(s)**")
+        st.caption(f"IDs: {', '.join(pending_ids[:10])}")
+        if len(pending_ids) > 10:
+            st.caption(f"... et {len(pending_ids) - 10} autre(s)")
+
+if counts["total"] == 0:
+    st.info("Aucun élève importé. Commencez par importer des bulletins.")
+    if st.button("Aller à Import"):
+        st.switch_page("pages/1_import.py")
+    st.stop()
+
+if counts["validated"] == 0:
+    st.warning("Aucune synthèse validée à exporter.")
+    if st.button("Aller valider →"):
+        st.switch_page("pages/2_review.py")
+    st.stop()
+
+st.divider()
+
+# =============================================================================
+# SECTION: PREVIEW
+# =============================================================================
+
+st.markdown("### 👁️ Aperçu")
+
+# Get full syntheses for preview
 syntheses_data = []
-
-for eleve in eleves:
+for eleve in eleves_data:
+    if not eleve.get("has_synthese"):
+        continue
     try:
         data = client.get_eleve_synthese(eleve["eleve_id"], trimestre)
         synthese = data.get("synthese")
@@ -64,72 +143,55 @@ for eleve in eleves:
                     "status": data.get("status", "unknown"),
                 }
             )
-            if data.get("status") == "validated":
-                validated_count += 1
     except Exception:
         pass
 
-# Statistics
-col1, col2, col3 = st.columns(3)
-col1.metric("Total élèves", len(eleves))
-col2.metric("Synthèses générées", len(syntheses_data))
-col3.metric("Synthèses validées", validated_count)
+# Filter options
+filter_status = st.selectbox(
+    "Filtrer par statut",
+    options=["Toutes", "Validées uniquement", "En attente uniquement"],
+)
 
-st.divider()
-
-# Preview
-st.markdown("### Aperçu")
-
-if syntheses_data:
-    # Filter options
-    filter_status = st.selectbox(
-        "Filtrer par statut",
-        options=["Toutes", "Validées uniquement", "En attente uniquement"],
-    )
-
-    filtered = syntheses_data
-    if filter_status == "Validées uniquement":
-        filtered = [s for s in syntheses_data if s["status"] == "validated"]
-    elif filter_status == "En attente uniquement":
-        filtered = [s for s in syntheses_data if s["status"] != "validated"]
-
-    st.caption(f"{len(filtered)} synthèse(s)")
-
-    # Table preview
-    for item in filtered[:10]:  # Show first 10
-        with st.container(border=True):
-            col1, col2 = st.columns([1, 4])
-
-            with col1:
-                st.markdown(f"**{item['eleve_id']}**")
-                status_icon = "✅" if item["status"] == "validated" else "⏳"
-                st.caption(f"{status_icon} {item['status']}")
-
-            with col2:
-                synthese = item["synthese"]
-                text = synthese.get("synthese_texte", "")
-                st.markdown(text[:200] + "..." if len(text) > 200 else text)
-
-                # Insights summary
-                alertes = synthese.get("alertes", [])
-                reussites = synthese.get("reussites", [])
-                if alertes or reussites:
-                    st.caption(f"Alertes: {len(alertes)} | Réussites: {len(reussites)}")
-
-    if len(filtered) > 10:
-        st.caption(f"... et {len(filtered) - 10} autre(s)")
-
+if filter_status == "Validées uniquement":
+    filtered = [s for s in syntheses_data if s["status"] == "validated"]
+elif filter_status == "En attente uniquement":
+    filtered = [s for s in syntheses_data if s["status"] != "validated"]
 else:
-    st.info("Aucune synthèse à exporter.")
-    st.markdown("Générez des synthèses depuis la page **Review**.")
-    if st.button("Aller à Review"):
-        st.switch_page("pages/2_review.py")
-    st.stop()
+    filtered = syntheses_data
+
+st.caption(f"{len(filtered)} synthèse(s)")
+
+# Preview cards
+for item in filtered[:5]:
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 4])
+
+        with col1:
+            st.markdown(f"**{item['eleve_id']}**")
+            status_icon = "✅" if item["status"] == "validated" else "⏳"
+            st.caption(f"{status_icon} {item['status']}")
+
+        with col2:
+            synthese = item["synthese"]
+            text = synthese.get("synthese_texte", "")
+            st.markdown(text[:250] + "..." if len(text) > 250 else text)
+
+            # Insights summary
+            alertes = synthese.get("alertes", [])
+            reussites = synthese.get("reussites", [])
+            if alertes or reussites:
+                st.caption(f"Alertes: {len(alertes)} | Réussites: {len(reussites)}")
+
+if len(filtered) > 5:
+    st.caption(f"... et {len(filtered) - 5} autre(s)")
 
 st.divider()
 
-# Export actions
-st.markdown("### Export")
+# =============================================================================
+# SECTION: EXPORT
+# =============================================================================
+
+st.markdown("### 📤 Export")
 
 col1, col2 = st.columns(2)
 
@@ -137,29 +199,32 @@ with col1:
     st.markdown("#### CSV")
     st.caption("Export des synthèses validées au format CSV")
 
-    if validated_count == 0:
-        st.warning("Aucune synthèse validée à exporter.")
+    if counts["validated"] == 0:
+        st.warning("Aucune synthèse validée")
     else:
-        if st.button("Télécharger CSV", type="primary", width="stretch"):
-            try:
-                csv_content = client.export_csv(classe_id, trimestre)
-                st.download_button(
-                    label="Sauvegarder le fichier",
-                    data=csv_content,
-                    file_name=f"syntheses_{classe_id}_T{trimestre}.csv",
-                    mime="text/csv",
-                )
-            except Exception as e:
-                st.error(f"Erreur: {e}")
+        try:
+            csv_content = client.export_csv(classe_id, trimestre)
+            st.download_button(
+                label=f"Télécharger CSV ({counts['validated']} synthèses)",
+                data=csv_content,
+                file_name=f"syntheses_{classe_id}_T{trimestre}.csv",
+                mime="text/csv",
+                type="primary",
+                width="stretch",
+            )
+        except Exception as e:
+            st.error(f"Erreur: {e}")
 
 with col2:
     st.markdown("#### Presse-papiers")
     st.caption("Copier les synthèses pour coller dans un document")
 
-    if st.button("Copier au presse-papiers", width="stretch"):
-        # Build text content
+    if st.button("Préparer pour copie", width="stretch"):
+        # Build text content from validated syntheses
+        validated_syntheses = [s for s in syntheses_data if s["status"] == "validated"]
+
         lines = []
-        for item in filtered:
+        for item in validated_syntheses:
             synthese = item["synthese"]
             lines.append(f"# {item['eleve_id']}")
             lines.append(synthese.get("synthese_texte", ""))
@@ -167,6 +232,9 @@ with col2:
 
         text_content = "\n".join(lines)
 
-        # Use st.code with copy button
-        st.code(text_content, language=None)
-        st.caption("Utilisez Ctrl+A puis Ctrl+C pour copier")
+        st.text_area(
+            "Contenu à copier (Ctrl+A puis Ctrl+C)",
+            value=text_content,
+            height=200,
+        )
+        st.caption(f"{len(validated_syntheses)} synthèse(s) validée(s)")

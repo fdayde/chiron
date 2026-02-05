@@ -103,9 +103,9 @@ class LLMSettings(BaseSettings):
         description="Max tokens de sortie par défaut (tous modèles)",
     )
     synthese_max_tokens: int = Field(
-        default=2000,
+        default=16000,
         gt=0,
-        description="Max tokens pour la génération de synthèses (~500 suffisent)",
+        description="Max tokens pour la génération de synthèses (valeur généreuse, coût = tokens utilisés)",
     )
 
     # Pricing (USD par million de tokens) - Input / Output

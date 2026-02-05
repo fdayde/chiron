@@ -136,6 +136,47 @@ def get_classe_eleves(
     ]
 
 
+@router.get("/{classe_id}/eleves-with-syntheses")
+def get_classe_eleves_with_syntheses(
+    classe_id: str,
+    trimestre: int,
+    classe_repo: ClasseRepository = Depends(get_classe_repo),
+    eleve_repo: EleveRepository = Depends(get_eleve_repo),
+    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
+):
+    """Get all students with their syntheses in one call.
+
+    Optimized endpoint to avoid N+1 queries in the UI.
+    Returns students with embedded synthesis data.
+    """
+    classe = classe_repo.get(classe_id)
+    if not classe:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    # Fetch all students and all syntheses in 2 queries (not N+1)
+    eleves = eleve_repo.get_by_classe(classe_id, trimestre)
+    syntheses_map = synthese_repo.get_by_classe(classe_id, trimestre)
+
+    result = []
+    for e in eleves:
+        synth_data = syntheses_map.get(e.eleve_id)
+        item = {
+            "eleve_id": e.eleve_id,
+            "genre": e.genre,
+            "trimestre": e.trimestre,
+            "absences_demi_journees": e.absences_demi_journees,
+            "retards": e.retards,
+            "nb_matieres": len(e.matieres),
+            # Synthesis data (None if not generated)
+            "synthese_id": synth_data["synthese_id"] if synth_data else None,
+            "synthese_status": synth_data["status"] if synth_data else None,
+            "has_synthese": synth_data is not None,
+        }
+        result.append(item)
+
+    return result
+
+
 @router.get("/{classe_id}/stats")
 def get_classe_stats(
     classe_id: str,

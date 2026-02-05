@@ -114,7 +114,7 @@ def render_new_classe_form(client: ChironAPIClient) -> dict | None:
 
             st.caption("Format : `{niveau}{groupe}_{année}` (ex: 3A_2024-2025)")
 
-            submitted = st.form_submit_button("Créer", use_container_width=True)
+            submitted = st.form_submit_button("Créer", width="stretch")
 
             if submitted:
                 if not groupe:

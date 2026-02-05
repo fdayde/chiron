@@ -411,6 +411,38 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             for row in results
         ]
 
+    def get_by_classe(self, classe_id: str, trimestre: int) -> dict[str, dict]:
+        """Get all syntheses for a class indexed by eleve_id.
+
+        Args:
+            classe_id: Class identifier.
+            trimestre: Trimester number.
+
+        Returns:
+            Dict mapping eleve_id to {synthese_id, status, synthese}.
+        """
+        results = self._execute(
+            """
+            SELECT s.id, s.eleve_id, s.status,
+                   s.synthese_texte, s.alertes_json, s.reussites_json,
+                   s.posture_generale, s.axes_travail_json
+            FROM syntheses s
+            JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
+            WHERE e.classe_id = ? AND s.trimestre = ?
+            ORDER BY s.eleve_id
+            """,
+            [classe_id, trimestre],
+        )
+
+        return {
+            row[1]: {
+                "synthese_id": row[0],
+                "status": row[2],
+                "synthese": self._row_to_entity(row[3:8]),
+            }
+            for row in results
+        }
+
     def get_stats(self, classe_id: str, trimestre: int) -> dict:
         """Get aggregated statistics for a class and trimester.
 

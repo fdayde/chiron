@@ -9,15 +9,13 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "app"))
 
 import streamlit as st
-from components.sidebar import render_sidebar
-from config import (
-    LLM_PROVIDERS,
-    calculate_actual_cost,
-    estimate_total_cost,
-    format_model_label,
-    get_api_client,
-    ui_settings,
+from components.data_helpers import (
+    clear_eleves_cache,
+    fetch_eleves_with_syntheses,
+    get_status_counts,
 )
+from components.sidebar import render_sidebar
+from config import get_api_client, ui_settings
 
 st.set_page_config(
     page_title=f"Import - {ui_settings.page_title}",
@@ -48,11 +46,10 @@ st.markdown(f"**Classe:** {classe_nom} | **Trimestre:** T{trimestre}")
 
 st.divider()
 
-# Initialize session state for import results
-if "import_results" not in st.session_state:
-    st.session_state.import_results = None
+# =============================================================================
+# SECTION 1: FILE UPLOAD & IMPORT
+# =============================================================================
 
-# File uploader
 uploaded_files = st.file_uploader(
     "Déposez les fichiers PDF des bulletins",
     type=["pdf"],
@@ -68,33 +65,22 @@ if uploaded_files:
         for f in uploaded_files:
             st.caption(f"- {f.name} ({f.size / 1024:.1f} Ko)")
 
-    # Check for existing students and syntheses
+    # Check for existing students
     try:
-        existing_eleves = client.get_eleves(classe_id, trimestre)
-        existing_count = len(existing_eleves)
-        # Count how many have syntheses
-        syntheses_count = 0
-        for eleve in existing_eleves:
-            try:
-                synth = client.get_eleve_synthese(eleve["eleve_id"], trimestre)
-                if synth and synth.get("synthese"):
-                    syntheses_count += 1
-            except Exception:
-                pass
+        eleves_data = fetch_eleves_with_syntheses(client, classe_id, trimestre)
+        counts = get_status_counts(eleves_data)
+        if counts["total"] > 0:
+            details = f"**{counts['total']} élève(s)** existant(s)"
+            if counts["with_synthese"] > 0:
+                details += f" dont **{counts['with_synthese']}** avec synthèse"
+            st.warning(f"{details} seront écrasés.")
     except Exception:
-        existing_count = 0
-        syntheses_count = 0
-
-    if existing_count > 0:
-        details = f"**{existing_count} élève(s)** (bulletins)"
-        if syntheses_count > 0:
-            details += f" dont **{syntheses_count}** avec synthèse"
-        st.warning(f"{details} seront écrasés.")
+        pass
 
     st.divider()
 
-    # Step 1: Import button
-    if st.button("Importer les fichiers", type="primary", use_container_width=True):
+    # Import button
+    if st.button("Importer les fichiers", type="primary", width="stretch"):
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -112,7 +98,6 @@ if uploaded_files:
                 results.append(
                     {"file": file.name, "status": "success", "result": result}
                 )
-                # Include both new and existing students
                 imported_eleve_ids.extend(result.get("eleve_ids", []))
                 imported_eleve_ids.extend(result.get("skipped_ids", []))
             except Exception as e:
@@ -123,17 +108,10 @@ if uploaded_files:
         progress_bar.empty()
         status_text.empty()
 
-        # Store results in session state
-        st.session_state.import_results = {
-            "results": results,
-            "eleve_ids": imported_eleve_ids,
-        }
+        # Clear cache to refresh data
+        clear_eleves_cache()
 
-    # Display import results if available
-    if st.session_state.import_results:
-        results = st.session_state.import_results["results"]
-        imported_eleve_ids = st.session_state.import_results["eleve_ids"]
-
+        # Display results
         st.markdown("### Résultats de l'import")
 
         error_count = sum(1 for r in results if r["status"] == "error")
@@ -169,101 +147,9 @@ if uploaded_files:
                 else:
                     st.error(f"{r['file']}: {r['error']}")
 
-        st.divider()
-
-        # Step 2: Generate syntheses button
-        if imported_eleve_ids:
-            st.markdown("### Génération des synthèses")
-
-            # LLM settings
-            col1, col2 = st.columns(2)
-            with col1:
-                provider = st.selectbox(
-                    "Provider",
-                    options=list(LLM_PROVIDERS.keys()),
-                    format_func=lambda x: LLM_PROVIDERS[x]["name"],
-                    index=0,
-                    key="import_llm_provider",
-                )
-            with col2:
-                provider_config = LLM_PROVIDERS[provider]
-                model_options = provider_config["models"]
-                model = st.selectbox(
-                    "Modèle",
-                    options=model_options,
-                    format_func=lambda x: format_model_label(provider, x),
-                    index=0,
-                    key="import_llm_model",
-                )
-
-            # Cost estimation
-            nb_eleves = len(imported_eleve_ids)
-            total_cost = estimate_total_cost(provider, model, nb_eleves)
-            st.caption(
-                f"💰 Estimation : **~${total_cost:.4f}** pour {nb_eleves} élève(s)"
-            )
-
-            if st.button(
-                f"Générer les synthèses ({nb_eleves} élèves)",
-                width="stretch",
-            ):
-                gen_progress = st.progress(0)
-                gen_status = st.empty()
-                gen_success = 0
-                gen_error = 0
-                total_tokens_input = 0
-                total_tokens_output = 0
-
-                for i, eleve_id in enumerate(imported_eleve_ids):
-                    gen_status.text(
-                        f"Génération {i + 1}/{len(imported_eleve_ids)}: {eleve_id}..."
-                    )
-
-                    try:
-                        result = client.generate_synthese(
-                            eleve_id,
-                            trimestre,
-                            provider=provider,
-                            model=model,
-                        )
-                        gen_success += 1
-                        meta = result.get("metadata", {})
-                        total_tokens_input += meta.get("tokens_input", 0) or 0
-                        total_tokens_output += meta.get("tokens_output", 0) or 0
-                    except Exception:
-                        gen_error += 1
-
-                    gen_progress.progress((i + 1) / len(imported_eleve_ids))
-
-                gen_progress.empty()
-                gen_status.empty()
-
-                # Get stats from database (persistent data)
-                try:
-                    stats = client.get_classe_stats(classe_id, trimestre)
-                    total_tokens = stats.get("tokens_total", 0)
-                    actual_cost = stats.get("cost_usd", 0)
-                    synthese_count = stats.get("synthese_count", gen_success)
-                except Exception:
-                    # Fallback to in-memory calculation
-                    total_tokens = total_tokens_input + total_tokens_output
-                    actual_cost = calculate_actual_cost(
-                        provider, model, total_tokens_input, total_tokens_output
-                    )
-                    synthese_count = gen_success
-
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Synthèses générées", synthese_count)
-                col2.metric("Tokens utilisés", f"{total_tokens:,}")
-                col3.metric("Coût réel", f"${actual_cost:.4f}")
-
-                if gen_error > 0:
-                    st.warning(f"{gen_error} erreur(s) de génération")
-
-                st.info(
-                    "Rendez-vous sur la page **Review** pour relire et "
-                    "valider les synthèses."
-                )
+        st.success(
+            "Import terminé. Passez à l'étape suivante pour générer les synthèses."
+        )
 
 else:
     st.info("Sélectionnez un ou plusieurs fichiers PDF à importer.")
@@ -275,9 +161,71 @@ else:
 1. Sélectionnez la classe et le trimestre dans la barre latérale
 2. Déposez les fichiers PDF des bulletins ci-dessus
 3. Cliquez sur **Importer les fichiers**
-4. Vérifiez les résultats (PDFs traités, élèves importés, anonymisation)
-5. Cliquez sur **Générer les synthèses** pour lancer l'IA
+4. Vérifiez les résultats
+5. Passez à la page **Synthèses** pour générer et revoir
 
 Les noms des élèves sont pseudonymisés automatiquement (conformité RGPD).
         """
         )
+
+# =============================================================================
+# SECTION 2: CLASS OVERVIEW
+# =============================================================================
+
+st.divider()
+st.markdown("### Vue de la classe")
+
+try:
+    eleves_data = fetch_eleves_with_syntheses(client, classe_id, trimestre)
+    counts = get_status_counts(eleves_data)
+except Exception as e:
+    st.error(f"Erreur: {e}")
+    eleves_data = []
+    counts = {
+        "total": 0,
+        "with_synthese": 0,
+        "validated": 0,
+        "pending": 0,
+        "missing": 0,
+    }
+
+if counts["total"] == 0:
+    st.info("Aucun élève importé pour cette classe/trimestre.")
+else:
+    # Metrics
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Élèves", counts["total"])
+    col2.metric("Synthèses", counts["with_synthese"])
+    col3.metric("Validées", counts["validated"])
+    col4.metric("Manquantes", counts["missing"])
+
+    # Table
+    rows = []
+    for e in eleves_data:
+        rows.append(
+            {
+                "Élève": e["eleve_id"],
+                "Genre": "👦"
+                if e.get("genre") == "M"
+                else "👧"
+                if e.get("genre") == "F"
+                else "?",
+                "Abs.": e.get("absences_demi_journees", 0) or 0,
+                "Synthèse": "✓" if e.get("has_synthese") else "-",
+                "Statut": e.get("synthese_status", "-") or "-",
+            }
+        )
+
+    st.dataframe(rows, width="stretch", hide_index=True)
+
+    # Navigation to Review
+    st.divider()
+
+    if counts["missing"] > 0:
+        st.info(f"🔄 {counts['missing']} élève(s) sans synthèse")
+
+    if counts["pending"] > 0:
+        st.info(f"⏳ {counts['pending']} synthèse(s) en attente de validation")
+
+    if st.button("Générer et revoir les synthèses →", type="primary", width="stretch"):
+        st.switch_page("pages/2_review.py")

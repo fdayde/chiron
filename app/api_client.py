@@ -99,6 +99,16 @@ class ChironAPIClient:
         params = {"trimestre": trimestre} if trimestre else None
         return self._get(f"/classes/{classe_id}/eleves", params)
 
+    def get_eleves_with_syntheses(self, classe_id: str, trimestre: int) -> list[dict]:
+        """Get students with their syntheses in one call.
+
+        Optimized to avoid N+1 queries.
+        """
+        return self._get(
+            f"/classes/{classe_id}/eleves-with-syntheses",
+            {"trimestre": trimestre},
+        )
+
     def get_eleve(self, eleve_id: str) -> dict:
         """Get a student by ID."""
         return self._get(f"/eleves/{eleve_id}")
