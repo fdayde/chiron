@@ -95,7 +95,7 @@ class LLMSettings(BaseSettings):
 
     # Paramètres LLM par défaut
     default_temperature: float = Field(
-        default=0.1, ge=0, le=2, description="Température par défaut"
+        default=0.2, ge=0, le=2, description="Température par défaut"
     )
     default_max_tokens: int = Field(
         default=16384,
@@ -115,7 +115,6 @@ class LLMSettings(BaseSettings):
     openai_pricing: dict[str, tuple[float, float]] = {
         "gpt-5.2": (1.75, 14.00),  # ~$0.011/bulletin - le plus puissant
         "gpt-5-mini": (0.25, 2.00),  # ~$0.0015/bulletin - défaut
-        "gpt-5-nano": (0.05, 0.40),  # ~$0.0003/bulletin - tests
     }
 
     # Anthropic - Source: https://www.anthropic.com/pricing (Feb 2026)
