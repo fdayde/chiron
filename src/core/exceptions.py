@@ -77,18 +77,6 @@ class GenerationError(ChironError):
     pass
 
 
-class ValidationError(ChironError):
-    """Data validation failed.
-
-    Raised when data doesn't meet expected format:
-    - Invalid field values
-    - Missing required fields
-    - Type mismatches
-    """
-
-    pass
-
-
 class ConfigurationError(ChironError):
     """Configuration error.
 

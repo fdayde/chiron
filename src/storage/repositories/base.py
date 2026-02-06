@@ -1,12 +1,8 @@
-"""Base repository interface.
+"""Base repository for DuckDB.
 
 Architecture:
-    Repository[T] (ABC)        - Interface abstraite (peut être implémentée pour PostgreSQL, etc.)
-        └── DuckDBRepository[T] - Implémentation DuckDB avec code commun factorisé
-                └── EleveRepository, SyntheseRepository, etc.
-
-Pour changer de base de données, créer une nouvelle classe (ex: PostgreSQLRepository)
-qui hérite de Repository[T] et implémente les mêmes méthodes.
+    DuckDBRepository[T] (ABC) - Base DuckDB avec code commun factorisé
+        └── EleveRepository, SyntheseRepository, etc.
 """
 
 from abc import ABC, abstractmethod
@@ -18,83 +14,8 @@ from src.storage.connection import DuckDBConnection
 T = TypeVar("T")
 
 
-class Repository[T](ABC):
-    """Abstract base repository defining standard CRUD operations.
-
-    All repositories should implement these methods for consistent
-    data access patterns across the application.
-
-    Pour changer de base de données (ex: PostgreSQL), créer une nouvelle
-    classe qui hérite de Repository[T] et implémente ces méthodes.
-    """
-
-    @abstractmethod
-    def create(self, entity: T) -> str:
-        """Create a new entity.
-
-        Args:
-            entity: Entity to create.
-
-        Returns:
-            ID of created entity.
-        """
-        ...
-
-    @abstractmethod
-    def get(self, entity_id: str) -> T | None:
-        """Get an entity by ID.
-
-        Args:
-            entity_id: Entity identifier.
-
-        Returns:
-            Entity or None if not found.
-        """
-        ...
-
-    @abstractmethod
-    def list(self, **filters) -> list[T]:
-        """List entities with optional filters.
-
-        Args:
-            **filters: Key-value filters.
-
-        Returns:
-            List of matching entities.
-        """
-        ...
-
-    @abstractmethod
-    def update(self, entity_id: str, **updates) -> bool:
-        """Update an entity.
-
-        Args:
-            entity_id: Entity identifier.
-            **updates: Fields to update.
-
-        Returns:
-            True if updated, False if not found.
-        """
-        ...
-
-    @abstractmethod
-    def delete(self, entity_id: str) -> bool:
-        """Delete an entity.
-
-        Args:
-            entity_id: Entity identifier.
-
-        Returns:
-            True if deleted, False if not found.
-        """
-        ...
-
-
-class DuckDBRepository[T](DuckDBConnection, Repository[T], ABC):
+class DuckDBRepository[T](DuckDBConnection, ABC):
     """Base DuckDB repository with common connection and query patterns.
-
-    Hérite de DuckDBConnection pour la gestion des connexions et de
-    Repository[T] pour l'interface CRUD.
 
     Factorise le code commun à tous les repositories DuckDB :
     - Gestion de la connexion (via DuckDBConnection._get_conn())

@@ -123,12 +123,3 @@ def render_new_classe_form(client: ChironAPIClient) -> dict | None:
                         st.error(f"Erreur: {e}")
 
     return None
-
-
-# Keep old function for compatibility during transition
-def render_classe_selector(
-    client: ChironAPIClient, key: str = "classe_select"
-) -> tuple[str | None, int]:
-    """Legacy function - redirects to session state values."""
-    init_session_state()
-    return st.session_state.classe_id, st.session_state.trimestre

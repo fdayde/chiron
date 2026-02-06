@@ -88,67 +88,6 @@ class PricingCalculator:
             return self.pricing.get(model)
 
 
-def calculate_batch_cost(
-    tokens: dict[str, int],
-    model_overrides: dict[str, str] | None = None,
-) -> float:
-    """Calcule le coût total d'un batch selon les tokens utilisés par provider.
-
-    Utilise les tarifs définis dans settings pour calculer le coût précis.
-    Pour chaque provider, utilise le modèle spécifié dans model_overrides ou le default.
-
-    Args:
-        tokens: Dict des tokens par provider, ex: {"openai": 50000, "mistral": 30000, "anthropic": 20000}
-        model_overrides: Dict optionnel pour spécifier les modèles utilisés, ex: {"anthropic": "claude-sonnet-4-5"}
-
-    Returns:
-        Coût total en USD (arrondi à 2 décimales)
-
-    Example:
-        >>> tokens = {"openai": 100000, "anthropic": 50000}
-        >>> cost = calculate_batch_cost(tokens)
-        >>> print(f"Coût total: ${cost:.2f}")
-    """
-    from src.llm.config import settings
-
-    model_overrides = model_overrides or {}
-    total_cost = 0.0
-
-    # Calculer le coût pour chaque provider
-    for provider, token_count in tokens.items():
-        if token_count == 0:
-            continue
-
-        # Déterminer le modèle utilisé (override ou default)
-        model = model_overrides.get(provider) or settings.get_model(provider)
-
-        # Récupérer le pricing config pour ce provider
-        try:
-            pricing_config = settings.get_pricing(provider)
-        except ValueError:
-            logger.warning(
-                f"Provider inconnu '{provider}', coût ignoré pour {token_count} tokens"
-            )
-            continue
-
-        # Créer calculateur et calculer le coût
-        calculator = PricingCalculator(provider=provider, pricing_config=pricing_config)
-
-        # Pour un batch, on approxime 40% input / 60% output (ratio typique extraction)
-        # Note: c'est une approximation, le coût réel dépend du ratio input/output réel
-        input_tokens = int(token_count * 0.4)
-        output_tokens = int(token_count * 0.6)
-
-        cost = calculator.calculate(
-            model=model, prompt_tokens=input_tokens, completion_tokens=output_tokens
-        )
-        total_cost += cost
-
-        logger.debug(f"[{provider}] {token_count:,} tokens ({model}) = ${cost:.4f}")
-
-    return round(total_cost, 2)
-
-
 def estimate_synthese_cost(
     nb_eleves: int,
     avg_input_tokens: int = 2000,

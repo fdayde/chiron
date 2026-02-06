@@ -98,17 +98,3 @@ LABELS = {
     "oral_label": "Oral",
     "chef_etablissement": "Le chef d'établissement-adjoint",
 }
-
-# Complete layout configuration dict (for easy passing to generator)
-BULLETIN_LAYOUT = {
-    "page_size": PAGE_SIZE,
-    "margins": MARGINS,
-    "content_width": CONTENT_WIDTH,
-    "content_height": CONTENT_HEIGHT,
-    "header": HEADER_CONFIG,
-    "table": TABLE_CONFIG,
-    "column_widths": TABLE_COLUMN_WIDTHS,
-    "colors": COLORS,
-    "fonts": FONTS,
-    "labels": LABELS,
-}

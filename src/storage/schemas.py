@@ -5,7 +5,7 @@ Architecture à deux bases de données (séparation RGPD) :
 ┌─────────────────────────────────────────────────────────────────┐
 │  data/db/chiron.duckdb - Données pseudonymisées                 │
 │  ✓ Peut être synchronisé, backupé, partagé                      │
-│  Tables: classes, eleves, syntheses, exemples_fewshot           │
+│  Tables: classes, eleves, syntheses                              │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
@@ -107,16 +107,7 @@ TABLES = {
             UNIQUE(eleve_id, trimestre)
         )
     """,
-    "exemples_fewshot": """
-        CREATE TABLE IF NOT EXISTS exemples_fewshot (
-            id VARCHAR PRIMARY KEY,
-            classe_id VARCHAR REFERENCES classes(classe_id),
-            eleve_data JSON,
-            synthese_prof TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """,
 }
 
 # Order matters for foreign key constraints
-TABLE_ORDER = ["classes", "eleves", "syntheses", "exemples_fewshot"]
+TABLE_ORDER = ["classes", "eleves", "syntheses"]

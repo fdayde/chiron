@@ -11,7 +11,6 @@ from pathlib import Path
 import duckdb
 
 from src.core.exceptions import PrivacyError
-from src.core.models import EleveExtraction
 from src.privacy.config import privacy_settings
 
 logger = logging.getLogger(__name__)
@@ -20,13 +19,13 @@ logger = logging.getLogger(__name__)
 class Pseudonymizer:
     """Handles pseudonymization of student data.
 
-    Replaces nom/prenom with generated pseudo_ids and stores
-    the mapping in DuckDB for secure depseudonymization.
+    Creates pseudo IDs and stores the mapping in DuckDB
+    for secure depseudonymization.
 
     Usage:
         pseudo = Pseudonymizer()
-        eleve_safe = pseudo.pseudonymize(eleve_raw, classe_id="5A")
-        # eleve_safe.eleve_id = "ELEVE_001", nom=None, prenom=None
+        eleve_id = pseudo.create_eleve_id("Dupont", "Marie", "5A")
+        # eleve_id = "ELEVE_001"
 
         # Later, to recover original data:
         original = pseudo.depseudonymize("ELEVE_001")
@@ -102,50 +101,6 @@ class Pseudonymizer:
         eleve_id = self._generate_eleve_id_atomic(classe_id, nom, prenom)
         logger.info(f"Created mapping: {nom} {prenom or ''} -> {eleve_id}")
         return eleve_id
-
-    def pseudonymize(
-        self,
-        eleve: EleveExtraction,
-        classe_id: str,
-    ) -> EleveExtraction:
-        """Pseudonymize a student record.
-
-        Replaces nom/prenom with a generated eleve_id and stores
-        the mapping in the database. Thread-safe: uses atomic INSERT
-        with conflict detection.
-
-        Args:
-            eleve: Student data with real name.
-            classe_id: Class identifier for grouping.
-
-        Returns:
-            New EleveExtraction with pseudonymized identity.
-
-        Raises:
-            PrivacyError: If pseudonymization fails.
-        """
-        if not eleve.nom:
-            raise PrivacyError("Cannot pseudonymize: eleve.nom is required")
-
-        # Check if this student already has a mapping (idempotent)
-        existing = self._get_existing_mapping(eleve.nom, eleve.prenom, classe_id)
-        if existing:
-            eleve_id = existing
-            logger.info(f"Found existing mapping for {eleve.nom} -> {eleve_id}")
-        else:
-            # Generate unique eleve_id atomically
-            eleve_id = self._generate_eleve_id_atomic(
-                classe_id, eleve.nom, eleve.prenom
-            )
-            logger.info(f"Pseudonymized {eleve.nom} -> {eleve_id}")
-
-        # Create pseudonymized copy
-        data = eleve.model_dump()
-        data["eleve_id"] = eleve_id
-        data["nom"] = None
-        data["prenom"] = None
-
-        return EleveExtraction(**data)
 
     def _get_existing_mapping(
         self, nom: str, prenom: str | None, classe_id: str
