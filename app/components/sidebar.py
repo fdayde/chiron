@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 import streamlit as st
 from api_client import ChironAPIClient
 from components.data_helpers import clear_classes_cache, fetch_classes
 
-from src.core.constants import get_current_school_year
+
+def _get_current_school_year() -> str:
+    """Année scolaire courante au format 'YYYY-YYYY+1' (sept à août)."""
+    today = date.today()
+    if today.month >= 9:
+        return f"{today.year}-{today.year + 1}"
+    return f"{today.year - 1}-{today.year}"
 
 
 def init_session_state():
@@ -99,7 +107,7 @@ def render_new_classe_form(client: ChironAPIClient) -> dict | None:
                 options=["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "Terminale"],
             )
             groupe = st.text_input("Groupe", placeholder="A")
-            annee = st.text_input("Année scolaire", value=get_current_school_year())
+            annee = st.text_input("Année scolaire", value=_get_current_school_year())
 
             st.caption("Format : `{niveau}{groupe}_{année}` (ex: 3A_2024-2025)")
 

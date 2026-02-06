@@ -162,6 +162,12 @@ with st.expander("🤖 Génération batch", expanded=counts["missing"] > 0):
                     progress.empty()
                     status.empty()
                     clear_eleves_cache()
+                    # Incrémenter les compteurs pour forcer de nouveaux widgets text_area
+                    for eid_key in all_ids:
+                        count_key = f"regen_count_{eid_key}"
+                        st.session_state[count_key] = (
+                            st.session_state.get(count_key, 0) + 1
+                        )
 
                     if error_count == 0:
                         st.success(f"{success_count} synthèses régénérées")

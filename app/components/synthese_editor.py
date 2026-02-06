@@ -83,7 +83,7 @@ def render_synthese_editor(
         st.info("Aucune synthèse générée pour cet élève.")
 
         if st.button("Générer", key=f"gen_{eleve_id}", type="primary"):
-            with st.spinner(f"Génération via {provider}..."):
+            with st.spinner(f"Génération via {provider} ({model})..."):
                 try:
                     result = client.generate_synthese(
                         eleve_id, trimestre, provider=provider, model=model
@@ -99,12 +99,15 @@ def render_synthese_editor(
         return action_performed
 
     # Editable text
+    # Le compteur de regen change la clé du widget pour forcer Streamlit
+    # à créer un nouveau text_area (sinon il réutilise l'ancienne valeur)
+    regen_count = st.session_state.get(f"regen_count_{eleve_id}", 0)
     synthese_texte = synthese.get("synthese_texte", "")
     new_text = st.text_area(
         "Texte de la synthèse",
         value=synthese_texte,
         height=180,
-        key=f"synthese_text_{eleve_id}",
+        key=f"synthese_text_{eleve_id}_{regen_count}",
     )
 
     # Insights
@@ -173,7 +176,7 @@ def render_synthese_editor(
 
     with col3:
         if st.button("Régénérer", key=f"regen_{eleve_id}"):
-            with st.spinner(f"Régénération via {provider}..."):
+            with st.spinner(f"Régénération via {provider} ({model})..."):
                 try:
                     if synthese_id:
                         client.delete_synthese(synthese_id)
@@ -184,6 +187,8 @@ def render_synthese_editor(
                     tokens = meta.get("tokens_total", "?")
                     st.success(f"Régénérée ({tokens} tokens)")
                     clear_eleves_cache()
+                    # Incrémenter le compteur pour changer la clé du widget text_area
+                    st.session_state[f"regen_count_{eleve_id}"] = regen_count + 1
                     action_performed = True
                 except Exception as e:
                     st.error(f"Erreur: {e}")

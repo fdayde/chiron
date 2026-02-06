@@ -1,6 +1,14 @@
-"""DuckDB connection management."""
+"""DuckDB connection management.
+
+Utilise une connexion persistante unique par fichier de base de données,
+protégée par un threading.Lock pour la sécurité multi-thread (FastAPI
+exécute les endpoints sync dans un thread pool).
+"""
 
 import logging
+import threading
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 
 import duckdb
@@ -11,46 +19,56 @@ from src.storage.schemas import TABLE_ORDER, TABLES
 
 logger = logging.getLogger(__name__)
 
+# Verrou global et pool de connexions persistantes (une par fichier DB)
+_db_lock = threading.Lock()
+_connections: dict[str, duckdb.DuckDBPyConnection] = {}
+
 _SHARED_CONNECTION: "DuckDBConnection | None" = None
 
 
 class DuckDBConnection:
-    """Base class for DuckDB connection management.
+    """Gestion de connexion DuckDB avec connexion persistante thread-safe.
 
-    Utilise le context manager `with` pour chaque opération SQL,
-    garantissant la fermeture automatique des connexions.
-
-    Cette classe sert de base pour DuckDBRepository et peut être
-    utilisée directement pour l'initialisation du schéma.
+    Utilise une connexion unique par fichier DB, partagée entre toutes
+    les instances (repositories). Un threading.Lock sérialise l'accès
+    pour éviter les conflits de verrouillage fichier sous Windows.
 
     Usage:
         conn = DuckDBConnection()
         conn.ensure_tables()
 
-        # Avec context manager:
         with conn._get_conn() as cur:
             result = cur.execute("SELECT * FROM eleves").fetchall()
     """
 
     def __init__(self, db_path: Path | str | None = None) -> None:
-        """Initialize connection manager.
+        """Initialise le gestionnaire de connexion.
 
         Args:
-            db_path: Path to database file. Defaults to config setting.
+            db_path: Chemin vers la base. Par défaut: valeur de la config.
         """
         self.db_path = Path(db_path) if db_path else storage_settings.db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def _get_conn(self) -> duckdb.DuckDBPyConnection:
-        """Get a new connection for context manager usage.
+    @contextmanager
+    def _get_conn(self) -> Generator[duckdb.DuckDBPyConnection]:
+        """Connexion persistante protégée par un lock.
 
-        Returns:
-            DuckDB connection that should be used with `with` statement.
+        Crée la connexion au premier appel, puis la réutilise.
+        Le lock est maintenu pendant toute la durée du bloc `with`.
+
+        Yields:
+            Connexion DuckDB partagée.
         """
-        return duckdb.connect(str(self.db_path))
+        db_key = str(self.db_path)
+        with _db_lock:
+            if db_key not in _connections:
+                _connections[db_key] = duckdb.connect(db_key)
+                logger.debug(f"Opened persistent connection: {db_key}")
+            yield _connections[db_key]
 
     def ensure_tables(self) -> None:
-        """Create all tables if they don't exist."""
+        """Crée toutes les tables si elles n'existent pas."""
         with self._get_conn() as conn:
             for table_name in TABLE_ORDER:
                 sql = TABLES[table_name]
@@ -66,10 +84,10 @@ class DuckDBConnection:
 
 
 def get_connection() -> DuckDBConnection:
-    """Get shared database connection manager (singleton pattern).
+    """Retourne le gestionnaire de connexion partagé (singleton).
 
     Returns:
-        Shared DuckDBConnection instance.
+        Instance partagée de DuckDBConnection.
     """
     global _SHARED_CONNECTION
     if _SHARED_CONNECTION is None:
@@ -79,6 +97,14 @@ def get_connection() -> DuckDBConnection:
 
 
 def reset_connection() -> None:
-    """Reset the shared connection manager (for testing)."""
+    """Réinitialise la connexion partagée (pour les tests)."""
     global _SHARED_CONNECTION
     _SHARED_CONNECTION = None
+    # Fermer et vider les connexions persistantes
+    with _db_lock:
+        for conn in _connections.values():
+            try:
+                conn.close()
+            except Exception:
+                pass
+        _connections.clear()

@@ -6,6 +6,9 @@ in DuckDB for later depseudonymization when needed.
 
 import logging
 import re
+import threading
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 
 import duckdb
@@ -31,6 +34,9 @@ class Pseudonymizer:
         original = pseudo.depseudonymize("ELEVE_001")
     """
 
+    _lock = threading.Lock()
+    _conn: duckdb.DuckDBPyConnection | None = None
+
     def __init__(self, db_path: Path | str | None = None) -> None:
         """Initialize pseudonymizer.
 
@@ -41,9 +47,17 @@ class Pseudonymizer:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_table()
 
-    def _get_connection(self) -> duckdb.DuckDBPyConnection:
-        """Get a DuckDB connection."""
-        return duckdb.connect(str(self.db_path))
+    @contextmanager
+    def _get_connection(self) -> Generator[duckdb.DuckDBPyConnection]:
+        """Connexion persistante protégée par un lock.
+
+        Yields:
+            Connexion DuckDB partagée.
+        """
+        with self._lock:
+            if Pseudonymizer._conn is None:
+                Pseudonymizer._conn = duckdb.connect(str(self.db_path))
+            yield Pseudonymizer._conn
 
     def _ensure_table(self) -> None:
         """Ensure the mapping table exists with proper constraints."""

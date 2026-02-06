@@ -120,6 +120,7 @@ class LLMSettings(BaseSettings):
 
     # Anthropic - Source: https://www.anthropic.com/pricing (Feb 2026)
     anthropic_pricing: dict[str, tuple[float, float]] = {
+        "claude-opus-4-6": (5.00, 25.00),  # ~$0.023/bulletin - qualité max
         "claude-sonnet-4-5": (3.00, 15.00),  # ~$0.014/bulletin
         "claude-haiku-4-5": (1.00, 5.00),  # ~$0.005/bulletin
     }
