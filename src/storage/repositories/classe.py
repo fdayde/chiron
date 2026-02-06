@@ -51,7 +51,7 @@ class ClasseRepository(DuckDBRepository[Classe]):
             classe_id of created class.
         """
         if not classe.classe_id:
-            classe.classe_id = str(uuid.uuid4())[:8]
+            classe.classe_id = str(uuid.uuid4())[:12]
 
         self._execute_write(
             """
@@ -168,7 +168,7 @@ class ClasseRepository(DuckDBRepository[Classe]):
             return self._row_to_entity(result)
 
         classe = Classe(
-            classe_id=str(uuid.uuid4())[:8],
+            classe_id=str(uuid.uuid4())[:12],
             nom=nom,
             niveau=niveau,
         )

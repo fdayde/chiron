@@ -1,13 +1,5 @@
 """Import PDF page."""
 
-import sys
-from pathlib import Path
-
-# Add project root and app dir to path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(project_root / "app"))
-
 import streamlit as st
 from components.data_helpers import (
     clear_eleves_cache,
@@ -50,6 +42,19 @@ st.divider()
 # =============================================================================
 # SECTION 1: FILE UPLOAD & IMPORT
 # =============================================================================
+
+# Warn about Mistral OCR limitations
+try:
+    from src.llm.config import settings as _llm_settings
+
+    if _llm_settings.pdf_parser_type.lower() == "mistral_ocr":
+        st.info(
+            "Parser actif : **Mistral OCR**. "
+            "Les matières, notes et absences ne seront pas extraites automatiquement. "
+            "Seul le texte brut du bulletin sera disponible."
+        )
+except Exception:
+    pass
 
 uploaded_files = st.file_uploader(
     "Déposez les fichiers PDF des bulletins",

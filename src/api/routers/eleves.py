@@ -1,9 +1,14 @@
 """Eleves router."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from src.api.dependencies import get_eleve_repo, get_pseudonymizer, get_synthese_repo
+from src.api.dependencies import (
+    get_eleve_repo,
+    get_or_404,
+    get_pseudonymizer,
+    get_synthese_repo,
+)
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
@@ -52,9 +57,7 @@ def get_eleve(
         eleve_id: Student identifier.
         trimestre: Optional trimester. If not provided, returns latest.
     """
-    eleve = repo.get(eleve_id, trimestre)
-    if not eleve:
-        raise HTTPException(status_code=404, detail="Student not found")
+    eleve = get_or_404(repo, eleve_id, trimestre, entity_name="Student")
 
     # Get real name from privacy database
     mapping = pseudonymizer.depseudonymize(eleve_id)
@@ -103,9 +106,7 @@ def get_eleve_synthese(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
     """Get the current synthesis for a student."""
-    eleve = eleve_repo.get(eleve_id, trimestre)
-    if not eleve:
-        raise HTTPException(status_code=404, detail="Student not found")
+    eleve = get_or_404(eleve_repo, eleve_id, trimestre, entity_name="Student")
 
     # Use eleve's trimester if not specified
     if trimestre is None:
@@ -147,9 +148,7 @@ def delete_eleve(
         eleve_id: Student identifier.
         trimestre: Optional trimester. If not provided, deletes ALL records for this student.
     """
-    eleve = repo.get(eleve_id, trimestre)
-    if not eleve:
-        raise HTTPException(status_code=404, detail="Student not found")
+    get_or_404(repo, eleve_id, trimestre, entity_name="Student")
     repo.delete(eleve_id, trimestre)
 
     if trimestre:

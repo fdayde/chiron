@@ -16,6 +16,7 @@ Usage:
 
 import logging
 import re
+import threading
 from pathlib import Path
 
 import fitz  # PyMuPDF
@@ -28,22 +29,25 @@ logger = logging.getLogger(__name__)
 # Labels NER pour les personnes (compatibles avec différents modèles)
 PERSON_LABELS = {"PER", "PERSON", "I-PER", "B-PER"}
 
-# Pipeline NER (lazy loading)
+# Pipeline NER (lazy loading, thread-safe)
 _ner_pipeline = None
+_ner_lock = threading.Lock()
 
 
 def _get_ner_pipeline():
-    """Charge le pipeline NER (lazy loading)."""
+    """Charge le pipeline NER (lazy loading, thread-safe)."""
     global _ner_pipeline
     if _ner_pipeline is None:
-        from transformers import pipeline
+        with _ner_lock:
+            if _ner_pipeline is None:  # Double-check après acquisition du lock
+                from transformers import pipeline
 
-        logger.info(f"Chargement du modèle NER: {llm_settings.ner_model}")
-        _ner_pipeline = pipeline(
-            "ner",
-            model=llm_settings.ner_model,
-            aggregation_strategy="simple",
-        )
+                logger.info(f"Chargement du modèle NER: {llm_settings.ner_model}")
+                _ner_pipeline = pipeline(
+                    "ner",
+                    model=llm_settings.ner_model,
+                    aggregation_strategy="simple",
+                )
     return _ner_pipeline
 
 

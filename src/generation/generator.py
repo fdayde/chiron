@@ -166,21 +166,8 @@ class SyntheseGenerator:
         Returns:
             Liste de SyntheseGeneree (None si erreur).
         """
-        logger.info(f"Batch génération: {len(eleves)} élèves")
-
-        results = []
-        for eleve in eleves:
-            try:
-                synthese = self.generate(eleve, classe_info, max_tokens)
-                results.append(synthese)
-            except Exception as e:
-                logger.error(f"Erreur pour {eleve.eleve_id}: {e}")
-                results.append(None)
-
-        success_count = sum(1 for r in results if r is not None)
-        logger.info(f"Batch terminé: {success_count}/{len(eleves)} succès")
-
-        return results
+        results = self.generate_batch_with_metadata(eleves, classe_info, max_tokens)
+        return [r.synthese if r is not None else None for r in results]
 
     def generate_batch_with_metadata(
         self,

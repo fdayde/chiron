@@ -3,9 +3,11 @@
 import sys
 from pathlib import Path
 
-# Add project root to path for src imports
+# Add project root and app dir to path (fallback if not installed via pip install -e .)
 project_root = Path(__file__).parent.parent
+app_dir = Path(__file__).parent
 sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(app_dir))
 
 import streamlit as st
 from components.data_helpers import check_api_health, fetch_classe_stats, fetch_classes

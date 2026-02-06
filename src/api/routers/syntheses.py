@@ -8,6 +8,7 @@ from pydantic import BaseModel, field_validator
 
 from src.api.dependencies import (
     get_eleve_repo,
+    get_or_404,
     get_pseudonymizer,
     get_synthese_generator,
     get_synthese_repo,
@@ -93,12 +94,7 @@ def generate_synthese(
         HTTPException: 404 if student not found, 500 on generation error.
     """
     # 1. Fetch student data for the specific trimester
-    eleve = eleve_repo.get(data.eleve_id, data.trimestre)
-    if not eleve:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Student {data.eleve_id} not found for trimester {data.trimestre}",
-        )
+    eleve = get_or_404(eleve_repo, data.eleve_id, data.trimestre, entity_name="Student")
 
     # 2. Create generator with requested provider/model
     generator = get_synthese_generator(
@@ -121,10 +117,14 @@ def generate_synthese(
         synthese = result.synthese
         llm_metadata = result.metadata
     except Exception as e:
-        logger.error(f"Generation failed for {data.eleve_id}: {e}")
+        logger.error(f"Generation failed for {data.eleve_id}: {e}", exc_info=True)
+        from src.core.exceptions import ConfigurationError
+
+        if isinstance(e, ConfigurationError):
+            raise HTTPException(status_code=500, detail=str(e)) from e
         raise HTTPException(
             status_code=500,
-            detail=f"Synthesis generation failed: {str(e)}",
+            detail="Erreur lors de la génération de la synthèse. Consultez les logs du serveur.",
         ) from e
 
     duration_ms = int((time.perf_counter() - start_time) * 1000)
@@ -207,9 +207,7 @@ def update_synthese(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
     """Update a synthesis."""
-    synthese = synthese_repo.get(synthese_id)
-    if not synthese:
-        raise HTTPException(status_code=404, detail="Synthesis not found")
+    get_or_404(synthese_repo, synthese_id, entity_name="Synthesis")
 
     updates = {}
     if data.synthese_texte is not None:
@@ -233,9 +231,7 @@ def validate_synthese(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
     """Validate a synthesis."""
-    synthese = synthese_repo.get(synthese_id)
-    if not synthese:
-        raise HTTPException(status_code=404, detail="Synthesis not found")
+    get_or_404(synthese_repo, synthese_id, entity_name="Synthesis")
 
     synthese_repo.update_status(synthese_id, "validated", data.validated_by)
     return {"status": "validated", "synthese_id": synthese_id}
@@ -257,8 +253,6 @@ def delete_synthese(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
     """Delete a synthesis."""
-    synthese = synthese_repo.get(synthese_id)
-    if not synthese:
-        raise HTTPException(status_code=404, detail="Synthesis not found")
+    get_or_404(synthese_repo, synthese_id, entity_name="Synthesis")
     synthese_repo.delete(synthese_id)
     return {"status": "deleted", "synthese_id": synthese_id}

@@ -1,13 +1,5 @@
 """Generation & Review page."""
 
-import sys
-from pathlib import Path
-
-# Add project root and app dir to path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(project_root / "app"))
-
 import streamlit as st
 from api_client import ChironAPIClient
 from components.appreciations_view import render_appreciations, render_eleve_header

@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from src.api.dependencies import (
     get_classe_repo,
     get_eleve_repo,
+    get_or_404,
     get_pseudonymizer,
     get_synthese_repo,
 )
@@ -70,9 +71,7 @@ def export_csv(
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Export validated syntheses as CSV."""
-    classe = classe_repo.get(classe_id)
-    if not classe:
-        raise HTTPException(status_code=404, detail="Class not found")
+    get_or_404(classe_repo, classe_id, entity_name="Class")
 
     validated = synthese_repo.get_validated(classe_id, trimestre)
 
@@ -251,8 +250,11 @@ async def import_pdf(
         }
 
     except Exception as e:
-        logger.error(f"Error importing {file.filename}: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        logger.error(f"Error importing {file.filename}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de l'import du PDF. Consultez les logs du serveur.",
+        ) from e
 
     finally:
         tmp_path.unlink(missing_ok=True)

@@ -85,7 +85,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         Returns:
             synthese_id of created record.
         """
-        synthese_id = str(uuid.uuid4())[:8]
+        synthese_id = str(uuid.uuid4())[:12]
         metadata = metadata or {}
 
         self._execute_write(

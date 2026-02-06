@@ -5,6 +5,7 @@ from api_client import ChironAPIClient
 from pydantic_settings import BaseSettings
 
 from src.llm.config import settings as llm_settings
+from src.llm.pricing import PricingCalculator
 
 # Estimation tokens par bulletin (basé sur ground truth)
 TOKENS_INPUT_PER_BULLETIN = 2000
@@ -69,16 +70,8 @@ def estimate_cost_per_bulletin(provider: str, model: str) -> float:
     Returns:
         Coût estimé en USD par bulletin.
     """
-    pricing = llm_settings.get_pricing(provider)
-    if model not in pricing:
-        return 0.0
-
-    input_price, output_price = pricing[model]
-    # Prix par million de tokens -> prix par token -> prix par bulletin
-    cost = (TOKENS_INPUT_PER_BULLETIN * input_price / 1_000_000) + (
-        TOKENS_OUTPUT_PER_BULLETIN * output_price / 1_000_000
-    )
-    return cost
+    calc = PricingCalculator(provider, llm_settings.get_pricing(provider))
+    return calc.calculate(model, TOKENS_INPUT_PER_BULLETIN, TOKENS_OUTPUT_PER_BULLETIN)
 
 
 def format_model_label(provider: str, model: str) -> str:
@@ -112,31 +105,6 @@ def estimate_total_cost(provider: str, model: str, nb_eleves: int) -> float:
         Coût total estimé en USD.
     """
     return estimate_cost_per_bulletin(provider, model) * nb_eleves
-
-
-def calculate_actual_cost(
-    provider: str, model: str, tokens_input: int, tokens_output: int
-) -> float:
-    """Calcule le coût réel basé sur les tokens utilisés.
-
-    Args:
-        provider: Provider LLM.
-        model: Nom du modèle.
-        tokens_input: Nombre de tokens en entrée.
-        tokens_output: Nombre de tokens en sortie.
-
-    Returns:
-        Coût réel en USD.
-    """
-    pricing = llm_settings.get_pricing(provider)
-    if model not in pricing:
-        return 0.0
-
-    input_price, output_price = pricing[model]
-    cost = (tokens_input * input_price / 1_000_000) + (
-        tokens_output * output_price / 1_000_000
-    )
-    return cost
 
 
 @st.cache_resource

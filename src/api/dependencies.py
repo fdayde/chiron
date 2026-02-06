@@ -2,6 +2,8 @@
 
 from functools import lru_cache
 
+from fastapi import HTTPException
+
 from src.generation.generator import SyntheseGenerator
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.classe import ClasseRepository
@@ -31,6 +33,26 @@ def get_synthese_repo() -> SyntheseRepository:
 def get_pseudonymizer() -> Pseudonymizer:
     """Get Pseudonymizer singleton."""
     return Pseudonymizer()
+
+
+def get_or_404(repo, *args, entity_name: str = "Resource"):
+    """Fetch an entity from a repository or raise 404.
+
+    Args:
+        repo: Repository with a get() method.
+        *args: Positional arguments passed to repo.get().
+        entity_name: Name for the error message.
+
+    Returns:
+        The entity found.
+
+    Raises:
+        HTTPException: 404 if entity not found.
+    """
+    entity = repo.get(*args)
+    if not entity:
+        raise HTTPException(status_code=404, detail=f"{entity_name} not found")
+    return entity
 
 
 def get_synthese_generator(

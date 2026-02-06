@@ -192,8 +192,9 @@
 - **Impact** : Les eleves importes via Mistral OCR n'ont ni matieres, ni notes, ni absences
 - **Fichiers** :
   - `src/document/mistral_parser.py:90-97`
-- **Correction** : Documenter cette limitation clairement dans l'UI, ou ajouter un post-traitement qui extrait les donnees structurees du `raw_text`.
-- [ ] Corrige
+- **Correction** : Warning ajoute dans l'UI (page import).
+- [x] Warning UI ajoute
+- **Piste future** : Reutiliser les fonctions d'extraction du pdfplumber parser (`extract_key_value`, `extract_number`, `parse_engagements`) sur le `raw_text` markdown de Mistral OCR, et parser les tables markdown pour extraire les matieres. A tester avec des vrais PDFs via Mistral OCR d'abord.
 
 ---
 

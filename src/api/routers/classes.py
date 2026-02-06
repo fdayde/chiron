@@ -3,7 +3,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 
-from src.api.dependencies import get_classe_repo, get_eleve_repo, get_synthese_repo
+from src.api.dependencies import (
+    get_classe_repo,
+    get_eleve_repo,
+    get_or_404,
+    get_synthese_repo,
+)
 from src.core.constants import get_current_school_year
 from src.storage.repositories.classe import Classe, ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
@@ -106,9 +111,7 @@ def get_classe(
     repo: ClasseRepository = Depends(get_classe_repo),
 ) -> ClasseResponse:
     """Get a class by ID."""
-    classe = repo.get(classe_id)
-    if not classe:
-        raise HTTPException(status_code=404, detail="Class not found")
+    classe = get_or_404(repo, classe_id, entity_name="Class")
     return ClasseResponse(
         classe_id=classe.classe_id,
         nom=classe.nom,
@@ -125,9 +128,7 @@ def get_classe_eleves(
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
 ):
     """Get all students in a class."""
-    classe = classe_repo.get(classe_id)
-    if not classe:
-        raise HTTPException(status_code=404, detail="Class not found")
+    get_or_404(classe_repo, classe_id, entity_name="Class")
 
     eleves = eleve_repo.get_by_classe(classe_id, trimestre)
     return [
@@ -155,9 +156,7 @@ def get_classe_eleves_with_syntheses(
     Optimized endpoint to avoid N+1 queries in the UI.
     Returns students with embedded synthesis data.
     """
-    classe = classe_repo.get(classe_id)
-    if not classe:
-        raise HTTPException(status_code=404, detail="Class not found")
+    get_or_404(classe_repo, classe_id, entity_name="Class")
 
     # Fetch all students and all syntheses in 2 queries (not N+1)
     eleves = eleve_repo.get_by_classe(classe_id, trimestre)
@@ -195,9 +194,7 @@ def get_classe_stats(
 
     Returns counts, tokens, and cost for all syntheses.
     """
-    classe = classe_repo.get(classe_id)
-    if not classe:
-        raise HTTPException(status_code=404, detail="Class not found")
+    get_or_404(classe_repo, classe_id, entity_name="Class")
 
     # Get student count
     eleves = eleve_repo.get_by_classe(classe_id, trimestre)
@@ -227,8 +224,6 @@ def delete_classe(
     repo: ClasseRepository = Depends(get_classe_repo),
 ):
     """Delete a class."""
-    classe = repo.get(classe_id)
-    if not classe:
-        raise HTTPException(status_code=404, detail="Class not found")
+    get_or_404(repo, classe_id, entity_name="Class")
     repo.delete(classe_id)
     return {"status": "deleted", "classe_id": classe_id}
