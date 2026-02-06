@@ -115,8 +115,8 @@ MISTRAL_OCR_API_KEY=...
 MISTRAL_OCR_MODEL=mistral-ocr-latest
 
 # Modèle par défaut
-DEFAULT_LLM_PROVIDER=openai
-DEFAULT_LLM_MODEL=gpt-5-mini
+DEFAULT_LLM_PROVIDER=anthropic
+DEFAULT_LLM_MODEL=claude-haiku-4-5
 
 # API Backend
 CHIRON_API_HOST=127.0.0.1

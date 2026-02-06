@@ -133,8 +133,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 MISTRAL_API_KEY=...
 
 # Provider et modèle par défaut
-DEFAULT_LLM_PROVIDER=openai
-DEFAULT_LLM_MODEL=gpt-5-mini
+DEFAULT_LLM_PROVIDER=anthropic
+DEFAULT_LLM_MODEL=claude-haiku-4-5
 ```
 
 ---

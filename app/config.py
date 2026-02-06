@@ -20,7 +20,7 @@ class UISettings(BaseSettings):
     page_icon: str = "📚"
 
     # LLM generation defaults - référence la config centrale
-    default_provider: str = "openai"
+    default_provider: str = "anthropic"
     default_model: str = ""  # Empty = use provider default from llm_settings
     default_temperature: float = llm_settings.default_temperature
 
