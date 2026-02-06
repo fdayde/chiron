@@ -1,6 +1,6 @@
 # Chiron
 
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#-statut-du-projet)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![DuckDB](https://img.shields.io/badge/DuckDB-local-FEF502)](https://duckdb.org/)
@@ -38,7 +38,7 @@ PDF PRONOTE → Anonymisation NER → OCR Cloud → Génération LLM → Validat
 
 ## Prérequis
 
-- Python 3.11+
+- Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
 - Clés API : OpenAI et/ou Anthropic, Mistral (OCR)
 
@@ -46,7 +46,7 @@ PDF PRONOTE → Anonymisation NER → OCR Cloud → Génération LLM → Validat
 
 ```bash
 # Cloner le repo
-git clone https://github.com/[user]/chiron.git
+git clone https://github.com/<votre-username>/chiron.git
 cd chiron
 
 # Créer l'environnement virtuel
@@ -83,6 +83,8 @@ streamlit run app/main.py
 
 Ouvrir http://localhost:8501 dans le navigateur.
 
+API Swagger UI disponible sur http://localhost:8000/docs.
+
 ### Workflow type
 
 1. **Import** : Uploader les PDF bulletins de la classe
@@ -96,8 +98,8 @@ Ouvrir http://localhost:8501 dans le navigateur.
 | Étape | Coût estimé |
 |-------|-------------|
 | Mistral OCR | ~$0.02/page |
-| Génération LLM (GPT-4o-mini) | ~$0.002/élève |
-| **Classe de 30 élèves** | **~$0.70** |
+| Génération LLM (GPT-5-mini) | ~$0.0015/élève |
+| **Classe de 30 élèves** | **~$0.65** |
 
 ## Configuration (.env)
 
@@ -107,12 +109,21 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 MISTRAL_API_KEY=...
 
-# Mistral OCR (peut être la même que MISTRAL_API_KEY)
+# PDF Parser : pdfplumber (gratuit, local) ou mistral_ocr (cloud, payant)
+PDF_PARSER_TYPE=pdfplumber
 MISTRAL_OCR_API_KEY=...
+MISTRAL_OCR_MODEL=mistral-ocr-latest
 
 # Modèle par défaut
 DEFAULT_LLM_PROVIDER=openai
-USE_TEST_MODELS=false  # true pour utiliser les modèles économiques
+DEFAULT_LLM_MODEL=gpt-5-mini
+
+# API Backend
+CHIRON_API_HOST=127.0.0.1
+API_PORT=8000
+
+# Base de données
+DB_PATH=data/db/chiron.duckdb
 ```
 
 ## Structure du projet
@@ -120,38 +131,41 @@ USE_TEST_MODELS=false  # true pour utiliser les modèles économiques
 ```
 chiron/
 ├── src/
-│   ├── llm/                  # Abstraction LLM multi-provider
-│   │   ├── manager.py        # LLMManager (registry pattern, rate limiting)
-│   │   ├── config.py         # Settings (clés API, modèles, pricing)
-│   │   └── clients/          # OpenAI, Anthropic, Mistral
+│   ├── api/                  # Backend REST FastAPI
+│   │   ├── main.py           # App FastAPI + lifespan
+│   │   ├── dependencies.py   # Injection de dépendances (get_or_404, repos)
+│   │   └── routers/          # classes, eleves, syntheses, exports
+│   ├── core/                 # Transverse
+│   │   ├── constants.py      # Année scolaire, constantes
+│   │   ├── models.py         # Modèles Pydantic (Eleve, Synthese, Alerte...)
+│   │   └── exceptions.py     # Hiérarchie d'exceptions custom
 │   ├── document/             # Parsing PDF
+│   │   ├── pdfplumber_parser.py # Extraction locale (gratuit)
 │   │   ├── mistral_parser.py # OCR cloud (Mistral)
-│   │   ├── pdfplumber_parser.py # Extraction locale
 │   │   └── anonymizer.py     # Anonymisation NER + PyMuPDF
-│   ├── privacy/              # Pseudonymisation RGPD
-│   │   └── pseudonymizer.py  # Mapping nom ↔ ELEVE_XXX
-│   ├── storage/              # Persistance DuckDB
-│   │   ├── connection.py     # DuckDBConnection base class
-│   │   └── repositories/     # CRUD (héritent de DuckDBConnection)
 │   ├── generation/           # Génération synthèses
 │   │   ├── generator.py      # SyntheseGenerator (DI)
-│   │   └── prompt_builder.py # Construction prompts few-shot
-│   ├── api/                  # Backend REST FastAPI
-│   │   └── routers/          # classes, eleves, syntheses, exports
-│   └── core/                 # Config, models, utils
+│   │   ├── prompts.py        # Templates de prompts versionnés (v1, v2)
+│   │   └── prompt_builder.py # Formatage données élève pour le prompt
+│   ├── llm/                  # Abstraction LLM multi-provider
+│   │   ├── manager.py        # LLMManager (registry, retry, rate limiting)
+│   │   ├── config.py         # Settings (clés API, modèles, pricing)
+│   │   ├── pricing.py        # Calcul de coûts unifié
+│   │   └── clients/          # OpenAI, Anthropic, Mistral
+│   ├── privacy/              # Pseudonymisation RGPD
+│   │   └── pseudonymizer.py  # Mapping nom ↔ ELEVE_XXX (DuckDB séparé)
+│   └── storage/              # Persistance DuckDB
+│       ├── connection.py     # DuckDBConnection base class
+│       ├── schemas.py        # Définitions des tables SQL
+│       └── repositories/     # CRUD (classes, eleves, syntheses)
 ├── app/                      # Frontend Streamlit
-│   ├── main.py
-│   ├── pages/                # Import, Review, Export
-│   └── components/           # UI components
+│   ├── main.py               # Entry point + navigation
+│   ├── api_client.py         # Client HTTP vers l'API FastAPI
+│   ├── config.py             # Settings UI (providers, coûts)
+│   ├── pages/                # 1_import, 2_syntheses, 3_Export
+│   └── components/           # sidebar, eleve_card, synthese_editor...
 ├── data/
-│   ├── raw/                  # PDFs importés
-│   ├── processed/            # PDFs anonymisés
-│   ├── db/                   # DuckDB (chiron.duckdb, privacy.duckdb)
-│   └── exports/              # CSV exportés
-├── notebooks/                # Développement et tests
-│   ├── 04_production_simulation.ipynb
-│   ├── 05_pdf_anonymization_test.ipynb
-│   └── 06_workflow_complet.ipynb
+│   └── db/                   # DuckDB (chiron.duckdb, privacy.duckdb)
 ├── docs/                     # Documentation technique
 └── tests/
 ```
@@ -171,8 +185,8 @@ chiron/
 
 | Composant | Technologie |
 |-----------|-------------|
-| Runtime | Python 3.11+ |
-| LLM Chat | OpenAI GPT-4o-mini / Claude Sonnet |
+| Runtime | Python 3.13+ |
+| LLM Chat | OpenAI GPT-5-mini / Claude Sonnet 4.5 |
 | LLM OCR | **Mistral OCR** (mistral-ocr-latest) |
 | NER | **CamemBERT** (Jean-Baptiste/camembert-ner) |
 | PDF manipulation | **PyMuPDF** (fitz) + pdfplumber |

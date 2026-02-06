@@ -30,10 +30,10 @@ class DuckDBRepository[T](DuckDBConnection, ABC):
     """
 
     def __init__(self, db_path: Path | str | None = None) -> None:
-        """Initialize repository.
+        """Initialise le repository.
 
         Args:
-            db_path: Path to database. Defaults to config setting.
+            db_path: Chemin vers la base. Par défaut: valeur de la config.
         """
         super().__init__(db_path)
 
@@ -64,14 +64,14 @@ class DuckDBRepository[T](DuckDBConnection, ABC):
     # _get_conn() est hérité de DuckDBConnection
 
     def _execute(self, sql: str, params: list | None = None) -> list[tuple]:
-        """Execute SQL and return results.
+        """Exécute du SQL et retourne les résultats.
 
         Args:
-            sql: SQL statement.
-            params: Optional parameters.
+            sql: Requête SQL.
+            params: Paramètres optionnels.
 
         Returns:
-            List of result tuples.
+            Liste de tuples résultat.
         """
         with self._get_conn() as conn:
             if params:
@@ -79,24 +79,24 @@ class DuckDBRepository[T](DuckDBConnection, ABC):
             return conn.execute(sql).fetchall()
 
     def _execute_one(self, sql: str, params: list | None = None) -> tuple | None:
-        """Execute SQL and return single result.
+        """Exécute du SQL et retourne un seul résultat.
 
         Args:
-            sql: SQL statement.
-            params: Optional parameters.
+            sql: Requête SQL.
+            params: Paramètres optionnels.
 
         Returns:
-            Single tuple or None.
+            Tuple unique ou None.
         """
         results = self._execute(sql, params)
         return results[0] if results else None
 
     def _execute_write(self, sql: str, params: list | None = None) -> None:
-        """Execute write SQL (INSERT, UPDATE, DELETE).
+        """Exécute du SQL d'écriture (INSERT, UPDATE, DELETE).
 
         Args:
-            sql: SQL statement.
-            params: Optional parameters.
+            sql: Requête SQL.
+            params: Paramètres optionnels.
         """
         with self._get_conn() as conn:
             if params:
@@ -105,13 +105,13 @@ class DuckDBRepository[T](DuckDBConnection, ABC):
                 conn.execute(sql)
 
     def exists(self, entity_id: str) -> bool:
-        """Check if entity exists.
+        """Vérifie si une entité existe.
 
         Args:
-            entity_id: Entity identifier.
+            entity_id: Identifiant de l'entité.
 
         Returns:
-            True if exists.
+            True si elle existe.
         """
         result = self._execute_one(
             f"SELECT 1 FROM {self.table_name} WHERE {self.id_column} = ?",
@@ -120,13 +120,13 @@ class DuckDBRepository[T](DuckDBConnection, ABC):
         return result is not None
 
     def delete(self, entity_id: str) -> bool:
-        """Delete an entity.
+        """Supprime une entité.
 
         Args:
-            entity_id: Entity identifier.
+            entity_id: Identifiant de l'entité.
 
         Returns:
-            True if deleted.
+            True si supprimée.
         """
         self._execute_write(
             f"DELETE FROM {self.table_name} WHERE {self.id_column} = ?",

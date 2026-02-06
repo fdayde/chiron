@@ -1,7 +1,7 @@
-"""PDF generator for synthetic bulletins.
+"""Générateur de bulletins PDF synthétiques.
 
-Generates PDF bulletins from EleveExtraction/EleveGroundTruth data,
-mimicking PRONOTE format for parser testing and development.
+Génère des bulletins PDF à partir de données EleveExtraction/EleveGroundTruth,
+imitant le format PRONOTE pour tester le parser.
 
 Structure PRONOTE :
 - Header avec infos établissement
@@ -35,22 +35,22 @@ logger = logging.getLogger(__name__)
 
 
 def _color_from_tuple(rgb: tuple[float, float, float]) -> Color:
-    """Convert RGB tuple (0-1 scale) to reportlab Color."""
+    """Convertit un tuple RGB (échelle 0-1) en Color reportlab."""
     return Color(rgb[0], rgb[1], rgb[2])
 
 
 def _escape_html(text: str) -> str:
-    """Escape HTML special characters for Paragraph."""
+    """Échappe les caractères spéciaux HTML pour Paragraph."""
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 class BulletinPDFGenerator:
-    """Generates synthetic PDF bulletins from student data.
+    """Génère des bulletins PDF synthétiques à partir de données élèves.
 
-    Creates PDFs that mimic PRONOTE bulletin format :
-    - Header with establishment and student info
-    - 4-column table (Matières, Moyennes, Éléments programme, Appréciations)
-    - Footer with engagements, parcours, absences
+    Crée des PDF imitant le format PRONOTE :
+    - En-tête avec infos établissement et élève
+    - Tableau 4 colonnes (Matières, Moyennes, Éléments programme, Appréciations)
+    - Pied de page avec engagements, parcours, absences
 
     Usage:
         generator = BulletinPDFGenerator()
@@ -61,17 +61,17 @@ class BulletinPDFGenerator:
         self,
         output_dir: Path | None = None,
     ) -> None:
-        """Initialize generator.
+        """Initialise le générateur.
 
         Args:
-            output_dir: Directory for generated PDFs (default: DATA_RAW_DIR).
+            output_dir: Répertoire de sortie (défaut: DATA_RAW_DIR).
         """
         self.output_dir = Path(output_dir) if output_dir else DATA_RAW_DIR
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._init_styles()
 
     def _init_styles(self) -> None:
-        """Initialize paragraph styles."""
+        """Initialise les styles de paragraphe."""
         self.styles = getSampleStyleSheet()
 
         # Header title style (centered)
@@ -144,15 +144,15 @@ class BulletinPDFGenerator:
         etablissement: str = "Collège Test",
         filename: str | None = None,
     ) -> Path:
-        """Generate a single PDF bulletin.
+        """Génère un bulletin PDF unique.
 
         Args:
-            eleve: Student data to generate bulletin for.
-            etablissement: School name for header.
-            filename: Custom filename (default: {eleve_id}.pdf).
+            eleve: Données de l'élève.
+            etablissement: Nom de l'établissement pour l'en-tête.
+            filename: Nom de fichier personnalisé (défaut: {eleve_id}.pdf).
 
         Returns:
-            Path to generated PDF file.
+            Chemin vers le PDF généré.
         """
         # Determine filename
         if filename is None:
@@ -197,14 +197,14 @@ class BulletinPDFGenerator:
         eleves: list["EleveExtraction | EleveGroundTruth"],
         etablissement: str = "Collège Test",
     ) -> list[Path]:
-        """Generate PDFs for multiple students.
+        """Génère des PDF pour plusieurs élèves.
 
         Args:
-            eleves: List of students.
-            etablissement: School name for headers.
+            eleves: Liste d'élèves.
+            etablissement: Nom de l'établissement.
 
         Returns:
-            List of paths to generated PDFs.
+            Liste de chemins vers les PDF générés.
         """
         paths = []
         for eleve in eleves:
@@ -222,7 +222,7 @@ class BulletinPDFGenerator:
         eleve: "EleveExtraction | EleveGroundTruth",
         etablissement: str,
     ) -> list:
-        """Build header section with establishment and basic info."""
+        """Construit l'en-tête avec infos établissement."""
         elements = []
 
         # No duplicate notice (small, centered, at top)
@@ -245,7 +245,7 @@ class BulletinPDFGenerator:
         return elements
 
     def _build_table(self, eleve: "EleveExtraction | EleveGroundTruth") -> Table:
-        """Build grades table with 4 columns (PRONOTE format)."""
+        """Construit le tableau de notes à 4 colonnes (format PRONOTE)."""
         # Header row
         header = [
             Paragraph(f"<b>{TABLE_CONFIG['columns'][0]}</b>", self.styles["TableCell"]),
@@ -303,7 +303,7 @@ class BulletinPDFGenerator:
         return table
 
     def _build_matiere_row(self, matiere) -> list:
-        """Build a single row for a subject."""
+        """Construit une ligne pour une matière."""
         # Column 1: Matière + professeur
         matiere_text = f"<b>{_escape_html(matiere.nom)}</b>"
         if matiere.professeur:
@@ -357,7 +357,7 @@ class BulletinPDFGenerator:
         return [matiere_cell, note_cell, comp_cell, appreciation_cell]
 
     def _build_footer(self, eleve: "EleveExtraction | EleveGroundTruth") -> list:
-        """Build footer with engagements, parcours, absences, signature."""
+        """Construit le pied de page avec engagements, parcours, absences, signature."""
         elements = []
         elements.append(Spacer(1, 8))
 

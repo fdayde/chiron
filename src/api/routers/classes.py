@@ -1,4 +1,4 @@
-"""Classes router."""
+"""Router des classes."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
@@ -18,7 +18,7 @@ router = APIRouter()
 
 
 class ClasseCreate(BaseModel):
-    """Request model for creating a class."""
+    """Modèle de requête pour créer une classe."""
 
     nom: str
     niveau: str | None = None
@@ -31,7 +31,7 @@ class ClasseCreate(BaseModel):
 
 
 class ClasseResponse(BaseModel):
-    """Response model for a class."""
+    """Modèle de réponse pour une classe."""
 
     classe_id: str
     nom: str
@@ -44,7 +44,7 @@ def create_classe(
     data: ClasseCreate,
     repo: ClasseRepository = Depends(get_classe_repo),
 ) -> ClasseResponse:
-    """Create a new class."""
+    """Créer une nouvelle classe."""
     classe = Classe(
         classe_id="",  # Will be generated
         nom=data.nom,
@@ -71,13 +71,13 @@ def list_classes(
     limit: int = 100,
     repo: ClasseRepository = Depends(get_classe_repo),
 ) -> list[ClasseResponse]:
-    """List all classes with optional filters and pagination.
+    """Liste les classes avec filtres et pagination optionnels.
 
     Args:
-        annee_scolaire: Filter by school year.
-        niveau: Filter by level (e.g., "5eme").
-        skip: Number of records to skip (default: 0).
-        limit: Maximum number of records to return (default: 100, max: 1000).
+        annee_scolaire: Filtrer par année scolaire.
+        niveau: Filtrer par niveau (ex: "5eme").
+        skip: Nombre d'enregistrements à sauter (défaut: 0).
+        limit: Nombre max d'enregistrements (défaut: 100, max: 1000).
     """
     # Clamp limit to prevent excessive queries
     limit = min(max(1, limit), 1000)
@@ -110,7 +110,7 @@ def get_classe(
     classe_id: str,
     repo: ClasseRepository = Depends(get_classe_repo),
 ) -> ClasseResponse:
-    """Get a class by ID."""
+    """Récupérer une classe par ID."""
     classe = get_or_404(repo, classe_id, entity_name="Class")
     return ClasseResponse(
         classe_id=classe.classe_id,
@@ -127,7 +127,7 @@ def get_classe_eleves(
     classe_repo: ClasseRepository = Depends(get_classe_repo),
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
 ):
-    """Get all students in a class."""
+    """Récupérer tous les élèves d'une classe."""
     get_or_404(classe_repo, classe_id, entity_name="Class")
 
     eleves = eleve_repo.get_by_classe(classe_id, trimestre)
@@ -151,10 +151,9 @@ def get_classe_eleves_with_syntheses(
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Get all students with their syntheses in one call.
+    """Récupérer les élèves avec leurs synthèses en un seul appel.
 
-    Optimized endpoint to avoid N+1 queries in the UI.
-    Returns students with embedded synthesis data.
+    Endpoint optimisé pour éviter les requêtes N+1 côté UI.
     """
     get_or_404(classe_repo, classe_id, entity_name="Class")
 
@@ -190,9 +189,9 @@ def get_classe_stats(
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Get aggregated statistics for a class and trimester.
+    """Statistiques agrégées pour une classe et un trimestre.
 
-    Returns counts, tokens, and cost for all syntheses.
+    Retourne les compteurs, tokens et coûts des synthèses.
     """
     get_or_404(classe_repo, classe_id, entity_name="Class")
 
@@ -223,7 +222,7 @@ def delete_classe(
     classe_id: str,
     repo: ClasseRepository = Depends(get_classe_repo),
 ):
-    """Delete a class."""
+    """Supprimer une classe."""
     get_or_404(repo, classe_id, entity_name="Class")
     repo.delete(classe_id)
     return {"status": "deleted", "classe_id": classe_id}

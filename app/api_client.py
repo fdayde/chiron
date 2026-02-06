@@ -1,4 +1,4 @@
-"""HTTP client for Chiron API."""
+"""Client HTTP pour l'API Chiron."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import httpx
 
 
 class ChironAPIClient:
-    """Client for interacting with the Chiron API."""
+    """Client pour interagir avec l'API Chiron."""
 
     # Timeout for standard requests (seconds)
     DEFAULT_TIMEOUT = 30.0
@@ -27,7 +27,7 @@ class ChironAPIClient:
         self._client = httpx.Client(timeout=self.DEFAULT_TIMEOUT)
 
     def close(self) -> None:
-        """Close the underlying HTTP client."""
+        """Ferme le client HTTP sous-jacent."""
         self._client.close()
 
     def __del__(self) -> None:
@@ -38,7 +38,7 @@ class ChironAPIClient:
 
     @staticmethod
     def _raise_for_status(response: httpx.Response) -> None:
-        """Raise an exception with the API error detail if available."""
+        """Lève une exception avec le détail de l'erreur API si disponible."""
         if response.is_success:
             return
         try:
@@ -50,7 +50,7 @@ class ChironAPIClient:
     def _get(
         self, endpoint: str, params: dict | None = None, timeout: float | None = None
     ) -> dict | list:
-        """Make a GET request."""
+        """Effectue une requête GET."""
         response = self._client.get(
             f"{self.base_url}{endpoint}",
             params=params,
@@ -66,7 +66,7 @@ class ChironAPIClient:
         files: dict | None = None,
         timeout: float | None = None,
     ) -> dict:
-        """Make a POST request."""
+        """Effectue une requête POST."""
         response = self._client.post(
             f"{self.base_url}{endpoint}",
             json=json,
@@ -77,7 +77,7 @@ class ChironAPIClient:
         return response.json()
 
     def _patch(self, endpoint: str, json: dict, timeout: float | None = None) -> dict:
-        """Make a PATCH request."""
+        """Effectue une requête PATCH."""
         response = self._client.patch(
             f"{self.base_url}{endpoint}",
             json=json,
@@ -87,7 +87,7 @@ class ChironAPIClient:
         return response.json()
 
     def _delete(self, endpoint: str, timeout: float | None = None) -> dict:
-        """Make a DELETE request."""
+        """Effectue une requête DELETE."""
         response = self._client.delete(
             f"{self.base_url}{endpoint}",
             timeout=timeout or self.DEFAULT_TIMEOUT,
@@ -99,7 +99,7 @@ class ChironAPIClient:
     def list_classes(
         self, annee_scolaire: str | None = None, niveau: str | None = None
     ) -> list[dict]:
-        """List all classes."""
+        """Lister toutes les classes."""
         params = {}
         if annee_scolaire:
             params["annee_scolaire"] = annee_scolaire
@@ -110,34 +110,34 @@ class ChironAPIClient:
     def create_classe(
         self, nom: str, niveau: str | None = None, annee_scolaire: str | None = None
     ) -> dict:
-        """Create a new class."""
+        """Créer une nouvelle classe."""
         data: dict = {"nom": nom, "niveau": niveau}
         if annee_scolaire:
             data["annee_scolaire"] = annee_scolaire
         return self._post("/classes", json=data)
 
     def get_classe(self, classe_id: str) -> dict:
-        """Get a class by ID."""
+        """Récupérer une classe par ID."""
         return self._get(f"/classes/{classe_id}")
 
     def delete_classe(self, classe_id: str) -> dict:
-        """Delete a class."""
+        """Supprimer une classe."""
         return self._delete(f"/classes/{classe_id}")
 
     def get_classe_stats(self, classe_id: str, trimestre: int) -> dict:
-        """Get aggregated statistics for a class and trimester."""
+        """Statistiques agrégées pour une classe et un trimestre."""
         return self._get(f"/classes/{classe_id}/stats", {"trimestre": trimestre})
 
     # Eleves
     def get_eleves(self, classe_id: str, trimestre: int | None = None) -> list[dict]:
-        """Get students for a class."""
+        """Récupérer les élèves d'une classe."""
         params = {"trimestre": trimestre} if trimestre else None
         return self._get(f"/classes/{classe_id}/eleves", params)
 
     def get_eleves_with_syntheses(self, classe_id: str, trimestre: int) -> list[dict]:
-        """Get students with their syntheses in one call.
+        """Récupérer les élèves avec leurs synthèses en un seul appel.
 
-        Optimized to avoid N+1 queries.
+        Optimisé pour éviter les requêtes N+1.
         """
         return self._get(
             f"/classes/{classe_id}/eleves-with-syntheses",
@@ -145,16 +145,16 @@ class ChironAPIClient:
         )
 
     def get_eleve(self, eleve_id: str) -> dict:
-        """Get a student by ID."""
+        """Récupérer un élève par ID."""
         return self._get(f"/eleves/{eleve_id}")
 
     def get_eleve_synthese(self, eleve_id: str, trimestre: int | None = None) -> dict:
-        """Get the synthesis for a student."""
+        """Récupérer la synthèse d'un élève."""
         params = {"trimestre": trimestre} if trimestre else None
         return self._get(f"/eleves/{eleve_id}/synthese", params)
 
     def delete_eleve(self, eleve_id: str) -> dict:
-        """Delete a student."""
+        """Supprimer un élève."""
         return self._delete(f"/eleves/{eleve_id}")
 
     # Syntheses
@@ -166,17 +166,17 @@ class ChironAPIClient:
         model: str | None = None,
         temperature: float | None = None,
     ) -> dict:
-        """Generate a synthesis for a student using LLM.
+        """Générer une synthèse pour un élève via LLM.
 
         Args:
-            eleve_id: Student identifier.
-            trimestre: Trimester number.
-            provider: LLM provider (openai, anthropic, mistral).
-            model: Specific model (None = provider default).
-            temperature: Sampling temperature (None = backend default).
+            eleve_id: Identifiant de l'élève.
+            trimestre: Numéro du trimestre.
+            provider: Provider LLM (openai, anthropic, mistral).
+            model: Modèle spécifique (None = défaut du provider).
+            temperature: Température de sampling (None = défaut backend).
 
         Returns:
-            Generated synthesis with metadata.
+            Synthèse générée avec métadonnées.
         """
         payload: dict = {
             "eleve_id": eleve_id,
@@ -201,7 +201,7 @@ class ChironAPIClient:
         alertes: list[dict] | None = None,
         reussites: list[dict] | None = None,
     ) -> dict:
-        """Update a synthesis."""
+        """Modifier une synthèse."""
         data = {}
         if synthese_texte is not None:
             data["synthese_texte"] = synthese_texte
@@ -214,18 +214,18 @@ class ChironAPIClient:
     def validate_synthese(
         self, synthese_id: str, validated_by: str | None = None
     ) -> dict:
-        """Validate a synthesis."""
+        """Valider une synthèse."""
         return self._post(
             f"/syntheses/{synthese_id}/validate",
             json={"validated_by": validated_by},
         )
 
     def delete_synthese(self, synthese_id: str) -> dict:
-        """Delete a synthesis."""
+        """Supprimer une synthèse."""
         return self._delete(f"/syntheses/{synthese_id}")
 
     def get_pending_syntheses(self, classe_id: str | None = None) -> dict:
-        """Get all pending syntheses."""
+        """Récupérer les synthèses en attente de validation."""
         params = {"classe_id": classe_id} if classe_id else None
         return self._get("/syntheses/pending", params)
 
@@ -233,7 +233,7 @@ class ChironAPIClient:
     def import_pdf(
         self, file_content: bytes, filename: str, classe_id: str, trimestre: int
     ) -> dict:
-        """Import a PDF bulletin."""
+        """Importer un bulletin PDF."""
         response = self._client.post(
             f"{self.base_url}/import/pdf",
             params={"classe_id": classe_id, "trimestre": trimestre},
@@ -249,7 +249,7 @@ class ChironAPIClient:
         classe_id: str,
         trimestre: int,
     ) -> dict:
-        """Import multiple PDF bulletins."""
+        """Importer plusieurs bulletins PDF."""
         files_data = [
             ("files", (name, content, "application/pdf")) for name, content in files
         ]
@@ -263,7 +263,7 @@ class ChironAPIClient:
         return response.json()
 
     def export_csv(self, classe_id: str, trimestre: int) -> bytes:
-        """Export validated syntheses as CSV."""
+        """Exporter les synthèses validées en CSV."""
         response = self._client.get(
             f"{self.base_url}/export/csv",
             params={"classe_id": classe_id, "trimestre": trimestre},
@@ -273,5 +273,5 @@ class ChironAPIClient:
 
     # Health
     def health(self) -> dict:
-        """Check API health."""
+        """Vérifier la santé de l'API."""
         return self._get("/health")

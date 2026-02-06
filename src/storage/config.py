@@ -1,4 +1,4 @@
-"""Storage module configuration."""
+"""Configuration du module de stockage."""
 
 from pathlib import Path
 
@@ -8,7 +8,7 @@ from src.core.constants import DATA_DIR
 
 
 class StorageSettings(BaseSettings):
-    """Settings for storage/database."""
+    """Paramètres de stockage/base de données."""
 
     db_path: Path = DATA_DIR / "db" / "chiron.duckdb"
 

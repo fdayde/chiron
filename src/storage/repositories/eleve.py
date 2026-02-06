@@ -1,4 +1,4 @@
-"""Repository for student (eleve) data.
+"""Repository des élèves.
 
 Gère le stockage des données élèves avec clé composite (eleve_id, trimestre).
 Un même élève peut avoir plusieurs enregistrements, un par trimestre.
@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class EleveRepository(DuckDBRepository[EleveExtraction]):
-    """Repository for managing students.
+    """Repository pour la gestion des élèves.
 
-    Note: La clé primaire est (eleve_id, trimestre), pas eleve_id seul.
+    Note : La clé primaire est (eleve_id, trimestre), pas eleve_id seul.
     Utiliser exists(eleve_id, trimestre) pour vérifier l'existence.
     """
 
@@ -31,16 +31,15 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         return "eleve_id"
 
     def _row_to_entity(self, row: tuple) -> EleveExtraction:
-        """Convert database row to EleveExtraction.
+        """Convertit une ligne SQL en EleveExtraction.
 
-        Expected row format from SELECT:
+        Format attendu du SELECT :
             0: eleve_id, 1: classe_id, 2: trimestre,
             3: raw_text, 4: moyenne_generale,
             5: genre, 6: absences_demi_journees, 7: absences_justifiees, 8: retards,
             9: engagements, 10: parcours, 11: evenements, 12: matieres
 
-        Handles corrupted JSON data gracefully by logging warnings
-        and returning empty lists/defaults instead of crashing.
+        Gère le JSON corrompu en loggant un warning et retournant des valeurs par défaut.
         """
         eleve_id = row[0]
 
@@ -79,16 +78,16 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         )
 
     def create(self, eleve: EleveExtraction) -> str:
-        """Create a new student record for a specific trimester.
+        """Crée un enregistrement élève pour un trimestre donné.
 
         Args:
-            eleve: Student data to store (must have eleve_id and trimestre).
+            eleve: Données de l'élève (eleve_id et trimestre requis).
 
         Returns:
-            eleve_id of created student.
+            eleve_id de l'élève créé.
 
         Raises:
-            ValueError: If eleve_id or trimestre is not set.
+            ValueError: Si eleve_id ou trimestre manquant.
         """
         if not eleve.eleve_id:
             raise ValueError("eleve_id is required")
@@ -126,14 +125,14 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
     def get(
         self, eleve_id: str, trimestre: int | None = None
     ) -> EleveExtraction | None:
-        """Get a student by ID and optionally trimester.
+        """Récupère un élève par ID et optionnellement par trimestre.
 
         Args:
-            eleve_id: Student identifier.
-            trimestre: Trimester number. If None, returns the latest.
+            eleve_id: Identifiant de l'élève.
+            trimestre: Numéro du trimestre. Si None, retourne le plus récent.
 
         Returns:
-            EleveExtraction or None.
+            EleveExtraction ou None.
         """
         if trimestre is not None:
             result = self._execute_one(
@@ -167,14 +166,14 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         return self._row_to_entity(result)
 
     def exists(self, eleve_id: str, trimestre: int | None = None) -> bool:
-        """Check if a student record exists.
+        """Vérifie si un enregistrement élève existe.
 
         Args:
-            eleve_id: Student identifier.
-            trimestre: Trimester number. If None, checks if any record exists.
+            eleve_id: Identifiant de l'élève.
+            trimestre: Numéro du trimestre. Si None, vérifie tout trimestre.
 
         Returns:
-            True if exists.
+            True si l'enregistrement existe.
         """
         if trimestre is not None:
             result = self._execute_one(
@@ -189,13 +188,13 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         return result is not None
 
     def list(self, **filters) -> list[EleveExtraction]:
-        """List students with optional filters.
+        """Liste les élèves avec filtres optionnels.
 
         Args:
-            **filters: Optional filters (classe_id, trimestre).
+            **filters: Filtres optionnels (classe_id, trimestre).
 
         Returns:
-            List of students.
+            Liste d'élèves.
         """
         sql = """
             SELECT eleve_id, classe_id, trimestre,
@@ -225,14 +224,14 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
     def get_by_classe(
         self, classe_id: str, trimestre: int | None = None
     ) -> list[EleveExtraction]:
-        """Get all students in a class.
+        """Récupère tous les élèves d'une classe.
 
         Args:
-            classe_id: Class identifier.
-            trimestre: Optional trimester filter.
+            classe_id: Identifiant de la classe.
+            trimestre: Filtre trimestre optionnel.
 
         Returns:
-            List of students.
+            Liste d'élèves.
         """
         filters = {"classe_id": classe_id}
         if trimestre is not None:
@@ -240,15 +239,15 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         return self.list(**filters)
 
     def update(self, eleve_id: str, trimestre: int, **updates) -> bool:
-        """Update a student record.
+        """Met à jour un enregistrement élève.
 
         Args:
-            eleve_id: Student identifier.
-            trimestre: Trimester number.
-            **updates: Fields to update.
+            eleve_id: Identifiant de l'élève.
+            trimestre: Numéro du trimestre.
+            **updates: Champs à mettre à jour.
 
         Returns:
-            True if updated.
+            True si mis à jour.
         """
         if not updates:
             return False
@@ -293,14 +292,14 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         return True
 
     def delete(self, eleve_id: str, trimestre: int | None = None) -> bool:
-        """Delete a student record.
+        """Supprime un enregistrement élève.
 
         Args:
-            eleve_id: Student identifier.
-            trimestre: Trimester number. If None, deletes ALL records for this student.
+            eleve_id: Identifiant de l'élève.
+            trimestre: Numéro du trimestre. Si None, supprime TOUS les trimestres.
 
         Returns:
-            True if deleted.
+            True si supprimé.
         """
         if trimestre is not None:
             self._execute_write(

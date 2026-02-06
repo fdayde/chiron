@@ -1,4 +1,4 @@
-"""Chiron API - FastAPI application."""
+"""Application FastAPI Chiron."""
 
 from contextlib import asynccontextmanager
 
@@ -17,7 +17,7 @@ from src.storage.connection import get_connection
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize database tables on startup."""
+    """Initialise les tables de la base au démarrage."""
     conn = get_connection()
     conn.ensure_tables()
     yield
@@ -48,13 +48,13 @@ app.include_router(exports_router, tags=["Import/Export"])
 
 @app.get("/health")
 def health():
-    """Health check endpoint."""
+    """Endpoint de vérification de santé."""
     return {"status": "ok"}
 
 
 @app.get("/")
 def root():
-    """Root endpoint with API info."""
+    """Endpoint racine avec infos de l'API."""
     return {
         "name": "Chiron API",
         "version": "0.1.0",

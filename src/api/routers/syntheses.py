@@ -1,4 +1,4 @@
-"""Syntheses router."""
+"""Router des synthèses."""
 
 import logging
 import time
@@ -27,7 +27,7 @@ router = APIRouter()
 
 
 class GenerateRequest(BaseModel):
-    """Request model for generating a synthesis."""
+    """Modèle de requête pour générer une synthèse."""
 
     eleve_id: str
     trimestre: int
@@ -38,7 +38,7 @@ class GenerateRequest(BaseModel):
     @field_validator("trimestre")
     @classmethod
     def validate_trimestre(cls, v: int) -> int:
-        """Validate trimestre is 1, 2, or 3."""
+        """Valide que le trimestre est 1, 2 ou 3."""
         if v not in (1, 2, 3):
             raise ValueError("trimestre must be 1, 2, or 3")
         return v
@@ -46,7 +46,7 @@ class GenerateRequest(BaseModel):
     @field_validator("temperature")
     @classmethod
     def validate_temperature(cls, v: float) -> float:
-        """Validate temperature is between 0 and 2."""
+        """Valide que la température est entre 0 et 2."""
         if not 0.0 <= v <= 2.0:
             raise ValueError("temperature must be between 0.0 and 2.0")
         return v
@@ -54,7 +54,7 @@ class GenerateRequest(BaseModel):
     @field_validator("provider")
     @classmethod
     def validate_provider(cls, v: str) -> str:
-        """Validate provider is supported."""
+        """Valide que le provider est supporté."""
         valid_providers = ("openai", "anthropic", "mistral")
         if v.lower() not in valid_providers:
             raise ValueError(f"provider must be one of: {', '.join(valid_providers)}")
@@ -62,7 +62,7 @@ class GenerateRequest(BaseModel):
 
 
 class SyntheseUpdate(BaseModel):
-    """Request model for updating a synthesis."""
+    """Modèle de requête pour modifier une synthèse."""
 
     synthese_texte: str | None = None
     alertes: list[dict] | None = None
@@ -70,7 +70,7 @@ class SyntheseUpdate(BaseModel):
 
 
 class ValidateRequest(BaseModel):
-    """Request model for validating a synthesis."""
+    """Modèle de requête pour valider une synthèse."""
 
     validated_by: str | None = None
 
@@ -82,16 +82,16 @@ def generate_synthese(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
-    """Generate a synthesis for a student using LLM.
+    """Générer une synthèse pour un élève via LLM.
 
     Args:
-        data: Request with eleve_id, trimestre, and optional LLM config.
+        data: Requête avec eleve_id, trimestre et config LLM optionnelle.
 
     Returns:
-        Generated synthesis ID and metadata.
+        ID de la synthèse générée et métadonnées.
 
     Raises:
-        HTTPException: 404 if student not found, 500 on generation error.
+        HTTPException: 404 si élève non trouvé, 500 en cas d'erreur de génération.
     """
     # 1. Fetch student data for the specific trimester
     eleve = get_or_404(eleve_repo, data.eleve_id, data.trimestre, entity_name="Student")
@@ -206,7 +206,7 @@ def update_synthese(
     data: SyntheseUpdate,
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Update a synthesis."""
+    """Modifier une synthèse."""
     get_or_404(synthese_repo, synthese_id, entity_name="Synthesis")
 
     updates = {}
@@ -230,7 +230,7 @@ def validate_synthese(
     data: ValidateRequest,
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Validate a synthesis."""
+    """Valider une synthèse."""
     get_or_404(synthese_repo, synthese_id, entity_name="Synthesis")
 
     synthese_repo.update_status(synthese_id, "validated", data.validated_by)
@@ -242,7 +242,7 @@ def get_pending_syntheses(
     classe_id: str | None = None,
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Get all syntheses pending validation."""
+    """Récupérer toutes les synthèses en attente de validation."""
     pending = synthese_repo.get_pending(classe_id)
     return {"pending": pending, "count": len(pending)}
 
@@ -252,7 +252,7 @@ def delete_synthese(
     synthese_id: str,
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Delete a synthesis."""
+    """Supprimer une synthèse."""
     get_or_404(synthese_repo, synthese_id, entity_name="Synthesis")
     synthese_repo.delete(synthese_id)
     return {"status": "deleted", "synthese_id": synthese_id}

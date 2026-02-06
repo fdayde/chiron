@@ -1,4 +1,4 @@
-"""Dependency injection for FastAPI."""
+"""Injection de dépendances FastAPI."""
 
 from functools import lru_cache
 
@@ -13,41 +13,41 @@ from src.storage.repositories.synthese import SyntheseRepository
 
 @lru_cache
 def get_classe_repo() -> ClasseRepository:
-    """Get ClasseRepository singleton."""
+    """Singleton ClasseRepository."""
     return ClasseRepository()
 
 
 @lru_cache
 def get_eleve_repo() -> EleveRepository:
-    """Get EleveRepository singleton."""
+    """Singleton EleveRepository."""
     return EleveRepository()
 
 
 @lru_cache
 def get_synthese_repo() -> SyntheseRepository:
-    """Get SyntheseRepository singleton."""
+    """Singleton SyntheseRepository."""
     return SyntheseRepository()
 
 
 @lru_cache
 def get_pseudonymizer() -> Pseudonymizer:
-    """Get Pseudonymizer singleton."""
+    """Singleton Pseudonymizer."""
     return Pseudonymizer()
 
 
 def get_or_404(repo, *args, entity_name: str = "Resource"):
-    """Fetch an entity from a repository or raise 404.
+    """Récupère une entité ou lève une 404.
 
     Args:
-        repo: Repository with a get() method.
-        *args: Positional arguments passed to repo.get().
-        entity_name: Name for the error message.
+        repo: Repository avec une méthode get().
+        *args: Arguments positionnels passés à repo.get().
+        entity_name: Nom pour le message d'erreur.
 
     Returns:
-        The entity found.
+        L'entité trouvée.
 
     Raises:
-        HTTPException: 404 if entity not found.
+        HTTPException: 404 si non trouvée.
     """
     entity = repo.get(*args)
     if not entity:
@@ -59,15 +59,13 @@ def get_synthese_generator(
     provider: str = "openai",
     model: str | None = None,
 ) -> SyntheseGenerator:
-    """Get SyntheseGenerator instance.
-
-    Note: Not cached because provider/model may vary per request.
+    """Instance de SyntheseGenerator (non cachée car provider/model varient).
 
     Args:
-        provider: LLM provider (openai, anthropic, mistral).
-        model: Specific model name (None = provider default).
+        provider: Provider LLM (openai, anthropic, mistral).
+        model: Nom du modèle (None = défaut du provider).
 
     Returns:
-        Configured SyntheseGenerator instance.
+        Instance configurée de SyntheseGenerator.
     """
     return SyntheseGenerator(provider=provider, model=model)

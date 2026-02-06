@@ -1,4 +1,4 @@
-"""Import/Export router."""
+"""Router d'import/export."""
 
 import csv
 import io
@@ -33,16 +33,16 @@ MAX_BATCH_FILES = 50
 
 
 async def _validate_pdf_upload(file: UploadFile) -> bytes:
-    """Validate and read an uploaded PDF file.
+    """Valide et lit un fichier PDF uploadé.
 
     Args:
-        file: Uploaded file.
+        file: Fichier uploadé.
 
     Returns:
-        File content as bytes.
+        Contenu du fichier en bytes.
 
     Raises:
-        HTTPException: If file is invalid.
+        HTTPException: Si le fichier est invalide.
     """
     if file.content_type != "application/pdf":
         raise HTTPException(
@@ -70,7 +70,7 @@ def export_csv(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
-    """Export validated syntheses as CSV."""
+    """Exporter les synthèses validées en CSV."""
     get_or_404(classe_repo, classe_id, entity_name="Class")
 
     validated = synthese_repo.get_validated(classe_id, trimestre)
@@ -122,18 +122,18 @@ def _import_single_pdf(
     synthese_repo: SyntheseRepository,
     eleve_count: int = 0,
 ) -> dict:
-    """Import a single PDF with the unified flow.
+    """Importe un PDF unique avec le flux unifié.
 
     Args:
-        pdf_path: Path to the PDF file.
-        classe_id: Class identifier.
-        trimestre: Trimester number.
-        pseudonymizer: Pseudonymizer instance.
-        eleve_repo: Eleve repository.
-        eleve_count: Current count for fallback ID generation.
+        pdf_path: Chemin vers le fichier PDF.
+        classe_id: Identifiant de la classe.
+        trimestre: Numéro du trimestre.
+        pseudonymizer: Instance du pseudonymiseur.
+        eleve_repo: Repository des élèves.
+        eleve_count: Compteur courant pour génération d'ID de secours.
 
     Returns:
-        Dict with import results.
+        Dict avec les résultats de l'import.
     """
     # 1. Extract student name from PDF (local, fast)
     identity = extract_eleve_name(pdf_path)
@@ -208,7 +208,7 @@ async def import_pdf(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
-    """Import a PDF bulletin and extract student data."""
+    """Importer un bulletin PDF et extraire les données de l'élève."""
     # Validate class exists or create it
     classe = classe_repo.get(classe_id)
     if not classe:
@@ -270,7 +270,7 @@ async def import_pdf_batch(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
-    """Import multiple PDF bulletins."""
+    """Importer plusieurs bulletins PDF."""
     # Validate batch size
     if len(files) > MAX_BATCH_FILES:
         raise HTTPException(

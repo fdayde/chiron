@@ -1,4 +1,4 @@
-"""Eleves router."""
+"""Router des élèves."""
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 class MatiereResponse(BaseModel):
-    """Response model for a subject."""
+    """Modèle de réponse pour une matière."""
 
     nom: str
     professeur: str | None
@@ -27,7 +27,7 @@ class MatiereResponse(BaseModel):
 
 
 class EleveResponse(BaseModel):
-    """Response model for a student."""
+    """Modèle de réponse pour un élève."""
 
     eleve_id: str
     nom_reel: str | None = None
@@ -51,11 +51,11 @@ def get_eleve(
     repo: EleveRepository = Depends(get_eleve_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ) -> EleveResponse:
-    """Get a student by ID and optionally trimester.
+    """Récupérer un élève par ID et optionnellement par trimestre.
 
     Args:
-        eleve_id: Student identifier.
-        trimestre: Optional trimester. If not provided, returns latest.
+        eleve_id: Identifiant de l'élève.
+        trimestre: Trimestre optionnel. Si absent, retourne le plus récent.
     """
     eleve = get_or_404(repo, eleve_id, trimestre, entity_name="Student")
 
@@ -105,7 +105,7 @@ def get_eleve_synthese(
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
 ):
-    """Get the current synthesis for a student."""
+    """Récupérer la synthèse actuelle d'un élève."""
     eleve = get_or_404(eleve_repo, eleve_id, trimestre, entity_name="Student")
 
     # Use eleve's trimester if not specified
@@ -142,11 +142,11 @@ def delete_eleve(
     trimestre: int | None = None,
     repo: EleveRepository = Depends(get_eleve_repo),
 ):
-    """Delete a student record.
+    """Supprimer un enregistrement élève.
 
     Args:
-        eleve_id: Student identifier.
-        trimestre: Optional trimester. If not provided, deletes ALL records for this student.
+        eleve_id: Identifiant de l'élève.
+        trimestre: Trimestre optionnel. Si absent, supprime TOUS les trimestres.
     """
     get_or_404(repo, eleve_id, trimestre, entity_name="Student")
     repo.delete(eleve_id, trimestre)

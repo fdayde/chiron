@@ -1,23 +1,18 @@
-"""Custom exceptions for Chiron.
+"""Exceptions personnalisées pour Chiron.
 
-Provides a hierarchy of exceptions for different error types,
-enabling precise error handling throughout the application.
+Hiérarchie d'exceptions pour une gestion d'erreurs précise.
 """
 
 
 class ChironError(Exception):
-    """Base exception for all Chiron errors.
-
-    All custom exceptions inherit from this class, allowing
-    catch-all handling when needed.
-    """
+    """Exception de base pour toutes les erreurs Chiron."""
 
     def __init__(self, message: str, details: dict | None = None) -> None:
-        """Initialize exception with message and optional details.
+        """Initialise l'exception.
 
         Args:
-            message: Human-readable error description.
-            details: Optional dict with additional context (file paths, values, etc.).
+            message: Description de l'erreur.
+            details: Contexte additionnel optionnel (chemins, valeurs, etc.).
         """
         super().__init__(message)
         self.message = message
@@ -30,73 +25,36 @@ class ChironError(Exception):
 
 
 class ParserError(ChironError):
-    """PDF parsing failed.
-
-    Raised when bulletin PDF cannot be parsed correctly:
-    - File not found or corrupted
-    - Unexpected format
-    - Missing required fields
-    """
+    """Échec du parsing PDF (fichier corrompu, format inattendu, champs manquants)."""
 
     pass
 
 
 class PrivacyError(ChironError):
-    """Privacy/pseudonymization error.
-
-    Raised when pseudonymization operations fail:
-    - Mapping storage errors
-    - Invalid pseudonym format
-    - Depseudonymization without mapping
-    """
+    """Erreur de pseudonymisation (mapping, format, dépseudonymisation)."""
 
     pass
 
 
 class StorageError(ChironError):
-    """Database operation failed.
-
-    Raised when DuckDB operations fail:
-    - Connection errors
-    - Query failures
-    - Constraint violations
-    """
+    """Échec d'opération base de données (connexion, requête, contrainte)."""
 
     pass
 
 
 class GenerationError(ChironError):
-    """LLM generation failed.
-
-    Raised when synthesis generation fails:
-    - LLM API errors
-    - Invalid response format
-    - JSON parsing failures
-    """
+    """Échec de génération LLM (erreur API, format réponse, parsing JSON)."""
 
     pass
 
 
 class ConfigurationError(ChironError):
-    """Configuration error.
-
-    Raised when configuration is invalid:
-    - Missing environment variables
-    - Invalid settings values
-    - Missing API keys
-    """
+    """Erreur de configuration (variable d'environnement, clé API manquante)."""
 
     pass
 
 
 class AnonymizationError(ChironError):
-    """Anonymization failed.
-
-    Raised when PDF anonymization fails and sending
-    the original document to cloud would violate RGPD:
-    - Name extraction failed
-    - NER processing error
-    - PDF redaction error
-    """
+    """Échec d'anonymisation PDF (NER, rédaction). Envoi cloud interdit (RGPD)."""
 
     pass
