@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 
 from src.core.models import Alerte, Reussite, SyntheseGeneree
 from src.storage.repositories.base import DuckDBRepository
+
+logger = logging.getLogger(__name__)
 
 
 class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
@@ -20,6 +23,16 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
     def id_column(self) -> str:
         return "id"
 
+    def _safe_json_loads(self, raw: str | None, field_name: str) -> list:
+        """Parse JSON or return empty list on error."""
+        if not raw:
+            return []
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            logger.warning("JSON corrompu dans %s: %.100s", field_name, raw)
+            return []
+
     def _row_to_entity(self, row: tuple) -> SyntheseGeneree:
         """Convert database row to SyntheseGeneree.
 
@@ -31,15 +44,15 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             row[3]: posture_generale
             row[4]: axes_travail_json
         """
-        alertes_data = json.loads(row[1]) if row[1] else []
-        reussites_data = json.loads(row[2]) if row[2] else []
+        alertes_data = self._safe_json_loads(row[1], "alertes_json")
+        reussites_data = self._safe_json_loads(row[2], "reussites_json")
 
         return SyntheseGeneree(
             synthese_texte=row[0],
             alertes=[Alerte(**a) for a in alertes_data],
             reussites=[Reussite(**r) for r in reussites_data],
             posture_generale=row[3],
-            axes_travail=json.loads(row[4]) if row[4] else [],
+            axes_travail=self._safe_json_loads(row[4], "axes_travail_json"),
         )
 
     def create(
@@ -217,11 +230,11 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         Returns:
             Number of deleted records.
         """
-        result = self._execute_write(
-            "DELETE FROM syntheses WHERE eleve_id = ? AND trimestre = ?",
+        rows = self._execute(
+            "DELETE FROM syntheses WHERE eleve_id = ? AND trimestre = ? RETURNING 1",
             [eleve_id, trimestre],
         )
-        return result.rowcount if hasattr(result, "rowcount") else 0
+        return len(rows)
 
     def list(self, **filters) -> list[SyntheseGeneree]:
         """List syntheses with optional filters.

@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 
 # Chemins racine du projet
@@ -24,3 +25,16 @@ DB_LLM_METRICS = DATA_LLM_METRICS_DIR / "metrics.duckdb"
 
 # Chemins logs
 DATA_LOGS_DIR = DATA_PROCESSED_DIR / "logs"
+
+
+def get_current_school_year() -> str:
+    """Return current school year as 'YYYY-YYYY+1'.
+
+    School year runs September to August:
+    - Sept 2025 to Aug 2026 → '2025-2026'
+    - Jan 2026 to Aug 2026 → '2025-2026'
+    """
+    today = date.today()
+    if today.month >= 9:
+        return f"{today.year}-{today.year + 1}"
+    return f"{today.year - 1}-{today.year}"

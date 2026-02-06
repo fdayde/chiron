@@ -27,6 +27,38 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+MAX_PDF_SIZE_MB = 20
+MAX_BATCH_FILES = 50
+
+
+async def _validate_pdf_upload(file: UploadFile) -> bytes:
+    """Validate and read an uploaded PDF file.
+
+    Args:
+        file: Uploaded file.
+
+    Returns:
+        File content as bytes.
+
+    Raises:
+        HTTPException: If file is invalid.
+    """
+    if file.content_type != "application/pdf":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Type de fichier invalide : {file.content_type}. Seuls les PDF sont acceptés.",
+        )
+
+    content = await file.read()
+    max_bytes = MAX_PDF_SIZE_MB * 1024 * 1024
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Fichier trop volumineux ({len(content) // (1024 * 1024)} Mo). Maximum : {MAX_PDF_SIZE_MB} Mo.",
+        )
+
+    return content
+
 
 @router.get("/export/csv")
 def export_csv(
@@ -186,9 +218,11 @@ async def import_pdf(
         classe = Classe(classe_id=classe_id, nom=classe_id)
         classe_repo.create(classe)
 
-    # Save uploaded file temporarily
+    # Validate and read file
+    content = await _validate_pdf_upload(file)
+
+    # Save to temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        content = await file.read()
         tmp.write(content)
         tmp_path = Path(tmp.name)
 
@@ -221,7 +255,6 @@ async def import_pdf(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
     finally:
-        # Cleanup temp file
         tmp_path.unlink(missing_ok=True)
 
 
@@ -236,6 +269,13 @@ async def import_pdf_batch(
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Import multiple PDF bulletins."""
+    # Validate batch size
+    if len(files) > MAX_BATCH_FILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Trop de fichiers ({len(files)}). Maximum : {MAX_BATCH_FILES}.",
+        )
+
     # Validate class exists or create it
     classe = classe_repo.get(classe_id)
     if not classe:
@@ -251,9 +291,10 @@ async def import_pdf_batch(
     for i, file in enumerate(files):
         tmp_path = None
         try:
-            # Save uploaded file temporarily
+            # Validate and read file
+            content = await _validate_pdf_upload(file)
+
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                content = await file.read()
                 tmp.write(content)
                 tmp_path = Path(tmp.name)
 

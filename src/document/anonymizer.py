@@ -197,25 +197,25 @@ def _replace_names_in_pdf(
     # Optimisation PyMuPDF pour éviter de supprimer du texte adjacent
     fitz.TOOLS.set_small_glyph_heights(True)
 
-    doc = fitz.open(pdf_path)
-    total_replacements = 0
+    with fitz.open(pdf_path) as doc:
+        total_replacements = 0
 
-    for page in doc:
-        for nom in noms_a_remplacer:
-            instances = page.search_for(nom)
+        for page in doc:
+            for nom in noms_a_remplacer:
+                instances = page.search_for(nom)
 
-            for rect in instances:
-                page.add_redact_annot(
-                    rect,
-                    text=nom_anonyme,
-                    fill=(1, 1, 1),  # Fond blanc
-                    fontsize=10,
-                )
-                total_replacements += 1
+                for rect in instances:
+                    page.add_redact_annot(
+                        rect,
+                        text=nom_anonyme,
+                        fill=(1, 1, 1),  # Fond blanc
+                        fontsize=10,
+                    )
+                    total_replacements += 1
 
-        page.apply_redactions()
+            page.apply_redactions()
 
-    return doc.tobytes(), total_replacements
+        return doc.tobytes(), total_replacements
 
 
 def _split_into_chunks(text: str, max_chars: int = 2000) -> list[str]:

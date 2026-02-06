@@ -83,7 +83,7 @@ try:
     col3.metric("Tokens total", f"{stats.get('tokens_total', 0):,}")
     col4.metric("Coût total", f"${stats.get('cost_usd', 0):.4f}")
 except Exception:
-    pass  # Stats non disponibles, on skip silencieusement
+    st.caption("Statistiques de coût non disponibles.")
 
 st.divider()
 
@@ -135,6 +135,7 @@ st.markdown("### 👁️ Aperçu")
 
 # Get full syntheses for preview (using cached function)
 syntheses_data = []
+load_errors = 0
 for eleve in eleves_data:
     if not eleve.get("has_synthese"):
         continue
@@ -150,7 +151,10 @@ for eleve in eleves_data:
                 }
             )
     except Exception:
-        pass
+        load_errors += 1
+
+if load_errors > 0:
+    st.warning(f"{load_errors} synthèse(s) n'ont pas pu être chargées pour l'aperçu.")
 
 # Filter options
 filter_status = st.selectbox(

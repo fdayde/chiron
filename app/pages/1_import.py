@@ -128,6 +128,12 @@ if uploaded_files:
         col3.metric("Écrasés", overwritten_count)
         col4.metric("Erreurs", error_count)
 
+        # Show errors prominently
+        if error_count > 0:
+            for r in results:
+                if r["status"] == "error":
+                    st.error(f"{r['file']}: {r['error']}")
+
         # Detail per file
         with st.expander("Détail par fichier"):
             for r in results:
@@ -148,9 +154,16 @@ if uploaded_files:
                 else:
                     st.error(f"{r['file']}: {r['error']}")
 
-        st.success(
-            "Import terminé. Passez à l'étape suivante pour générer les synthèses."
-        )
+        if error_count == 0:
+            st.success(
+                "Import terminé. Passez à l'étape suivante pour générer les synthèses."
+            )
+        elif error_count == len(results):
+            st.error("Aucun fichier n'a pu être importé.")
+        else:
+            st.warning(
+                f"Import partiel : {len(results) - error_count} fichier(s) importé(s), {error_count} erreur(s)."
+            )
 
 else:
     st.info("Sélectionnez un ou plusieurs fichiers PDF à importer.")

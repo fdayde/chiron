@@ -7,6 +7,9 @@ import asyncio
 import logging
 from typing import Any
 
+import anthropic
+import httpx
+import openai
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -14,6 +17,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from src.core.exceptions import ConfigurationError
 from src.llm.base import LLMClient
 from src.llm.clients.anthropic import AnthropicClient
 from src.llm.clients.mistral import MistralClient
@@ -30,6 +34,13 @@ CLIENT_REGISTRY: dict[str, type[LLMClient]] = {
     "openai": OpenAIClient,
     "anthropic": AnthropicClient,
     "mistral": MistralClient,
+}
+
+# Mapping provider -> (attribut settings, variable d'environnement)
+_API_KEY_MAP: dict[str, tuple[str, str]] = {
+    "openai": ("openai_api_key", "OPENAI_API_KEY"),
+    "anthropic": ("anthropic_api_key", "ANTHROPIC_API_KEY"),
+    "mistral": ("mistral_api_key", "MISTRAL_API_KEY"),
 }
 
 
@@ -80,6 +91,14 @@ class LLMManager:
             )
 
         if provider_lower not in self._clients:
+            # Vérifier que la clé API est configurée
+            attr, env_var = _API_KEY_MAP[provider_lower]
+            if not getattr(settings, attr, ""):
+                raise ConfigurationError(
+                    f"Clé API {provider_lower} non configurée. "
+                    f"Ajoutez {env_var} dans votre fichier .env"
+                )
+
             client_class = CLIENT_REGISTRY[provider_lower]
             self._clients[provider_lower] = client_class()
             logger.debug(f"Client {provider_lower} initialisé")
@@ -89,7 +108,17 @@ class LLMManager:
     @retry(
         stop=stop_after_attempt(settings.max_retries),
         wait=wait_exponential(multiplier=settings.backoff_factor, min=1, max=60),
-        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+        retry=retry_if_exception_type(
+            (
+                ConnectionError,
+                TimeoutError,
+                httpx.ReadTimeout,
+                openai.RateLimitError,
+                openai.APIConnectionError,
+                anthropic.RateLimitError,
+                anthropic.APIConnectionError,
+            )
+        ),
         reraise=True,
     )
     async def call(

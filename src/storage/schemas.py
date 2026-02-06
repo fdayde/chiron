@@ -27,7 +27,7 @@ TABLES = {
             nom VARCHAR NOT NULL,
             niveau VARCHAR,
             etablissement VARCHAR,
-            annee_scolaire VARCHAR DEFAULT '2024-2025',
+            annee_scolaire VARCHAR,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )

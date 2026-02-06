@@ -148,6 +148,9 @@ with st.expander("🤖 Génération batch", expanded=counts["missing"] > 0):
                     all_ids = [e["eleve_id"] for e in eleves_data]
                     progress = st.progress(0)
                     status = st.empty()
+                    success_count = 0
+                    error_count = 0
+                    errors = []
 
                     for i, eid in enumerate(all_ids):
                         status.text(f"Régénération {i + 1}/{len(all_ids)}")
@@ -158,14 +161,24 @@ with st.expander("🤖 Génération batch", expanded=counts["missing"] > 0):
                             client.generate_synthese(
                                 eid, trimestre, provider=provider, model=model
                             )
-                        except Exception:
-                            pass
+                            success_count += 1
+                        except Exception as e:
+                            error_count += 1
+                            errors.append(f"{eid}: {e}")
                         progress.progress((i + 1) / len(all_ids))
 
                     progress.empty()
                     status.empty()
                     clear_eleves_cache()
-                    st.success("Régénération terminée")
+
+                    if error_count == 0:
+                        st.success(f"{success_count} synthèses régénérées")
+                    else:
+                        st.warning(
+                            f"{success_count} régénérées, {error_count} erreur(s)"
+                        )
+                        for err in errors:
+                            st.error(err)
                     st.rerun()
 
         if st.button("Tout régénérer", key="regen_all_btn"):

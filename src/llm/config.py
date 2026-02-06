@@ -95,7 +95,7 @@ class LLMSettings(BaseSettings):
 
     # Paramètres LLM par défaut
     default_temperature: float = Field(
-        default=0.0, ge=0, le=2, description="Température par défaut"
+        default=0.1, ge=0, le=2, description="Température par défaut"
     )
     default_max_tokens: int = Field(
         default=16384,

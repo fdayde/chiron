@@ -26,6 +26,27 @@ class ChironAPIClient:
         # Persistent client for connection reuse (avoids TCP handshake overhead)
         self._client = httpx.Client(timeout=self.DEFAULT_TIMEOUT)
 
+    def close(self) -> None:
+        """Close the underlying HTTP client."""
+        self._client.close()
+
+    def __del__(self) -> None:
+        try:
+            self._client.close()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _raise_for_status(response: httpx.Response) -> None:
+        """Raise an exception with the API error detail if available."""
+        if response.is_success:
+            return
+        try:
+            detail = response.json().get("detail", response.text)
+        except Exception:
+            detail = response.text
+        raise httpx.HTTPStatusError(detail, request=response.request, response=response)
+
     def _get(
         self, endpoint: str, params: dict | None = None, timeout: float | None = None
     ) -> dict | list:
@@ -35,7 +56,7 @@ class ChironAPIClient:
             params=params,
             timeout=timeout or self.DEFAULT_TIMEOUT,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def _post(
@@ -52,7 +73,7 @@ class ChironAPIClient:
             files=files,
             timeout=timeout or self.DEFAULT_TIMEOUT,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def _patch(self, endpoint: str, json: dict, timeout: float | None = None) -> dict:
@@ -62,7 +83,7 @@ class ChironAPIClient:
             json=json,
             timeout=timeout or self.DEFAULT_TIMEOUT,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def _delete(self, endpoint: str, timeout: float | None = None) -> dict:
@@ -71,7 +92,7 @@ class ChironAPIClient:
             f"{self.base_url}{endpoint}",
             timeout=timeout or self.DEFAULT_TIMEOUT,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     # Classes
@@ -87,13 +108,13 @@ class ChironAPIClient:
         return self._get("/classes", params or None)
 
     def create_classe(
-        self, nom: str, niveau: str | None = None, annee_scolaire: str = "2024-2025"
+        self, nom: str, niveau: str | None = None, annee_scolaire: str | None = None
     ) -> dict:
         """Create a new class."""
-        return self._post(
-            "/classes",
-            json={"nom": nom, "niveau": niveau, "annee_scolaire": annee_scolaire},
-        )
+        data: dict = {"nom": nom, "niveau": niveau}
+        if annee_scolaire:
+            data["annee_scolaire"] = annee_scolaire
+        return self._post("/classes", json=data)
 
     def get_classe(self, classe_id: str) -> dict:
         """Get a class by ID."""
@@ -143,7 +164,7 @@ class ChironAPIClient:
         trimestre: int,
         provider: str = "openai",
         model: str | None = None,
-        temperature: float = 0.7,
+        temperature: float | None = None,
     ) -> dict:
         """Generate a synthesis for a student using LLM.
 
@@ -152,19 +173,20 @@ class ChironAPIClient:
             trimestre: Trimester number.
             provider: LLM provider (openai, anthropic, mistral).
             model: Specific model (None = provider default).
-            temperature: Sampling temperature.
+            temperature: Sampling temperature (None = backend default).
 
         Returns:
             Generated synthesis with metadata.
         """
-        payload = {
+        payload: dict = {
             "eleve_id": eleve_id,
             "trimestre": trimestre,
             "provider": provider,
-            "temperature": temperature,
         }
         if model:
             payload["model"] = model
+        if temperature is not None:
+            payload["temperature"] = temperature
 
         return self._post(
             "/syntheses/generate",
@@ -218,7 +240,7 @@ class ChironAPIClient:
             files={"file": (filename, file_content, "application/pdf")},
             timeout=self.IMPORT_TIMEOUT,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def import_pdf_batch(
@@ -237,7 +259,7 @@ class ChironAPIClient:
             files=files_data,
             timeout=self.IMPORT_TIMEOUT,
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def export_csv(self, classe_id: str, trimestre: int) -> bytes:
@@ -246,7 +268,7 @@ class ChironAPIClient:
             f"{self.base_url}/export/csv",
             params={"classe_id": classe_id, "trimestre": trimestre},
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.content
 
     # Health

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from src.core.constants import get_current_school_year
 from src.storage.repositories.base import DuckDBRepository
 
 
@@ -16,7 +17,7 @@ class Classe:
     nom: str
     niveau: str | None = None
     etablissement: str | None = None
-    annee_scolaire: str = "2024-2025"
+    annee_scolaire: str = field(default_factory=get_current_school_year)
 
 
 class ClasseRepository(DuckDBRepository[Classe]):
@@ -37,7 +38,7 @@ class ClasseRepository(DuckDBRepository[Classe]):
             nom=row[1],
             niveau=row[2],
             etablissement=row[3] if len(row) > 3 else None,
-            annee_scolaire=row[4] if len(row) > 4 else "2024-2025",
+            annee_scolaire=row[4] if len(row) > 4 else get_current_school_year(),
         )
 
     def create(self, classe: Classe) -> str:

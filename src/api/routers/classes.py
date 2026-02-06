@@ -1,9 +1,10 @@
 """Classes router."""
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from src.api.dependencies import get_classe_repo, get_eleve_repo, get_synthese_repo
+from src.core.constants import get_current_school_year
 from src.storage.repositories.classe import Classe, ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
@@ -16,7 +17,12 @@ class ClasseCreate(BaseModel):
 
     nom: str
     niveau: str | None = None
-    annee_scolaire: str = "2024-2025"
+    annee_scolaire: str | None = None
+
+    @field_validator("annee_scolaire", mode="before")
+    @classmethod
+    def default_annee_scolaire(cls, v: str | None) -> str:
+        return v or get_current_school_year()
 
 
 class ClasseResponse(BaseModel):
