@@ -162,7 +162,7 @@ class ChironAPIClient:
         self,
         eleve_id: str,
         trimestre: int,
-        provider: str = "openai",
+        provider: str = "anthropic",
         model: str | None = None,
         temperature: float | None = None,
     ) -> dict:

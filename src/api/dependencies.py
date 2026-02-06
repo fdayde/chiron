@@ -5,6 +5,7 @@ from functools import lru_cache
 from fastapi import HTTPException
 
 from src.generation.generator import SyntheseGenerator
+from src.llm.config import settings as llm_settings
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.classe import ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
@@ -56,7 +57,7 @@ def get_or_404(repo, *args, entity_name: str = "Resource"):
 
 
 def get_synthese_generator(
-    provider: str = "openai",
+    provider: str = llm_settings.default_provider,
     model: str | None = None,
 ) -> SyntheseGenerator:
     """Instance de SyntheseGenerator (non cachée car provider/model varient).

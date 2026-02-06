@@ -31,7 +31,7 @@ class GenerateRequest(BaseModel):
 
     eleve_id: str
     trimestre: int
-    provider: str = "openai"
+    provider: str = llm_settings.default_provider
     model: str | None = None
     temperature: float = llm_settings.default_temperature
 

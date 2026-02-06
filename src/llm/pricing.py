@@ -7,6 +7,8 @@ Unifie la logique de pricing pour tous les providers (OpenAI, Anthropic, Mistral
 import logging
 import re
 
+from src.llm.config import settings as llm_settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -92,7 +94,7 @@ def estimate_synthese_cost(
     nb_eleves: int,
     avg_input_tokens: int = 2000,
     avg_output_tokens: int = 500,
-    provider: str = "openai",
+    provider: str = llm_settings.default_provider,
     model: str | None = None,
 ) -> dict:
     """Estime le coût de génération de synthèses pour N élèves.

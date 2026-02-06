@@ -41,7 +41,7 @@ class SyntheseGenerator:
 
     def __init__(
         self,
-        provider: str = "openai",
+        provider: str = llm_settings.default_provider,
         model: str | None = None,
         *,
         llm_manager: LLMManager | None = None,
