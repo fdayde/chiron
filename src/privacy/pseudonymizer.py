@@ -315,7 +315,7 @@ class Pseudonymizer:
 
         for eleve_id, nom, prenom in mappings:
             if nom:
-                replacement = f"{prenom} {nom}" if prenom else nom
+                replacement = prenom if prenom else nom
                 text = text.replace(eleve_id, replacement)
 
         return text
