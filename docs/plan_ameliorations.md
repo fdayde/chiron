@@ -30,17 +30,9 @@ Index UNIQUE `(nom, annee_scolaire)` ajouté, vérification applicative dans `cr
 
 ---
 
-### 4. Doublon d'élèves (normalisation des noms)
+### ~~4. Doublon d'élèves (normalisation des noms)~~ — ✅ Fait
 
-**Fichiers** : `src/privacy/pseudonymizer.py:119-150`
-
-**Problème** : Le lookup dans `_get_existing_mapping()` fait un match exact sur (nom, prenom, classe_id). Un accent ou espace en trop crée un doublon.
-
-**Implémentation** :
-- [ ] Créer une fonction `normalize_name(name: str) -> str` dans `src/core/utils.py` :
-  - `strip()`, `lower()`, collapse espaces multiples, normalisation unicode (NFC)
-- [ ] Appliquer cette normalisation dans `_get_existing_mapping()` et `create_eleve_id()` avant le lookup et l'insertion
-- [ ] Stocker le nom normalisé en plus du nom original (colonne `nom_normalise`)
+`normalize_name()` créée dans `src/core/utils.py` (NFC + strip + collapse espaces + lowercase). Colonnes `nom_normalized`/`prenom_normalized` ajoutées à `mapping_identites` avec migration automatique. Lookup et insert sur colonnes normalisées, index UNIQUE dédié. Noms originaux préservés pour dépseudonymisation.
 
 ---
 
@@ -139,7 +131,7 @@ P0 #2  Fallback ELEVE_001              ✅
   ↓
 P1 #3  Doublon classes (UNIQUE)        ✅
   ↓
-P1 #4  Normalisation noms élèves
+P1 #4  Normalisation noms élèves      ✅
   ↓
 P1 #5  Validation format PDF
   ↓
@@ -158,10 +150,10 @@ P3 #9  Biais supplémentaires
 
 | Fichier | Tickets |
 |---------|---------|
-| `src/storage/schemas.py` | ~~#2~~, ~~#3~~, #4 |
+| `src/storage/schemas.py` | ~~#2~~, ~~#3~~ |
 | `src/storage/connection.py` | ~~#3~~ |
 | `src/storage/repositories/classe.py` | ~~#3~~ |
-| `src/privacy/pseudonymizer.py` | #4 |
+| `src/privacy/pseudonymizer.py` | ~~#4~~ |
 | `src/api/routers/classes.py` | ~~#3~~ |
 | `src/api/routers/exports.py` | ~~#2~~, #5 |
 | `src/api/routers/syntheses.py` | #6, #7 |
@@ -171,4 +163,4 @@ P3 #9  Biais supplémentaires
 | `app/pages/2_syntheses.py` | #6, #7 |
 | `app/pages/1_import.py` | #2, #5 |
 | `app/api_client.py` | #2, #6 |
-| `src/core/utils.py` (nouveau) | #4 |
+| `src/core/utils.py` (nouveau) | ~~#4~~ |

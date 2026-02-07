@@ -14,6 +14,7 @@ from pathlib import Path
 import duckdb
 
 from src.core.exceptions import PrivacyError
+from src.core.utils import normalize_name
 from src.privacy.config import privacy_settings
 
 logger = logging.getLogger(__name__)
@@ -61,25 +62,52 @@ class Pseudonymizer:
 
     def _ensure_table(self) -> None:
         """Ensure the mapping table exists with proper constraints."""
+        table = privacy_settings.mapping_table
         with self._get_connection() as conn:
             conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS {privacy_settings.mapping_table} (
+                CREATE TABLE IF NOT EXISTS {table} (
                     eleve_id VARCHAR PRIMARY KEY,
                     nom_original VARCHAR NOT NULL,
                     prenom_original VARCHAR,
+                    nom_normalized VARCHAR,
+                    prenom_normalized VARCHAR,
                     classe_id VARCHAR NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(nom_original, prenom_original, classe_id)
                 )
             """)
-            # Add unique constraint if table already exists (migration)
+            # Migration: add normalized columns if missing (existing databases)
+            for col in ("nom_normalized", "prenom_normalized"):
+                try:
+                    conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} VARCHAR")
+                except duckdb.CatalogException:
+                    pass  # Column already exists
+
+            # Populate normalized columns from existing data (one-time migration)
+            conn.execute(f"""
+                UPDATE {table}
+                SET nom_normalized = LOWER(TRIM(nom_original)),
+                    prenom_normalized = LOWER(TRIM(prenom_original))
+                WHERE nom_normalized IS NULL
+            """)
+
+            # Original index on raw names (kept for backward compatibility)
             try:
                 conn.execute(f"""
                     CREATE UNIQUE INDEX IF NOT EXISTS idx_eleve_identity
-                    ON {privacy_settings.mapping_table} (nom_original, prenom_original, classe_id)
+                    ON {table} (nom_original, prenom_original, classe_id)
                 """)
             except duckdb.CatalogException:
-                pass  # Index already exists
+                pass
+
+            # New index on normalized names (primary dedup mechanism)
+            try:
+                conn.execute(f"""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_eleve_identity_normalized
+                    ON {table} (nom_normalized, prenom_normalized, classe_id)
+                """)
+            except duckdb.CatalogException:
+                pass
 
     def create_eleve_id(
         self,
@@ -121,6 +149,9 @@ class Pseudonymizer:
     ) -> str | None:
         """Check if a mapping already exists for this student.
 
+        Uses normalized names for comparison to avoid duplicates from
+        case, spacing, or unicode differences.
+
         Args:
             nom: Student's last name.
             prenom: Student's first name (may be None).
@@ -129,22 +160,25 @@ class Pseudonymizer:
         Returns:
             Existing eleve_id if found, None otherwise.
         """
+        nom_norm = normalize_name(nom)
+        prenom_norm = normalize_name(prenom)
+        table = privacy_settings.mapping_table
         with self._get_connection() as conn:
-            if prenom:
+            if prenom_norm:
                 result = conn.execute(
                     f"""
-                    SELECT eleve_id FROM {privacy_settings.mapping_table}
-                    WHERE nom_original = ? AND prenom_original = ? AND classe_id = ?
+                    SELECT eleve_id FROM {table}
+                    WHERE nom_normalized = ? AND prenom_normalized = ? AND classe_id = ?
                     """,
-                    [nom, prenom, classe_id],
+                    [nom_norm, prenom_norm, classe_id],
                 ).fetchone()
             else:
                 result = conn.execute(
                     f"""
-                    SELECT eleve_id FROM {privacy_settings.mapping_table}
-                    WHERE nom_original = ? AND prenom_original IS NULL AND classe_id = ?
+                    SELECT eleve_id FROM {table}
+                    WHERE nom_normalized = ? AND prenom_normalized IS NULL AND classe_id = ?
                     """,
-                    [nom, classe_id],
+                    [nom_norm, classe_id],
                 ).fetchone()
         return result[0] if result else None
 
@@ -173,10 +207,17 @@ class Pseudonymizer:
                     conn.execute(
                         f"""
                         INSERT INTO {privacy_settings.mapping_table}
-                        (eleve_id, nom_original, prenom_original, classe_id)
-                        VALUES (?, ?, ?, ?)
+                        (eleve_id, nom_original, prenom_original, nom_normalized, prenom_normalized, classe_id)
+                        VALUES (?, ?, ?, ?, ?, ?)
                         """,
-                        [eleve_id, nom, prenom, classe_id],
+                        [
+                            eleve_id,
+                            nom,
+                            prenom,
+                            normalize_name(nom),
+                            normalize_name(prenom),
+                            classe_id,
+                        ],
                     )
                 return eleve_id
             except Exception as e:
