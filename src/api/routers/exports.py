@@ -16,6 +16,7 @@ from src.api.dependencies import (
     get_pseudonymizer,
     get_synthese_repo,
 )
+from src.core.exceptions import ParserError
 from src.document import ParserType, get_parser
 from src.document.anonymizer import anonymize_pdf, extract_eleve_name
 from src.llm.config import settings
@@ -120,7 +121,6 @@ def _import_single_pdf(
     pseudonymizer: Pseudonymizer,
     eleve_repo: EleveRepository,
     synthese_repo: SyntheseRepository,
-    eleve_count: int = 0,
 ) -> dict:
     """Importe un PDF unique avec le flux unifié.
 
@@ -130,36 +130,34 @@ def _import_single_pdf(
         trimestre: Numéro du trimestre.
         pseudonymizer: Instance du pseudonymiseur.
         eleve_repo: Repository des élèves.
-        eleve_count: Compteur courant pour génération d'ID de secours.
+        synthese_repo: Repository des synthèses.
 
     Returns:
         Dict avec les résultats de l'import.
+
+    Raises:
+        ParserError: Si le nom de l'élève n'est pas détecté dans le PDF.
     """
     # 1. Extract student name from PDF (local, fast)
     identity = extract_eleve_name(pdf_path)
 
-    if identity and identity.get("nom"):
-        nom = identity["nom"]
-        prenom = identity.get("prenom")
-        genre = identity.get("genre")
+    if not identity or not identity.get("nom"):
+        raise ParserError(
+            "Nom de l'élève non détecté dans le PDF",
+            details={"filename": pdf_path.name},
+        )
 
-        # 2. Create eleve_id and store mapping
-        eleve_id = pseudonymizer.create_eleve_id(nom, prenom, classe_id)
-        logger.info(f"Created/found eleve_id: {eleve_id} for {prenom} {nom}")
+    nom = identity["nom"]
+    prenom = identity.get("prenom")
+    genre = identity.get("genre")
 
-        # 3. Anonymize PDF
-        pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
-        logger.info(f"PDF anonymized ({len(pdf_bytes)} bytes)")
+    # 2. Create eleve_id and store mapping
+    eleve_id = pseudonymizer.create_eleve_id(nom, prenom, classe_id)
+    logger.info(f"Created/found eleve_id: {eleve_id} for {prenom} {nom}")
 
-    else:
-        # Fallback: no name found, generate generic ID
-        eleve_id = f"ELEVE_{eleve_count + 1:03d}"
-        genre = None
-        logger.warning(f"No name found in PDF, using fallback ID: {eleve_id}")
-
-        # Use original PDF (can't anonymize without a name)
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
+    # 3. Anonymize PDF
+    pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
+    logger.info(f"PDF anonymized ({len(pdf_bytes)} bytes)")
 
     # 4. Parse PDF (pdfplumber or Mistral OCR)
     parser_type = ParserType(settings.pdf_parser_type.lower())
@@ -233,7 +231,6 @@ async def import_pdf(
             pseudonymizer=pseudonymizer,
             eleve_repo=eleve_repo,
             synthese_repo=synthese_repo,
-            eleve_count=0,
         )
 
         was_overwritten = result["status"] == "overwritten"
@@ -248,6 +245,9 @@ async def import_pdf(
             "eleve_ids": [result["eleve_id"]],
             "overwritten_ids": [result["eleve_id"]] if was_overwritten else [],
         }
+
+    except ParserError as e:
+        raise HTTPException(status_code=422, detail=e.message) from e
 
     except Exception as e:
         logger.error(f"Error importing {file.filename}: {e}", exc_info=True)
@@ -290,7 +290,7 @@ async def import_pdf_batch(
     total_imported = 0
     total_overwritten = 0
 
-    for i, file in enumerate(files):
+    for _i, file in enumerate(files):
         tmp_path = None
         try:
             # Validate and read file
@@ -307,7 +307,6 @@ async def import_pdf_batch(
                 pseudonymizer=pseudonymizer,
                 eleve_repo=eleve_repo,
                 synthese_repo=synthese_repo,
-                eleve_count=total_imported + i,
             )
 
             was_overwritten = result["status"] == "overwritten"

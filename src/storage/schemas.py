@@ -111,3 +111,10 @@ TABLES = {
 
 # Order matters for foreign key constraints
 TABLE_ORDER = ["classes", "eleves", "syntheses"]
+
+# Indexes to create after tables (idempotent via IF NOT EXISTS)
+INDEXES: dict[str, list[str]] = {
+    "classes": [
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_classes_nom_annee ON classes(nom, annee_scolaire)",
+    ],
+}

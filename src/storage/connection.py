@@ -15,7 +15,7 @@ import duckdb
 
 from src.core.exceptions import StorageError
 from src.storage.config import storage_settings
-from src.storage.schemas import TABLE_ORDER, TABLES
+from src.storage.schemas import INDEXES, TABLE_ORDER, TABLES
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class DuckDBConnection:
             yield _connections[db_key]
 
     def ensure_tables(self) -> None:
-        """Crée toutes les tables si elles n'existent pas."""
+        """Crée toutes les tables et index si ils n'existent pas."""
         with self._get_conn() as conn:
             for table_name in TABLE_ORDER:
                 sql = TABLES[table_name]
@@ -79,6 +79,16 @@ class DuckDBConnection:
                     raise StorageError(
                         f"Failed to create table {table_name}: {e}"
                     ) from e
+
+            for table_name in TABLE_ORDER:
+                for idx_sql in INDEXES.get(table_name, []):
+                    try:
+                        conn.execute(idx_sql)
+                        logger.debug(f"Ensured index for table: {table_name}")
+                    except Exception as e:
+                        raise StorageError(
+                            f"Failed to create index for {table_name}: {e}"
+                        ) from e
 
         logger.info(f"Database initialized at {self.db_path}")
 

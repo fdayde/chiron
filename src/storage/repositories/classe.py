@@ -6,6 +6,7 @@ import uuid
 from dataclasses import dataclass, field
 
 from src.core.constants import get_current_school_year
+from src.core.exceptions import StorageError
 from src.storage.repositories.base import DuckDBRepository
 
 
@@ -49,9 +50,26 @@ class ClasseRepository(DuckDBRepository[Classe]):
 
         Returns:
             classe_id of created class.
+
+        Raises:
+            StorageError: Si une classe avec le même nom et année scolaire existe déjà.
         """
         if not classe.classe_id:
             classe.classe_id = str(uuid.uuid4())[:12]
+
+        existing = self._execute_one(
+            "SELECT classe_id FROM classes WHERE nom = ? AND annee_scolaire = ?",
+            [classe.nom, classe.annee_scolaire],
+        )
+        if existing:
+            raise StorageError(
+                "Cette classe existe déjà pour cette année scolaire",
+                details={
+                    "nom": classe.nom,
+                    "annee_scolaire": classe.annee_scolaire,
+                    "existing_id": existing[0],
+                },
+            )
 
         self._execute_write(
             """
@@ -149,19 +167,26 @@ class ClasseRepository(DuckDBRepository[Classe]):
         )
         return True
 
-    def get_or_create(self, nom: str, niveau: str | None = None) -> Classe:
-        """Get existing class by name or create new one.
+    def get_or_create(
+        self,
+        nom: str,
+        niveau: str | None = None,
+        annee_scolaire: str | None = None,
+    ) -> Classe:
+        """Get existing class by name and school year, or create new one.
 
         Args:
             nom: Class name.
             niveau: Optional level.
+            annee_scolaire: School year (defaults to current).
 
         Returns:
             Existing or newly created class.
         """
+        annee = annee_scolaire or get_current_school_year()
         result = self._execute_one(
-            "SELECT classe_id, nom, niveau, etablissement, annee_scolaire FROM classes WHERE nom = ?",
-            [nom],
+            "SELECT classe_id, nom, niveau, etablissement, annee_scolaire FROM classes WHERE nom = ? AND annee_scolaire = ?",
+            [nom, annee],
         )
 
         if result:
@@ -171,6 +196,7 @@ class ClasseRepository(DuckDBRepository[Classe]):
             classe_id=str(uuid.uuid4())[:12],
             nom=nom,
             niveau=niveau,
+            annee_scolaire=annee,
         )
         self.create(classe)
         return classe

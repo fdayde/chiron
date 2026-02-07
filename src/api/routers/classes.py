@@ -10,6 +10,7 @@ from src.api.dependencies import (
     get_synthese_repo,
 )
 from src.core.constants import get_current_school_year
+from src.core.exceptions import StorageError
 from src.storage.repositories.classe import Classe, ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
@@ -51,7 +52,10 @@ def create_classe(
         niveau=data.niveau,
         annee_scolaire=data.annee_scolaire,
     )
-    classe_id = repo.create(classe)
+    try:
+        classe_id = repo.create(classe)
+    except StorageError as e:
+        raise HTTPException(status_code=409, detail=e.message) from e
     created = repo.get(classe_id)
     if not created:
         raise HTTPException(status_code=500, detail="Failed to create class")
