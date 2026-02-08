@@ -1,5 +1,6 @@
 """Générateur de synthèses avec orchestration LLM."""
 
+import asyncio
 import logging
 from dataclasses import dataclass
 
@@ -200,3 +201,95 @@ class SyntheseGenerator:
         logger.info(f"Batch terminé: {success_count}/{len(eleves)} succès")
 
         return results
+
+    # ========== Méthodes async (pour batch parallèle) ==========
+
+    async def generate_with_metadata_async(
+        self,
+        eleve: EleveExtraction,
+        classe_info: str | None = None,
+        max_tokens: int | None = None,
+    ) -> GenerationResult:
+        """Version async de generate_with_metadata().
+
+        Utilise le chemin async natif du LLMManager (pas de wrapper sync).
+        """
+        if max_tokens is None:
+            max_tokens = llm_settings.synthese_max_tokens
+
+        messages = self._prompt_builder.build_messages(eleve, classe_info)
+
+        logger.info(
+            f"Génération async pour {eleve.eleve_id or 'élève'} "
+            f"via {self.provider}/{self.model or 'default'}"
+        )
+
+        parsed_json, llm_metadata = await self._llm.call_with_json_parsing(
+            provider=self.provider,
+            messages=messages,
+            model=self.model,
+            max_tokens=max_tokens,
+            context_name=f"synthese_{eleve.eleve_id or 'eleve'}",
+        )
+
+        synthese = SyntheseGeneree(**parsed_json)
+
+        metadata = {
+            "llm_provider": self.provider,
+            "llm_model": llm_metadata.get("model", self.model),
+            "llm_response_raw": llm_metadata.get("content", ""),
+            "tokens_input": llm_metadata.get("input_tokens"),
+            "tokens_output": llm_metadata.get("output_tokens"),
+            "tokens_total": llm_metadata.get("total_tokens"),
+            "cost_usd": llm_metadata.get("cost_usd"),
+            "retry_count": llm_metadata.get("retry_count", 1),
+        }
+
+        logger.info(
+            f"Synthèse async générée: {eleve.eleve_id}, "
+            f"{len(synthese.synthese_texte)} chars, "
+            f"{metadata.get('tokens_total', 0)} tokens"
+        )
+
+        return GenerationResult(synthese=synthese, metadata=metadata)
+
+    async def generate_batch_async(
+        self,
+        eleves: list[EleveExtraction],
+        classe_info: str | None = None,
+        max_tokens: int | None = None,
+        max_concurrent: int = 3,
+    ) -> list[GenerationResult | None]:
+        """Génère des synthèses en parallèle avec semaphore.
+
+        Args:
+            eleves: Liste d'élèves.
+            classe_info: Contexte classe optionnel.
+            max_tokens: Limite de tokens.
+            max_concurrent: Nombre max d'appels LLM simultanés.
+
+        Returns:
+            Liste de GenerationResult (None si erreur), même ordre que eleves.
+        """
+        logger.info(
+            f"Batch async: {len(eleves)} élèves, max_concurrent={max_concurrent}"
+        )
+
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def _generate_one(eleve: EleveExtraction) -> GenerationResult | None:
+            async with semaphore:
+                try:
+                    return await self.generate_with_metadata_async(
+                        eleve, classe_info, max_tokens
+                    )
+                except Exception as e:
+                    logger.error(f"Erreur batch async pour {eleve.eleve_id}: {e}")
+                    return None
+
+        results = await asyncio.gather(*[_generate_one(e) for e in eleves])
+
+        success_count = sum(1 for r in results if r is not None)
+        logger.info(f"Batch async terminé: {success_count}/{len(eleves)} succès")
+
+        return list(results)

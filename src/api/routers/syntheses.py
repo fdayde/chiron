@@ -4,7 +4,7 @@ import logging
 import time
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from src.api.dependencies import (
     get_eleve_repo,
@@ -197,6 +197,173 @@ def generate_synthese(
             "tokens_total": metadata.get("tokens_total"),
             "prompt_template": CURRENT_PROMPT,
         },
+    }
+
+
+class GenerateBatchRequest(BaseModel):
+    """Modèle de requête pour la génération batch."""
+
+    classe_id: str
+    trimestre: int
+    eleve_ids: list[str] | None = Field(
+        default=None,
+        description="IDs des élèves à générer. Si None, génère pour tous les manquants.",
+    )
+    provider: str = llm_settings.default_provider
+    model: str | None = None
+
+    @field_validator("trimestre")
+    @classmethod
+    def validate_trimestre(cls, v: int) -> int:
+        if v not in (1, 2, 3):
+            raise ValueError("trimestre must be 1, 2, or 3")
+        return v
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        valid_providers = ("openai", "anthropic", "mistral")
+        if v.lower() not in valid_providers:
+            raise ValueError(f"provider must be one of: {', '.join(valid_providers)}")
+        return v.lower()
+
+
+@router.post("/generate-batch")
+async def generate_batch(
+    data: GenerateBatchRequest,
+    eleve_repo: EleveRepository = Depends(get_eleve_repo),
+    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
+    pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
+):
+    """Générer des synthèses pour plusieurs élèves en parallèle.
+
+    Si eleve_ids est None, génère pour tous les élèves sans synthèse.
+    Utilise asyncio.gather + Semaphore(3) pour paralléliser les appels LLM.
+    """
+    # 1. Get all students for this class/trimester
+    all_eleves = eleve_repo.get_by_classe(data.classe_id, data.trimestre)
+    if not all_eleves:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Aucun élève trouvé pour {data.classe_id} T{data.trimestre}",
+        )
+
+    # 2. Determine which students to generate for
+    if data.eleve_ids is not None:
+        # Explicit list: filter + delete existing syntheses (regeneration)
+        eleves_map = {e.eleve_id: e for e in all_eleves}
+        eleves_to_generate = []
+        not_found = []
+        for eid in data.eleve_ids:
+            if eid in eleves_map:
+                eleves_to_generate.append(eleves_map[eid])
+                synthese_repo.delete_for_eleve(eid, data.trimestre)
+            else:
+                not_found.append(eid)
+
+        if not_found:
+            logger.warning(f"Élèves non trouvés: {not_found}")
+    else:
+        # No list: generate for students missing a synthesis
+        syntheses_map = synthese_repo.get_by_classe(data.classe_id, data.trimestre)
+        eleves_to_generate = [e for e in all_eleves if e.eleve_id not in syntheses_map]
+
+    if not eleves_to_generate:
+        return {
+            "classe_id": data.classe_id,
+            "trimestre": data.trimestre,
+            "total_requested": 0,
+            "total_success": 0,
+            "total_errors": 0,
+            "results": [],
+        }
+
+    # 3. Generate in parallel
+    generator = get_synthese_generator(provider=data.provider, model=data.model)
+
+    start_time = time.perf_counter()
+    gen_results = await generator.generate_batch_async(
+        eleves=eleves_to_generate,
+        max_tokens=llm_settings.synthese_max_tokens,
+    )
+    total_duration_ms = int((time.perf_counter() - start_time) * 1000)
+
+    # 4. Post-process each result: depseudonymize + store
+    results = []
+    total_success = 0
+    total_errors = 0
+
+    for eleve, gen_result in zip(eleves_to_generate, gen_results, strict=False):
+        if gen_result is None:
+            total_errors += 1
+            results.append(
+                {
+                    "eleve_id": eleve.eleve_id,
+                    "status": "error",
+                    "error": "Échec de la génération LLM",
+                }
+            )
+            continue
+
+        synthese = gen_result.synthese
+        llm_metadata = gen_result.metadata
+
+        # Depseudonymize
+        classe_id = eleve.classe
+        if classe_id:
+            synthese.synthese_texte = pseudonymizer.depseudonymize_text(
+                synthese.synthese_texte, classe_id
+            )
+
+        # Prepare metadata
+        eleve_data_str = format_eleve_data(eleve)
+        prompt_hash = get_prompt_hash(CURRENT_PROMPT, eleve_data_str)
+
+        metadata = {
+            "llm_provider": llm_metadata.get("llm_provider", data.provider),
+            "llm_model": llm_metadata.get("llm_model", data.model or generator.model),
+            "llm_response_raw": llm_metadata.get("llm_response_raw"),
+            "prompt_template": CURRENT_PROMPT,
+            "prompt_hash": prompt_hash,
+            "tokens_input": llm_metadata.get("tokens_input"),
+            "tokens_output": llm_metadata.get("tokens_output"),
+            "tokens_total": llm_metadata.get("tokens_total"),
+            "llm_cost": llm_metadata.get("cost_usd"),
+            "llm_duration_ms": total_duration_ms // len(eleves_to_generate),
+            "llm_temperature": llm_settings.default_temperature,
+            "retry_count": llm_metadata.get("retry_count", 1),
+        }
+
+        # Store
+        synthese_id = synthese_repo.create(
+            eleve_id=eleve.eleve_id,
+            synthese=synthese,
+            trimestre=data.trimestre,
+            metadata=metadata,
+        )
+
+        total_success += 1
+        results.append(
+            {
+                "eleve_id": eleve.eleve_id,
+                "status": "generated",
+                "synthese_id": synthese_id,
+            }
+        )
+
+    logger.info(
+        f"Batch generation: {total_success}/{len(eleves_to_generate)} succès "
+        f"en {total_duration_ms}ms"
+    )
+
+    return {
+        "classe_id": data.classe_id,
+        "trimestre": data.trimestre,
+        "total_requested": len(eleves_to_generate),
+        "total_success": total_success,
+        "total_errors": total_errors,
+        "duration_ms": total_duration_ms,
+        "results": results,
     }
 
 

@@ -36,20 +36,11 @@ Index UNIQUE `(nom, annee_scolaire)` ajouté, vérification applicative dans `cr
 
 ---
 
-### 5. Validation du format PDF à l'import
+### ~~5. Validation du format PDF à l'import~~ — ✅ Fait
 
-**Fichiers** : `src/api/routers/exports.py:35-61`, `src/document/pdfplumber_parser.py`
+**Fichiers** : `src/document/validation.py`, `src/api/routers/exports.py`, `app/pages/1_import.py`
 
-**Problème** : Seuls le content-type et la taille sont vérifiés. Un PDF non-bulletin passe sans erreur.
-
-**Implémentation** :
-- [ ] Après le parsing, valider le résultat `EleveExtraction` avec des règles :
-  - **Bloquant** : nom élève non détecté (cf. P0 #2)
-  - **Bloquant** : aucune matière détectée (= ce n'est probablement pas un bulletin)
-  - **Warning** : genre non détecté → importer quand même, afficher un avertissement
-  - **Warning** : certaines matières sans note ou sans appréciation → importer, avertir
-- [ ] Créer une fonction `validate_extraction(extraction: EleveExtraction) -> ValidationResult` dans `src/document/` avec liste d'erreurs et de warnings
-- [ ] Retourner les warnings dans la réponse API pour affichage UI
+`validate_extraction()` créée avec `ValidationResult` (erreurs bloquantes + warnings). Bloquant si aucune matière détectée. Warnings pour genre manquant, matières sans note ou sans appréciation. Warnings retournés dans la réponse API et affichés dans l'UI.
 
 ---
 
@@ -73,19 +64,11 @@ Index UNIQUE `(nom, annee_scolaire)` ajouté, vérification applicative dans `cr
 
 ## P2 — Améliorations fonctionnelles
 
-### 6. Génération batch (performance)
+### ~~6. Génération batch (performance)~~ — ✅ Fait
 
-**Fichiers** : `src/generation/generator.py:172-202`, `src/api/routers/syntheses.py`
+**Fichiers** : `src/generation/generator.py`, `src/api/routers/syntheses.py`, `app/api_client.py`, `app/pages/2_syntheses.py`
 
-**Problème** : Pas d'endpoint batch. L'UI boucle sur l'endpoint unitaire → lent, pas de parallélisme.
-
-**Implémentation** :
-- [ ] Créer `POST /syntheses/generate-batch` dans le router :
-  - Paramètres : `classe_id`, `trimestre`, `eleve_ids: list[str] | None` (None = tous les manquants)
-  - Réponse : liste de résultats par élève (succès/erreur)
-- [ ] Dans `generator.py`, modifier `generate_batch()` pour utiliser `asyncio.gather()` avec `asyncio.Semaphore(3)` (3 appels LLM concurrents max)
-- [ ] Côté UI : remplacer la boucle par un appel unique à l'endpoint batch
-- [ ] Ajouter un polling ou SSE pour la progress bar (ou garder le polling HTTP simple — KISS)
+Méthodes `async generate_with_metadata_async()` et `async generate_batch_async()` ajoutées au `SyntheseGenerator` avec `asyncio.gather()` + `asyncio.Semaphore(3)`. Endpoint `POST /syntheses/generate-batch` (async) créé. API client avec `BATCH_TIMEOUT = 600s`. UI "Générer manquantes" et "Tout régénérer" remplacées par appel batch unique avec spinner.
 
 ---
 
@@ -151,11 +134,11 @@ P1 #3  Doublon classes (UNIQUE)        ✅
   ↓
 P1 #4  Normalisation noms élèves      ✅
   ↓
-P1 #5  Validation format PDF
+P1 #5  Validation format PDF          ✅
   ↓
 P1 #10 UX Import (dépseudo + confirm) ✅
   ↓
-P2 #6  Endpoint batch generation
+P2 #6  Endpoint batch generation       ✅
   ↓
 P2 #7  Afficher le prompt
   ↓

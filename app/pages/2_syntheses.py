@@ -90,35 +90,33 @@ with st.expander("🤖 Génération batch", expanded=counts["missing"] > 0):
             disabled=counts["missing"] == 0,
             width="stretch",
         ):
-            # Get IDs without synthese
-            missing_ids = [
-                e["eleve_id"] for e in eleves_data if not e.get("has_synthese")
-            ]
-
-            progress = st.progress(0)
-            status = st.empty()
-            success_count = 0
-            error_count = 0
-
-            for i, eleve_id in enumerate(missing_ids):
-                status.text(f"Génération {i + 1}/{len(missing_ids)}: {eleve_id}")
+            with st.spinner(
+                f"Génération de {counts['missing']} synthèse(s) en parallèle..."
+            ):
                 try:
-                    client.generate_synthese(
-                        eleve_id, trimestre, provider=provider, model=model
+                    batch_result = client.generate_batch(
+                        classe_id=classe_id,
+                        trimestre=trimestre,
+                        provider=provider,
+                        model=model,
                     )
-                    success_count += 1
-                except Exception:
-                    error_count += 1
-                progress.progress((i + 1) / len(missing_ids))
+                    clear_eleves_cache()
 
-            progress.empty()
-            status.empty()
-            clear_eleves_cache()
+                    success = batch_result.get("total_success", 0)
+                    errors = batch_result.get("total_errors", 0)
+                    duration = batch_result.get("duration_ms", 0)
 
-            if error_count > 0:
-                st.warning(f"{success_count} générées, {error_count} erreurs")
-            else:
-                st.success(f"{success_count} synthèses générées")
+                    if errors > 0:
+                        st.warning(
+                            f"{success} générée(s), {errors} erreur(s) "
+                            f"({duration / 1000:.0f}s)"
+                        )
+                    else:
+                        st.success(
+                            f"{success} synthèse(s) générée(s) ({duration / 1000:.0f}s)"
+                        )
+                except Exception as e:
+                    st.error(f"Erreur batch: {e}")
             st.rerun()
 
     with col2:
@@ -138,45 +136,48 @@ with st.expander("🤖 Génération batch", expanded=counts["missing"] > 0):
             with col_confirm:
                 if st.button("Confirmer", key="do_regen", type="primary"):
                     all_ids = [e["eleve_id"] for e in eleves_data]
-                    progress = st.progress(0)
-                    status = st.empty()
-                    success_count = 0
-                    error_count = 0
-                    errors = []
 
-                    for i, eid in enumerate(all_ids):
-                        status.text(f"Régénération {i + 1}/{len(all_ids)}")
+                    with st.spinner(
+                        f"Régénération de {len(all_ids)} synthèse(s) en parallèle..."
+                    ):
                         try:
-                            synth_data = eleves_data[i]
-                            if synth_data.get("synthese_id"):
-                                client.delete_synthese(synth_data["synthese_id"])
-                            client.generate_synthese(
-                                eid, trimestre, provider=provider, model=model
+                            batch_result = client.generate_batch(
+                                classe_id=classe_id,
+                                trimestre=trimestre,
+                                eleve_ids=all_ids,
+                                provider=provider,
+                                model=model,
                             )
-                            success_count += 1
+                            clear_eleves_cache()
+
+                            # Force new text_area widgets
+                            for eid_key in all_ids:
+                                count_key = f"regen_count_{eid_key}"
+                                st.session_state[count_key] = (
+                                    st.session_state.get(count_key, 0) + 1
+                                )
+
+                            success = batch_result.get("total_success", 0)
+                            errors = batch_result.get("total_errors", 0)
+                            duration = batch_result.get("duration_ms", 0)
+
+                            if errors == 0:
+                                st.success(
+                                    f"{success} synthèse(s) régénérée(s) "
+                                    f"({duration / 1000:.0f}s)"
+                                )
+                            else:
+                                st.warning(
+                                    f"{success} régénérée(s), {errors} erreur(s) "
+                                    f"({duration / 1000:.0f}s)"
+                                )
+                                for r in batch_result.get("results", []):
+                                    if r.get("status") == "error":
+                                        st.error(
+                                            f"{r['eleve_id']}: {r.get('error', '?')}"
+                                        )
                         except Exception as e:
-                            error_count += 1
-                            errors.append(f"{eid}: {e}")
-                        progress.progress((i + 1) / len(all_ids))
-
-                    progress.empty()
-                    status.empty()
-                    clear_eleves_cache()
-                    # Incrémenter les compteurs pour forcer de nouveaux widgets text_area
-                    for eid_key in all_ids:
-                        count_key = f"regen_count_{eid_key}"
-                        st.session_state[count_key] = (
-                            st.session_state.get(count_key, 0) + 1
-                        )
-
-                    if error_count == 0:
-                        st.success(f"{success_count} synthèses régénérées")
-                    else:
-                        st.warning(
-                            f"{success_count} régénérées, {error_count} erreur(s)"
-                        )
-                        for err in errors:
-                            st.error(err)
+                            st.error(f"Erreur batch: {e}")
                     st.rerun()
 
         if st.button("Tout régénérer", key="regen_all_btn"):

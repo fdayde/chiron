@@ -19,6 +19,9 @@ class ChironAPIClient:
     # Extended timeout for PDF import (NER model loading can take 60s+ first time)
     IMPORT_TIMEOUT = 300.0
 
+    # Extended timeout for batch LLM generation (30+ students with semaphore=3)
+    BATCH_TIMEOUT = 600.0
+
     def __init__(self, base_url: str | None = None) -> None:
         self.base_url = base_url or os.getenv(
             "CHIRON_UI_API_BASE_URL", "http://localhost:8000"
@@ -192,6 +195,42 @@ class ChironAPIClient:
             "/syntheses/generate",
             json=payload,
             timeout=self.LLM_TIMEOUT,
+        )
+
+    def generate_batch(
+        self,
+        classe_id: str,
+        trimestre: int,
+        eleve_ids: list[str] | None = None,
+        provider: str = "anthropic",
+        model: str | None = None,
+    ) -> dict:
+        """Générer des synthèses en batch (parallèle côté backend).
+
+        Args:
+            classe_id: Identifiant de la classe.
+            trimestre: Numéro du trimestre.
+            eleve_ids: Liste d'IDs à générer. None = tous les manquants.
+            provider: Provider LLM.
+            model: Modèle spécifique.
+
+        Returns:
+            Résultats batch avec total_success, total_errors, results par élève.
+        """
+        payload: dict = {
+            "classe_id": classe_id,
+            "trimestre": trimestre,
+            "provider": provider,
+        }
+        if eleve_ids is not None:
+            payload["eleve_ids"] = eleve_ids
+        if model:
+            payload["model"] = model
+
+        return self._post(
+            "/syntheses/generate-batch",
+            json=payload,
+            timeout=self.BATCH_TIMEOUT,
         )
 
     def update_synthese(
