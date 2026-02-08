@@ -231,12 +231,21 @@ class ChironAPIClient:
 
     # Import/Export
     def import_pdf(
-        self, file_content: bytes, filename: str, classe_id: str, trimestre: int
+        self,
+        file_content: bytes,
+        filename: str,
+        classe_id: str,
+        trimestre: int,
+        force_overwrite: bool = True,
     ) -> dict:
         """Importer un bulletin PDF."""
         response = self._client.post(
             f"{self.base_url}/import/pdf",
-            params={"classe_id": classe_id, "trimestre": trimestre},
+            params={
+                "classe_id": classe_id,
+                "trimestre": trimestre,
+                "force_overwrite": force_overwrite,
+            },
             files={"file": (filename, file_content, "application/pdf")},
             timeout=self.IMPORT_TIMEOUT,
         )
@@ -248,6 +257,7 @@ class ChironAPIClient:
         files: list[tuple[str, bytes]],
         classe_id: str,
         trimestre: int,
+        force_overwrite: bool = True,
     ) -> dict:
         """Importer plusieurs bulletins PDF."""
         files_data = [
@@ -255,6 +265,33 @@ class ChironAPIClient:
         ]
         response = self._client.post(
             f"{self.base_url}/import/pdf/batch",
+            params={
+                "classe_id": classe_id,
+                "trimestre": trimestre,
+                "force_overwrite": force_overwrite,
+            },
+            files=files_data,
+            timeout=self.IMPORT_TIMEOUT,
+        )
+        self._raise_for_status(response)
+        return response.json()
+
+    def check_pdf_duplicates(
+        self,
+        files: list[tuple[str, bytes]],
+        classe_id: str,
+        trimestre: int,
+    ) -> dict:
+        """Vérifie les doublons avant import.
+
+        Returns:
+            Dict avec 'conflicts', 'new', 'unreadable'.
+        """
+        files_data = [
+            ("files", (name, content, "application/pdf")) for name, content in files
+        ]
+        response = self._client.post(
+            f"{self.base_url}/import/pdf/check",
             params={"classe_id": classe_id, "trimestre": trimestre},
             files=files_data,
             timeout=self.IMPORT_TIMEOUT,

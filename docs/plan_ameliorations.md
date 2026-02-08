@@ -1,6 +1,6 @@
 # Plan d'améliorations Chiron
 
-> Date : 2026-02-06 | Branche : `feature/pdf-parser`
+> Date : 2026-02-08 | Branche : `feature/pdf-parser`
 
 Principes directeurs : **DRY, KISS, YAGNI, modularité, fiabilité.**
 
@@ -50,6 +50,24 @@ Index UNIQUE `(nom, annee_scolaire)` ajouté, vérification applicative dans `cr
   - **Warning** : certaines matières sans note ou sans appréciation → importer, avertir
 - [ ] Créer une fonction `validate_extraction(extraction: EleveExtraction) -> ValidationResult` dans `src/document/` avec liste d'erreurs et de warnings
 - [ ] Retourner les warnings dans la réponse API pour affichage UI
+
+---
+
+### ~~10. UX Import — Dépseudonymisation + confirmation écrasement~~ — ✅ Fait
+
+**Fichiers** : `src/api/routers/classes.py`, `src/api/routers/exports.py`, `app/api_client.py`, `app/pages/1_import.py`
+
+**Problèmes** :
+- La "Vue de la classe" affichait les IDs pseudonymisés (`ELEVE_001`) au lieu des vrais noms
+- L'import écrasait silencieusement un élève existant sans demander confirmation
+
+**Implémentation** :
+- ~~Endpoint `eleves-with-syntheses` : injection `Pseudonymizer`, ajout `prenom`/`nom` via `list_mappings()` (1 requête)~~
+- ~~UI Vue de la classe : affichage `"{prenom} {nom}"` avec fallback sur `eleve_id`~~
+- ~~Nouvel endpoint `POST /import/pdf/check` : extraction nom (regex, pas de NER), vérification mapping + existence → retourne `{conflicts, new, unreadable}`~~
+- ~~Paramètre `force_overwrite` (défaut `True`) dans `_import_single_pdf`, `import_pdf`, `import_pdf_batch` : si `False` et élève existe → `status: "skipped"`~~
+- ~~API client : `force_overwrite` sur `import_pdf`/`import_pdf_batch`, nouvelle méthode `check_pdf_duplicates`~~
+- ~~UI : vérification pré-import (cache par fingerprint fichiers), bandeau warning/info avec vrais noms, checkbox cochée par défaut, résultats post-import avec compteur skipped~~
 
 ---
 
@@ -135,6 +153,8 @@ P1 #4  Normalisation noms élèves      ✅
   ↓
 P1 #5  Validation format PDF
   ↓
+P1 #10 UX Import (dépseudo + confirm) ✅
+  ↓
 P2 #6  Endpoint batch generation
   ↓
 P2 #7  Afficher le prompt
@@ -154,13 +174,13 @@ P3 #9  Biais supplémentaires
 | `src/storage/connection.py` | ~~#3~~ |
 | `src/storage/repositories/classe.py` | ~~#3~~ |
 | `src/privacy/pseudonymizer.py` | ~~#4~~ |
-| `src/api/routers/classes.py` | ~~#3~~ |
-| `src/api/routers/exports.py` | ~~#2~~, #5 |
+| `src/api/routers/classes.py` | ~~#3~~, ~~#10~~ |
+| `src/api/routers/exports.py` | ~~#2~~, #5, ~~#10~~ |
 | `src/api/routers/syntheses.py` | #6, #7 |
 | `src/document/anonymizer.py` | #2 |
 | `src/generation/generator.py` | #6 |
 | `src/generation/prompts.py` | #8, #9 |
 | `app/pages/2_syntheses.py` | #6, #7 |
-| `app/pages/1_import.py` | #2, #5 |
-| `app/api_client.py` | #2, #6 |
+| `app/pages/1_import.py` | #2, #5, ~~#10~~ |
+| `app/api_client.py` | #2, #6, ~~#10~~ |
 | `src/core/utils.py` (nouveau) | ~~#4~~ |

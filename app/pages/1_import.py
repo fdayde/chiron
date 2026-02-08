@@ -71,17 +71,58 @@ if uploaded_files:
         for f in uploaded_files:
             st.caption(f"- {f.name} ({f.size / 1024:.1f} Ko)")
 
-    # Check for existing students
-    try:
-        eleves_data = fetch_eleves_with_syntheses(client, classe_id, trimestre)
-        counts = get_status_counts(eleves_data)
-        if counts["total"] > 0:
-            details = f"**{counts['total']} élève(s)** existant(s)"
-            if counts["with_synthese"] > 0:
-                details += f" dont **{counts['with_synthese']}** avec synthèse"
-            st.warning(f"{details} seront écrasés.")
-    except Exception:
-        pass
+    # --- Pre-import duplicate check ---
+    # Build a fingerprint to detect file changes and avoid redundant API calls
+    files_fingerprint = tuple(sorted((f.name, f.size) for f in uploaded_files))
+    check_key = (files_fingerprint, classe_id, trimestre)
+
+    if st.session_state.get("_check_key") != check_key:
+        # Read all file contents once for both check and import
+        file_contents = []
+        for f in uploaded_files:
+            f.seek(0)
+            file_contents.append((f.name, f.read()))
+        st.session_state["_file_contents"] = file_contents
+
+        try:
+            check_result = client.check_pdf_duplicates(
+                file_contents, classe_id, trimestre
+            )
+            st.session_state["_check_result"] = check_result
+            st.session_state["_check_key"] = check_key
+        except Exception:
+            st.session_state["_check_result"] = None
+            st.session_state["_check_key"] = check_key
+
+    check_result = st.session_state.get("_check_result")
+    conflicts = check_result.get("conflicts", []) if check_result else []
+    unreadable = check_result.get("unreadable", []) if check_result else []
+
+    # Show unreadable files
+    if unreadable:
+        for item in unreadable:
+            st.error(f"{item['filename']}: {item['error']}")
+
+    # Overwrite checkbox + warning banner
+    force_overwrite = True
+    if conflicts:
+        conflict_names = ", ".join(
+            f"{c['prenom']} {c['nom']}".strip() for c in conflicts
+        )
+        force_overwrite = st.checkbox(
+            "Écraser les données existantes en cas de doublon",
+            value=True,
+        )
+        if force_overwrite:
+            st.warning(
+                f"**{len(conflicts)}** élève(s) déjà présent(s) pour cette classe/trimestre : "
+                f"{conflict_names}. Leurs données (bulletin + synthèse) seront écrasées."
+            )
+        else:
+            st.info(
+                f"**{len(conflicts)}** élève(s) déjà présent(s) seront ignorés : "
+                f"{conflict_names}."
+            )
 
     st.divider()
 
@@ -92,22 +133,35 @@ if uploaded_files:
 
         results = []
         imported_eleve_ids = []
+        skipped_eleve_ids = []
         total = len(uploaded_files)
 
-        for i, file in enumerate(uploaded_files):
-            status_text.text(f"Import de {file.name}...")
+        # Use pre-read file contents
+        file_contents = st.session_state.get("_file_contents", [])
+        if not file_contents:
+            for f in uploaded_files:
+                f.seek(0)
+                file_contents.append((f.name, f.read()))
+
+        for i, (filename, content) in enumerate(file_contents):
+            status_text.text(f"Import de {filename}...")
             progress_bar.progress((i + 0.5) / total)
 
             try:
-                content = file.read()
-                result = client.import_pdf(content, file.name, classe_id, trimestre)
+                result = client.import_pdf(
+                    content,
+                    filename,
+                    classe_id,
+                    trimestre,
+                    force_overwrite=force_overwrite,
+                )
                 results.append(
-                    {"file": file.name, "status": "success", "result": result}
+                    {"file": filename, "status": "success", "result": result}
                 )
                 imported_eleve_ids.extend(result.get("eleve_ids", []))
-                imported_eleve_ids.extend(result.get("skipped_ids", []))
+                skipped_eleve_ids.extend(result.get("skipped_ids", []))
             except Exception as e:
-                results.append({"file": file.name, "status": "error", "error": str(e)})
+                results.append({"file": filename, "status": "error", "error": str(e)})
 
             progress_bar.progress((i + 1) / total)
 
@@ -116,6 +170,8 @@ if uploaded_files:
 
         # Clear cache to refresh data
         clear_eleves_cache()
+        # Reset check cache so next rerun re-checks
+        st.session_state.pop("_check_key", None)
 
         # Display results
         st.markdown("### Résultats de l'import")
@@ -126,12 +182,29 @@ if uploaded_files:
             for r in results
             if r["status"] == "success"
         )
+        skipped_count = sum(
+            r["result"].get("skipped_count", 0)
+            for r in results
+            if r["status"] == "success"
+        )
 
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("PDFs traités", len(results))
         col2.metric("Élèves importés", len(imported_eleve_ids))
         col3.metric("Écrasés", overwritten_count)
         col4.metric("Erreurs", error_count)
+
+        # Show overwrites prominently
+        if overwritten_count > 0:
+            st.info(
+                f"{overwritten_count} élève(s) existant(s) écrasé(s) (données et synthèses remplacées)."
+            )
+
+        # Show skipped
+        if skipped_count > 0:
+            st.info(
+                f"{skipped_count} élève(s) existant(s) ignoré(s) (données conservées)."
+            )
 
         # Show errors prominently
         if error_count > 0:
@@ -146,16 +219,20 @@ if uploaded_files:
                     result = r["result"]
                     eleve_ids = result.get("eleve_ids", [])
                     overwritten_ids = result.get("overwritten_ids", [])
+                    skipped_ids = result.get("skipped_ids", [])
                     parsed = result.get("parsed_count", 0)
 
-                    if overwritten_ids:
+                    if skipped_ids:
+                        st.info(f"{r['file']}: élève ignoré (déjà existant)")
+                    elif overwritten_ids:
                         st.info(f"{r['file']}: {len(eleve_ids)} élève(s) écrasé(s)")
-                        st.caption(f"IDs: {', '.join(eleve_ids)}")
                     elif eleve_ids:
                         st.success(f"{r['file']}: {len(eleve_ids)} élève(s) importé(s)")
-                        st.caption(f"IDs anonymisés: {', '.join(eleve_ids)}")
                     elif parsed == 0:
                         st.warning(f"{r['file']}: aucun élève détecté dans le PDF")
+
+                    for w in result.get("warnings", []):
+                        st.warning(f"{r['file']}: {w}")
                 else:
                     st.error(f"{r['file']}: {r['error']}")
 
@@ -221,9 +298,12 @@ else:
     # Table
     rows = []
     for e in eleves_data:
+        prenom = e.get("prenom") or ""
+        nom = e.get("nom") or ""
+        display_name = f"{prenom} {nom}".strip() or e["eleve_id"]
         rows.append(
             {
-                "Élève": e["eleve_id"],
+                "Élève": display_name,
                 "Genre": e.get("genre") or "?",
                 "Abs.": e.get("absences_demi_journees", 0) or 0,
                 "Synthèse": "✓" if e.get("has_synthese") else "-",

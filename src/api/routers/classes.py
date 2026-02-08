@@ -7,10 +7,12 @@ from src.api.dependencies import (
     get_classe_repo,
     get_eleve_repo,
     get_or_404,
+    get_pseudonymizer,
     get_synthese_repo,
 )
 from src.core.constants import get_current_school_year
 from src.core.exceptions import StorageError
+from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.classe import Classe, ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
@@ -154,6 +156,7 @@ def get_classe_eleves_with_syntheses(
     classe_repo: ClasseRepository = Depends(get_classe_repo),
     eleve_repo: EleveRepository = Depends(get_eleve_repo),
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
+    pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Récupérer les élèves avec leurs synthèses en un seul appel.
 
@@ -165,11 +168,18 @@ def get_classe_eleves_with_syntheses(
     eleves = eleve_repo.get_by_classe(classe_id, trimestre)
     syntheses_map = synthese_repo.get_by_classe(classe_id, trimestre)
 
+    # Fetch all pseudonymization mappings in 1 query
+    mappings = pseudonymizer.list_mappings(classe_id)
+    mappings_by_id = {m["eleve_id"]: m for m in mappings}
+
     result = []
     for e in eleves:
         synth_data = syntheses_map.get(e.eleve_id)
+        mapping = mappings_by_id.get(e.eleve_id)
         item = {
             "eleve_id": e.eleve_id,
+            "prenom": mapping["prenom_original"] if mapping else None,
+            "nom": mapping["nom_original"] if mapping else None,
             "genre": e.genre,
             "trimestre": e.trimestre,
             "absences_demi_journees": e.absences_demi_journees,
