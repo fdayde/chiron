@@ -15,7 +15,7 @@ from src.api.dependencies import (
 )
 from src.core.models import Alerte, Reussite
 from src.generation.prompt_builder import format_eleve_data
-from src.generation.prompts import CURRENT_PROMPT, get_prompt_hash
+from src.generation.prompts import CURRENT_PROMPT, get_prompt, get_prompt_hash
 from src.llm.config import settings as llm_settings
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.eleve import EleveRepository
@@ -364,6 +364,20 @@ async def generate_batch(
         "total_errors": total_errors,
         "duration_ms": total_duration_ms,
         "results": results,
+    }
+
+
+@router.get("/prompts/current")
+def get_current_prompt():
+    """Retourne le prompt actuellement utilisé pour la génération."""
+    template = get_prompt(CURRENT_PROMPT)
+    return {
+        "name": CURRENT_PROMPT,
+        "version": template["version"],
+        "description": template.get("description", ""),
+        "system_prompt": template["system"],
+        "user_prompt_template": template["user"],
+        "prompt_hash": get_prompt_hash(CURRENT_PROMPT),
     }
 
 

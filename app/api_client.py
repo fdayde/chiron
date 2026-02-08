@@ -268,6 +268,10 @@ class ChironAPIClient:
         params = {"classe_id": classe_id} if classe_id else None
         return self._get("/syntheses/pending", params)
 
+    def get_current_prompt(self) -> dict:
+        """Récupérer le prompt actuellement utilisé."""
+        return self._get("/syntheses/prompts/current")
+
     # Import/Export
     def import_pdf(
         self,

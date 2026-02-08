@@ -72,21 +72,11 @@ Méthodes `async generate_with_metadata_async()` et `async generate_batch_async(
 
 ---
 
-### 7. Afficher le prompt au user
+### ~~7. Afficher le prompt au user~~ — ✅ Fait
 
-**Fichiers** : `src/generation/prompts.py`, `src/api/routers/syntheses.py`
+**Fichiers** : `src/api/routers/syntheses.py`, `app/api_client.py`, `app/pages/4_Prompt.py`
 
-**Implémentation** :
-- [ ] Ajouter un endpoint `GET /prompts/current` qui retourne :
-  ```json
-  {
-    "version": "synthese_v2",
-    "system_prompt": "...",
-    "user_prompt_template": "...",
-    "prompt_hash": "..."
-  }
-  ```
-- [ ] Côté UI : ajouter un `st.expander("Voir le prompt utilisé")` sur la page synthèses, appelant cet endpoint, affichant le contenu en lecture seule
+Endpoint `GET /prompts/current` retournant nom, version, hash, system prompt et user template. Page dédiée `4_Prompt.py` avec affichage en lecture seule (`st.code`).
 
 ---
 
@@ -140,7 +130,7 @@ P1 #10 UX Import (dépseudo + confirm) ✅
   ↓
 P2 #6  Endpoint batch generation       ✅
   ↓
-P2 #7  Afficher le prompt
+P2 #7  Afficher le prompt               ✅
   ↓
 P3 #8  Prompt v3
   ↓

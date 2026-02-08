@@ -146,7 +146,9 @@ Réponds UNIQUEMENT avec un JSON valide selon cette structure :
 
 _USER_TEMPLATE = """Rédige une synthèse pour cet élève :
 
-{eleve_data}"""
+<ELEVE_DATA>
+{eleve_data}
+</ELEVE_DATA>"""
 
 # Étapes communes à toutes les versions
 _COMMON_STEPS = "\n\n".join(
