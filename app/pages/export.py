@@ -266,15 +266,7 @@ def export_page():
                     "text-caption text-grey-7"
                 )
 
-                clipboard_area = (
-                    ui.textarea(
-                        label="Contenu a copier (Ctrl+A puis Ctrl+C)",
-                    )
-                    .classes("w-full hidden")
-                    .props("rows=8")
-                )
-
-                def _prepare_clipboard():
+                async def _copy_to_clipboard():
                     validated = [
                         s for s in syntheses_data if s["status"] == "validated"
                     ]
@@ -283,11 +275,19 @@ def export_page():
                         lines.append(f"# {item['display_name']}")
                         lines.append(item["synthese"].get("synthese_texte", ""))
                         lines.append("")
-                    clipboard_area.value = "\n".join(lines)
-                    clipboard_area.set_visibility(True)
+                    text = "\n".join(lines)
+                    escaped = (
+                        text.replace("\\", "\\\\")
+                        .replace("`", "\\`")
+                        .replace("$", "\\$")
+                    )
+                    await ui.run_javascript(
+                        f"navigator.clipboard.writeText(`{escaped}`)"
+                    )
+                    ui.notify("Copie dans le presse-papiers", type="positive")
 
                 ui.button(
-                    "Preparer pour copie",
+                    "Copier dans le presse-papiers",
                     icon="content_copy",
-                    on_click=_prepare_clipboard,
+                    on_click=_copy_to_clipboard,
                 ).props("outline")

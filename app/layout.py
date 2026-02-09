@@ -88,22 +88,30 @@ def _render_drawer_content() -> None:
             current = None
             set_classe_id(None)
 
+        def _on_classe_change(e):
+            set_classe_id(e.value)
+            ui.navigate.to(ui.context.client.page.path)
+
         ui.select(
             options=options,
             label="Classe",
             value=current,
             clearable=True,
-            on_change=lambda e: set_classe_id(e.value),
+            on_change=_on_classe_change,
         ).classes("w-full")
     else:
         ui.label("Aucune classe").classes("text-grey-6 q-mb-sm")
 
     # --- Trimester selector ---
+    def _on_trimestre_change(e):
+        set_trimestre(e.value)
+        ui.navigate.to(ui.context.client.page.path)
+
     ui.select(
         options={1: "Trimestre 1", 2: "Trimestre 2", 3: "Trimestre 3"},
         label="Trimestre",
         value=get_trimestre(),
-        on_change=lambda e: set_trimestre(e.value),
+        on_change=_on_trimestre_change,
     ).classes("w-full q-mt-sm")
 
     ui.separator().classes("q-my-md")
