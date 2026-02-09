@@ -12,6 +12,7 @@ description = "Assistant IA pour la préparation des conseils de classe"
 requires-python = ">=3.13"
 dependencies = [
     "anthropic>=0.46.0",
+    "cachetools>=5.0.0",
     "docling>=2.69.1",
     "duckdb>=1.4.0",
     "fastapi>=0.115.0",
@@ -22,6 +23,7 @@ dependencies = [
     "matplotlib>=3.10.7",
     "mistralai>=1.9.11",
     "nest-asyncio>=1.6.0",
+    "nicegui>=2.0.0",
     "numpy>=2.3.3",
     "openai>=1.109.1",
     "openpyxl>=3.1.5",
@@ -30,6 +32,7 @@ dependencies = [
     "pdfservices-sdk>=4.2.0",
     "pydantic>=2.11.10",
     "pydantic-settings>=2.11.0",
+    "pywebview>=5.0",
     "pymupdf>=1.26.7",
     "pypdf2>=3.0.1",
     "pytest>=8.4.2",
@@ -79,6 +82,7 @@ ignore = [
 "src/api/routers/*.py" = ["B008"]  # FastAPI Depends() pattern
 "app/pages/*.py" = ["N999"]  # Streamlit: numbered page names (1_import, 2_syntheses, etc.)
 "app/main.py" = ["E402"]  # sys.path manipulation before imports
+"run.py" = ["E402"]  # sys.path manipulation before imports
 
 [tool.ruff.format]
 quote-style = "double"

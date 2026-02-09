@@ -237,3 +237,6 @@ tmpclaude-*
 # DuckDB local databases
 data/db/*.duckdb
 data/db/*.duckdb.wal
+
+# NiceGUI
+.nicegui/
