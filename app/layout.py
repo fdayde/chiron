@@ -28,8 +28,18 @@ def page_layout(title: str):
         title: Titre affiché en haut de la page.
     """
     ui.dark_mode(True)
+    ui.colors(primary="#5C6BC0")
+
+    ui.add_head_html("""
+    <style>
+    .q-card { transition: transform 0.15s, box-shadow 0.15s; }
+    .q-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    </style>
+    """)
 
     # --- Header ---
+    current_path = ui.context.client.page.path
+
     with ui.header().classes("items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
             ui.button(icon="menu", on_click=lambda: drawer.toggle()).props(
@@ -46,12 +56,18 @@ def page_layout(title: str):
                 ("Export", "/export"),
                 ("Prompt", "/prompt"),
             ]:
-                ui.button(label, on_click=lambda p=path: ui.navigate.to(p)).props(
+                btn = ui.button(label, on_click=lambda p=path: ui.navigate.to(p)).props(
                     "flat color=white size=sm"
                 )
+                if current_path == path:
+                    btn.style("border-bottom: 2px solid white")
 
     # --- Drawer (sidebar) ---
-    with ui.left_drawer(value=True).classes("q-pa-md") as drawer:
+    with (
+        ui.left_drawer(value=True)
+        .classes("q-pa-sm")
+        .style("border-right: 1px solid rgba(255,255,255,0.1)") as drawer
+    ):
         _render_drawer_content()
 
     # --- Page content ---

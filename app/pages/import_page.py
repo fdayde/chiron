@@ -232,7 +232,9 @@ def import_page():
         # =============================================================
 
         ui.separator().classes("q-mt-md")
-        ui.label("Vue de la classe").classes("text-h6 q-mt-sm")
+        with ui.row().classes("items-center gap-2 q-mt-sm"):
+            ui.icon("groups").classes("text-primary")
+            ui.label("Vue de la classe").classes("text-h6")
 
         overview_container = ui.column().classes("w-full")
 
@@ -279,33 +281,59 @@ def import_page():
                             }
                         )
 
-                    table = ui.table(
-                        columns=[
-                            {"name": "eleve", "label": "Eleve", "field": "eleve"},
-                            {"name": "genre", "label": "Genre", "field": "genre"},
-                            {
-                                "name": "absences",
-                                "label": "Abs.",
-                                "field": "absences",
-                            },
-                            {
-                                "name": "synthese",
-                                "label": "Synthese",
-                                "field": "synthese",
-                            },
-                            {
-                                "name": "statut",
-                                "label": "Statut",
-                                "field": "statut",
-                            },
-                            {
-                                "name": "actions",
-                                "label": "Actions",
-                                "field": "actions",
-                            },
-                        ],
-                        rows=rows,
-                    ).classes("w-full q-mt-sm")
+                    table = (
+                        ui.table(
+                            columns=[
+                                {"name": "eleve", "label": "Eleve", "field": "eleve"},
+                                {"name": "genre", "label": "Genre", "field": "genre"},
+                                {
+                                    "name": "absences",
+                                    "label": "Abs.",
+                                    "field": "absences",
+                                },
+                                {
+                                    "name": "synthese",
+                                    "label": "Synthese",
+                                    "field": "synthese",
+                                },
+                                {
+                                    "name": "statut",
+                                    "label": "Statut",
+                                    "field": "statut",
+                                },
+                                {
+                                    "name": "actions",
+                                    "label": "Actions",
+                                    "field": "actions",
+                                },
+                            ],
+                            rows=rows,
+                        )
+                        .props("flat bordered dense")
+                        .classes("w-full q-mt-sm")
+                    )
+
+                    table.add_slot(
+                        "body-cell-synthese",
+                        r"""
+                        <q-td :props="props">
+                            <q-badge v-if="props.value === 'ok'" color="positive" label="ok" />
+                            <span v-else class="text-grey">—</span>
+                        </q-td>
+                        """,
+                    )
+
+                    table.add_slot(
+                        "body-cell-statut",
+                        r"""
+                        <q-td :props="props">
+                            <q-badge v-if="props.value !== '-'"
+                                     :color="props.value === 'validated' ? 'positive' : props.value === 'generated' ? 'primary' : 'warning'"
+                                     :label="props.value" />
+                            <span v-else class="text-grey">—</span>
+                        </q-td>
+                        """,
+                    )
 
                     table.add_slot(
                         "body-cell-actions",

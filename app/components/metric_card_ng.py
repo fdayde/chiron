@@ -24,8 +24,12 @@ def metric_card(
     if inverse:
         delta_color = "negative" if delta_color == "positive" else "positive"
 
-    with ui.card().classes("p-4 min-w-36"):
+    with (
+        ui.card()
+        .classes("p-3 min-w-36")
+        .style("border-left: 3px solid var(--q-primary)")
+    ):
         ui.label(label).classes("text-caption text-grey-7")
-        ui.label(str(value)).classes("text-h4 text-weight-bold")
+        ui.label(str(value)).classes("text-h5 text-weight-bold")
         if delta is not None:
             ui.label(delta).classes(f"text-caption text-{delta_color}")

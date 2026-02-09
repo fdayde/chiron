@@ -25,7 +25,9 @@ def home_page():
             return
 
         # --- Metrics ---
-        ui.label("État des lieux").classes("text-h6 q-mt-md")
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("assessment").classes("text-primary")
+            ui.label("État des lieux").classes("text-h6")
 
         classes = []
         try:
@@ -75,7 +77,9 @@ def home_page():
 
         # --- Table ---
         if table_rows:
-            ui.label("Détail par classe").classes("text-h6 q-mt-md")
+            with ui.row().classes("items-center gap-2 q-mt-md"):
+                ui.icon("table_chart").classes("text-primary")
+                ui.label("Détail par classe").classes("text-h6")
             ui.table(
                 columns=[
                     {"name": "classe", "label": "Classe", "field": "classe"},
@@ -85,7 +89,7 @@ def home_page():
                     {"name": "validees", "label": "Validées", "field": "validees"},
                 ],
                 rows=table_rows,
-            ).classes("w-full q-mt-sm")
+            ).props("flat bordered dense").classes("w-full q-mt-sm")
         elif classes:
             ui.label("Aucune donnée importée pour le moment.").classes(
                 "text-grey-6 q-mt-md"
@@ -98,7 +102,9 @@ def home_page():
         ui.separator().classes("q-mt-md")
 
         # --- Workflow ---
-        ui.label("Comment ça marche ?").classes("text-h6 q-mt-md")
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("help_outline").classes("text-primary")
+            ui.label("Comment ça marche ?").classes("text-h6")
 
         with ui.row().classes("q-mt-md gap-4 justify-center"):
             _workflow_card(
@@ -135,7 +141,9 @@ def home_page():
         ui.separator().classes("q-mt-md")
 
         # --- Quick actions ---
-        ui.label("Démarrer").classes("text-h6 q-mt-md")
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("rocket_launch").classes("text-primary")
+            ui.label("Démarrer").classes("text-h6")
         with ui.row().classes("q-mt-md gap-4"):
             ui.button(
                 "Importer des bulletins",
@@ -156,9 +164,13 @@ def home_page():
 
 def _metric_card(label: str, value: str) -> None:
     """Affiche une carte métrique simple (Phase 0, sans delta)."""
-    with ui.card().classes("p-4 min-w-40"):
+    with (
+        ui.card()
+        .classes("p-3 min-w-40")
+        .style("border-left: 3px solid var(--q-primary)")
+    ):
         ui.label(label).classes("text-caption text-grey-7")
-        ui.label(value).classes("text-h4 text-weight-bold")
+        ui.label(value).classes("text-h5 text-weight-bold")
 
 
 def _workflow_card(title: str, subtitle: str, bullets: list[str], color: str) -> None:

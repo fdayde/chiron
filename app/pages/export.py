@@ -41,7 +41,9 @@ def export_page():
         # RECAPITULATIF
         # =============================================================
 
-        ui.label("Recapitulatif").classes("text-h6 q-mt-md")
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("assessment").classes("text-primary")
+            ui.label("Recapitulatif").classes("text-h6")
 
         try:
             eleves_data = fetch_eleves_with_syntheses(classe_id, trimestre)
@@ -59,7 +61,9 @@ def export_page():
         # Cost stats
         stats = fetch_classe_stats(classe_id, trimestre)
         if stats:
-            ui.label("Couts de generation").classes("text-h6 q-mt-md")
+            with ui.row().classes("items-center gap-2 q-mt-md"):
+                ui.icon("payments").classes("text-primary")
+                ui.label("Couts de generation").classes("text-h6")
             with ui.row().classes("gap-4"):
                 metric_card("Tokens entree", f"{stats.get('tokens_input', 0):,}")
                 metric_card("Tokens sortie", f"{stats.get('tokens_output', 0):,}")
@@ -139,7 +143,9 @@ def export_page():
         # PREVIEW
         # =============================================================
 
-        ui.label("Apercu").classes("text-h6 q-mt-md")
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("visibility").classes("text-primary")
+            ui.label("Apercu").classes("text-h6")
 
         # Load syntheses for preview
         syntheses_data = []
@@ -233,7 +239,9 @@ def export_page():
         # EXPORT
         # =============================================================
 
-        ui.label("Export").classes("text-h6 q-mt-md")
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("download").classes("text-primary")
+            ui.label("Export").classes("text-h6")
 
         with ui.row().classes("w-full gap-8"):
             # CSV export
