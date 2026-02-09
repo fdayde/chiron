@@ -4,6 +4,7 @@ import csv
 import io
 import logging
 import tempfile
+from datetime import date
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -73,7 +74,8 @@ def export_csv(
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Exporter les synthèses validées en CSV."""
-    get_or_404(classe_repo, classe_id, entity_name="Class")
+    classe = get_or_404(classe_repo, classe_id, entity_name="Class")
+    classe_nom = classe.nom.replace(" ", "_") if classe.nom else classe_id
 
     validated = synthese_repo.get_validated(classe_id, trimestre)
 
@@ -109,7 +111,7 @@ def export_csv(
         media_type="text/csv; charset=utf-8",
         headers={
             "Content-Disposition": (
-                f"attachment; filename=syntheses_{classe_id}_T{trimestre}.csv"
+                f"attachment; filename=syntheses_{classe_nom}_T{trimestre}_{date.today().isoformat()}.csv"
             )
         },
     )

@@ -7,12 +7,11 @@ from cache import (
     fetch_classe_stats,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
-    get_api_client,
     get_status_counts,
 )
 from components.metric_card_ng import metric_card
 from layout import page_layout
-from nicegui import run, ui
+from nicegui import ui
 from state import get_classe_id, get_trimestre
 
 
@@ -249,20 +248,12 @@ def export_page():
                 else:
 
                     async def _download_csv():
-                        csv_btn.props(add="loading")
-                        try:
-                            client = get_api_client()
-                            csv_content = await run.io_bound(
-                                client.export_csv, classe_id, trimestre
-                            )
-                            filename = f"syntheses_{classe_id}_T{trimestre}.csv"
-                            ui.download(csv_content, filename)
-                        except Exception as e:
-                            ui.notify(f"Erreur: {e}", type="negative")
-                        finally:
-                            csv_btn.props(remove="loading")
+                        url = f"/export/csv?classe_id={classe_id}&trimestre={trimestre}"
+                        await ui.run_javascript(
+                            f'window.open("{url}", "_blank")',
+                        )
 
-                    csv_btn = ui.button(
+                    ui.button(
                         f"Telecharger CSV ({counts['validated']} syntheses)",
                         icon="download",
                         on_click=_download_csv,
