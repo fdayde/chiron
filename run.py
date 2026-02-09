@@ -55,37 +55,44 @@ if __name__ == "__main__":
     ensure_data_directories()
 
     # --- Database lifecycle (with = flush WAL on exit) ---
-    with managed_connection():
-        # --- Mount existing FastAPI routers (same prefixes as src/api/main.py) ---
-        app.include_router(classes_router, prefix="/classes", tags=["Classes"])
-        app.include_router(eleves_router, prefix="/eleves", tags=["Eleves"])
-        app.include_router(syntheses_router, prefix="/syntheses", tags=["Syntheses"])
-        app.include_router(exports_router, tags=["Import/Export"])
+    try:
+        with managed_connection():
+            # --- Mount existing FastAPI routers ---
+            app.include_router(classes_router, prefix="/classes", tags=["Classes"])
+            app.include_router(eleves_router, prefix="/eleves", tags=["Eleves"])
+            app.include_router(
+                syntheses_router, prefix="/syntheses", tags=["Syntheses"]
+            )
+            app.include_router(exports_router, tags=["Import/Export"])
 
-        @app.get("/health")
-        def health():
-            """Health check endpoint."""
-            return {"status": "ok"}
+            @app.get("/health")
+            def health():
+                """Health check endpoint."""
+                return {"status": "ok"}
 
-        # --- Static files ---
-        app.add_static_files("/static", str(project_root / "app" / "static"))
+            # --- Static files ---
+            app.add_static_files("/static", str(project_root / "app" / "static"))
 
-        # --- Import NiceGUI pages (registers @ui.page decorators) ---
-        import pages.export  # noqa: F401
-        import pages.home  # noqa: F401
-        import pages.import_page  # noqa: F401
-        import pages.prompt  # noqa: F401
-        import pages.syntheses  # noqa: F401
+            # --- Import NiceGUI pages (registers @ui.page decorators) ---
+            import pages.export  # noqa: F401
+            import pages.home  # noqa: F401
+            import pages.import_page  # noqa: F401
+            import pages.prompt  # noqa: F401
+            import pages.syntheses  # noqa: F401
 
-        # --- Launch ---
-        native = os.getenv("CHIRON_NATIVE", "0") == "1"
-        ui.run(
-            title="Chiron",
-            favicon=str(project_root / "app" / "static" / "chiron_logo.png"),
-            port=_PORT,
-            native=native,
-            window_size=(1400, 900),
-            reload=False,
-            storage_secret=os.getenv("CHIRON_STORAGE_SECRET", "chiron-local-secret"),
-            reconnect_timeout=30.0,  # PDF import can take 30s+ (NER model loading)
-        )
+            # --- Launch ---
+            native = os.getenv("CHIRON_NATIVE", "0") == "1"
+            ui.run(
+                title="Chiron",
+                favicon=str(project_root / "app" / "static" / "chiron_logo.png"),
+                port=_PORT,
+                native=native,
+                window_size=(1400, 900),
+                reload=False,
+                storage_secret=os.getenv(
+                    "CHIRON_STORAGE_SECRET", "chiron-local-secret"
+                ),
+                reconnect_timeout=30.0,
+            )
+    except KeyboardInterrupt:
+        pass
