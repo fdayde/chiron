@@ -29,9 +29,9 @@ User → LLMManager.call() → Rate Limiter → Client → API Provider → Resp
 
 | Provider | Modèles | Tier 1 Limits | Usage |
 |----------|---------|---------------|-------|
-| **OpenAI** | gpt-5-mini, gpt-4.1-nano | 500 RPM | Extraction primaire |
-| **Anthropic** | claude-sonnet-4-5, haiku-3.5 | 50 RPM | Arbitrage consensus |
-| **Mistral** | mistral-large-latest | 100 RPM | Extraction primaire |
+| **OpenAI** | gpt-5-mini, gpt-5-nano | 500 RPM | Génération synthèses |
+| **Anthropic** | claude-sonnet-4-5, claude-haiku-4-5 | 50 RPM | Génération synthèses |
+| **Mistral** | mistral-large-latest | 100 RPM | Génération synthèses |
 
 ---
 
@@ -122,99 +122,26 @@ async def extract_info():
 result = asyncio.run(extract_info())
 ```
 
-### Batch Processing (Parallèle)
-
-```python
-# Préparer les requêtes
-requests = [
-    {
-        "provider": "openai",
-        "messages": [{"role": "user", "content": f"Extract from PDF {i}"}],
-        "model": "gpt-5-mini",
-    }
-    for i in range(100)
-]
-
-# Appel batch avec rate limiting automatique
-results = await manager.batch_call(
-    requests=requests,
-    max_concurrent=50  # Concurrence max (rate limiter régule)
-)
-
-# Résultats dans l'ordre original
-for result in results:
-    if "error" not in result:
-        print(result["content"])
-```
-
----
-
 ## Configuration
 
 ### Variables d'Environnement (.env)
 
 ```bash
-# API Keys (obligatoires)
+# API Keys (obligatoires selon le provider choisi)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 MISTRAL_API_KEY=...
 
-# Modèles par défaut (optionnel)
-DEFAULT_OPENAI_MODEL=gpt-5-mini
-DEFAULT_ANTHROPIC_MODEL=claude-sonnet-4-5
-DEFAULT_MISTRAL_MODEL=mistral-large-latest
-
-# Rate Limits (optionnel, surcharge les defaults)
-OPENAI_RPM=500
-ANTHROPIC_RPM=50
-MISTRAL_RPM=100
+# Provider et modèle par défaut
+DEFAULT_LLM_PROVIDER=anthropic
+DEFAULT_LLM_MODEL=claude-haiku-4-5
 ```
 
 ---
 
 ## Métriques
 
-```python
-from src.llm.metrics import metrics_collector
-
-# Résumé des métriques
-summary = metrics_collector.get_summary()
-print(summary)
-# {
-#     "openai": {
-#         "total_calls": 150,
-#         "total_tokens": 450000,
-#         "total_cost_usd": 0.45,
-#         "avg_latency_ms": 1200,
-#         "success_rate": 0.98
-#     }
-# }
-
-# Export vers DuckDB
-metrics_collector.export_to_duckdb()
-```
-
----
-
-## Pipeline Consensus (Architecture Production)
-
-```
-2000 PDFs
-  ↓
-Extraction Primaire (Parallèle)
-  • GPT-5-mini (500 RPM)      → ~4 min
-  • Mistral Large (100 RPM)   → ~20 min
-  ↓
-Analyse de Divergence
-  ↓
-~400 PDFs divergents (20%)
-  ↓
-Arbitrage Sonnet 4.5 (50 RPM) → ~8 min
-  ↓
-Résultats finaux
-
-TEMPS TOTAL: ~32 minutes
-```
+Les métriques (tokens, coûts, latence) sont collectées automatiquement par `LLMClient.call()` et stockées avec chaque synthèse dans `chiron.duckdb`.
 
 ---
 
@@ -250,20 +177,3 @@ await limiter.acquire(timeout=120.0)  # Max 2 minutes d'attente
 **Solution** : Découper le document ou filtrer le contenu avant extraction
 
 ---
-
-## Performances Mesurées
-
-**Benchmark 5 PDFs** (notebooks/benchmark_parallelization.ipynb) :
-
-| Méthode | Temps | Speedup |
-|---------|-------|---------|
-| Séquentiel | 75.7s | 1x |
-| Parallèle (max_concurrent=20) | 25.6s | **3.0x** |
-
-**Projection 2000 PDFs** :
-
-| Provider | Temps Estimé |
-|----------|--------------|
-| GPT-5-mini | ~4 min |
-| Mistral Large | ~20 min |
-| Sonnet 4.5 (400 PDFs) | ~8 min |

@@ -5,7 +5,7 @@ et un collector pour les agréger et les exporter vers DuckDB.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 
@@ -34,7 +34,8 @@ class LLMCallMetrics(BaseModel):
     """
 
     timestamp: datetime = Field(
-        default_factory=datetime.now, description="Horodatage de l'appel"
+        default_factory=lambda: datetime.now(UTC),
+        description="Horodatage de l'appel (UTC)",
     )
     provider: str = Field(..., description="Provider (openai/anthropic/mistral)")
     model: str = Field(..., description="Nom du modèle")
