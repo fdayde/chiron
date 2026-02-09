@@ -72,7 +72,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
                 - llm_provider: Provider name (openai, anthropic, mistral)
                 - llm_model: Model used
                 - llm_response_raw: Raw response text from LLM
-                - prompt_template: Template name (e.g., "synthese_v1")
+                - prompt_template: Template name (e.g., "synthese_v3")
                 - prompt_hash: Hash for traceability
                 - tokens_input: Input tokens count
                 - tokens_output: Output tokens count

@@ -58,6 +58,9 @@ if __name__ == "__main__":
         """Health check endpoint."""
         return {"status": "ok"}
 
+    # --- Static files ---
+    app.add_static_files("/static", str(project_root / "app" / "static"))
+
     # --- Import NiceGUI pages (registers @ui.page decorators) ---
     import pages.export  # noqa: F401
     import pages.home  # noqa: F401
@@ -69,7 +72,7 @@ if __name__ == "__main__":
     native = os.getenv("CHIRON_NATIVE", "0") == "1"
     ui.run(
         title="Chiron",
-        favicon="🏫",
+        favicon=str(project_root / "app" / "static" / "chiron_logo.png"),
         port=_PORT,
         native=native,
         window_size=(1400, 900),

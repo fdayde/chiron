@@ -168,7 +168,7 @@ class SyntheseGeneree(BaseModel):
     synthese_texte: str
     alertes: list[Alerte] = Field(default_factory=list)
     reussites: list[Reussite] = Field(default_factory=list)
-    posture_generale: Literal["actif", "passif", "perturbateur", "variable"]
+    posture_generale: Literal["engage", "en_progression", "en_retrait", "heterogene"]
     axes_travail: list[str] = Field(default_factory=list)
     biais_detectes: list[BiaisGenre] = Field(default_factory=list)
 

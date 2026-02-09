@@ -1,4 +1,8 @@
-# Chiron
+<p align="center">
+  <img src="app/static/chiron_logo.png" alt="Chiron" width="120">
+</p>
+
+<h1 align="center">Chiron</h1>
 
 [![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#-statut-du-projet)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from cache import (
     clear_eleves_cache,
     delete_synthese_direct,
@@ -10,6 +12,143 @@ from cache import (
     validate_synthese_direct,
 )
 from nicegui import run, ui
+
+
+def _build_insights_text(synthese: dict) -> str:
+    """Build a plain-text version of all insights for copy-paste.
+
+    Args:
+        synthese: Synthesis data dict.
+
+    Returns:
+        Formatted plain text.
+    """
+    parts: list[str] = []
+
+    alertes = synthese.get("alertes", [])
+    if alertes:
+        parts.append("ALERTES :")
+        for a in alertes:
+            sev = a.get("severite", "")
+            sev_tag = f" [{sev}]" if sev else ""
+            parts.append(
+                f"  - {a.get('matiere', '?')}{sev_tag} : {a.get('description', '')}"
+            )
+
+    reussites = synthese.get("reussites", [])
+    if reussites:
+        if parts:
+            parts.append("")
+        parts.append("RÉUSSITES :")
+        for r in reussites:
+            parts.append(f"  - {r.get('matiere', '?')} : {r.get('description', '')}")
+
+    posture = synthese.get("posture_generale")
+    if posture:
+        if parts:
+            parts.append("")
+        parts.append(f"ENGAGEMENT : {posture}")
+
+    axes = synthese.get("axes_travail", [])
+    if axes:
+        if parts:
+            parts.append("")
+        parts.append("STRATÉGIES D'APPRENTISSAGE :")
+        for axe in axes:
+            parts.append(f"  - {axe}")
+
+    biais = synthese.get("biais_detectes", [])
+    if biais:
+        if parts:
+            parts.append("")
+        parts.append("BIAIS DE GENRE DÉTECTÉS :")
+        for b in biais:
+            parts.append(
+                f'  - {b.get("matiere", "?")} : "{b.get("formulation_biaisee", "")}" '
+                f"→ {b.get('suggestion', '')}"
+            )
+
+    return "\n".join(parts)
+
+
+def _render_insights_panel(synthese: dict) -> None:
+    """Render the insights panel with selectable text and copy button.
+
+    Args:
+        synthese: Synthesis data dict.
+    """
+    insights_text = _build_insights_text(synthese)
+    if not insights_text:
+        return
+
+    with (
+        ui.card()
+        .classes("w-full q-mt-sm p-3")
+        .style("user-select: text; cursor: text;")
+    ):
+        with ui.row().classes("w-full items-center justify-between q-mb-xs"):
+            ui.label("Insights").classes("text-weight-bold text-body2")
+            ui.button(
+                icon="content_copy",
+                on_click=lambda: ui.run_javascript(
+                    f"navigator.clipboard.writeText({json.dumps(insights_text)})"
+                    ".then(() => null)"
+                ),
+            ).props("flat dense size=sm").tooltip("Copier les insights")
+
+        # Alertes
+        alertes = synthese.get("alertes", [])
+        if alertes:
+            with ui.row().classes("items-center gap-1 q-mb-xs"):
+                ui.icon("warning", size="xs").classes("text-orange")
+                ui.label("Alertes").classes("text-weight-bold text-caption")
+            for alerte in alertes:
+                sev = alerte.get("severite", "")
+                color = "text-red" if sev == "urgent" else "text-orange"
+                ui.label(
+                    f"  {alerte.get('matiere', '?')} : {alerte.get('description', '')}"
+                ).classes(f"text-caption {color}").style("user-select: text;")
+
+        # Reussites
+        reussites = synthese.get("reussites", [])
+        if reussites:
+            with ui.row().classes("items-center gap-1 q-mt-xs q-mb-xs"):
+                ui.icon("emoji_events", size="xs").classes("text-green")
+                ui.label("Réussites").classes("text-weight-bold text-caption")
+            for reussite in reussites:
+                ui.label(
+                    f"  {reussite.get('matiere', '?')} : {reussite.get('description', '')}"
+                ).classes("text-caption text-green").style("user-select: text;")
+
+        # Engagement + Strategies
+        posture = synthese.get("posture_generale")
+        axes = synthese.get("axes_travail", [])
+        if posture or axes:
+            with ui.row().classes("items-center gap-1 q-mt-xs q-mb-xs"):
+                ui.icon("psychology", size="xs").classes("text-blue")
+                ui.label("Engagement & stratégies").classes(
+                    "text-weight-bold text-caption"
+                )
+            if posture:
+                ui.label(f"  Profil : {posture}").classes("text-caption").style(
+                    "user-select: text;"
+                )
+            for axe in axes:
+                ui.label(f"  • {axe}").classes("text-caption").style(
+                    "user-select: text;"
+                )
+
+        # Biais
+        biais = synthese.get("biais_detectes", [])
+        if biais:
+            with ui.row().classes("items-center gap-1 q-mt-xs q-mb-xs"):
+                ui.icon("balance", size="xs").classes("text-purple")
+                ui.label("Biais de genre").classes("text-weight-bold text-caption")
+            for b in biais:
+                ui.label(
+                    f'  {b.get("matiere", "?")} : "{b.get("formulation_biaisee", "")}" '
+                    f"→ {b.get('suggestion', '')}"
+                ).classes("text-caption text-purple").style("user-select: text;")
 
 
 def synthese_display(synthese: dict) -> None:
@@ -23,45 +162,7 @@ def synthese_display(synthese: dict) -> None:
 
     ui.separator()
 
-    with ui.row().classes("w-full gap-8"):
-        # Alertes
-        with ui.column().classes("flex-1"):
-            ui.label("Alertes").classes("text-weight-bold")
-            alertes = synthese.get("alertes", [])
-            if alertes:
-                for alerte in alertes:
-                    with ui.card().classes("w-full p-2 q-mb-xs"):
-                        ui.label(alerte.get("matiere", "N/A")).classes(
-                            "text-weight-bold text-body2"
-                        )
-                        ui.label(alerte.get("description", "")).classes("text-caption")
-            else:
-                ui.label("Aucune alerte").classes("text-caption text-grey-6")
-
-        # Reussites
-        with ui.column().classes("flex-1"):
-            ui.label("Reussites").classes("text-weight-bold")
-            reussites = synthese.get("reussites", [])
-            if reussites:
-                for reussite in reussites:
-                    with ui.card().classes("w-full p-2 q-mb-xs"):
-                        ui.label(reussite.get("matiere", "N/A")).classes(
-                            "text-weight-bold text-body2"
-                        )
-                        ui.label(reussite.get("description", "")).classes(
-                            "text-caption"
-                        )
-            else:
-                ui.label("Aucune reussite").classes("text-caption text-grey-6")
-
-    # Posture and axes
-    posture = synthese.get("posture_generale")
-    if posture:
-        ui.label(f"Posture generale : {posture}").classes("text-body2 q-mt-sm")
-
-    axes = synthese.get("axes_travail", [])
-    if axes:
-        ui.label(f"Axes de travail : {', '.join(axes)}").classes("text-body2")
+    _render_insights_panel(synthese)
 
 
 def synthese_editor(
@@ -130,40 +231,8 @@ def synthese_editor(
         .props("rows=8")
     )
 
-    # Insights: alertes + reussites
-    with ui.row().classes("w-full gap-8 q-mt-sm"):
-        with ui.column().classes("flex-1"):
-            ui.label("Alertes").classes("text-weight-bold")
-            alertes = synthese.get("alertes", [])
-            if alertes:
-                for alerte in alertes:
-                    ui.label(
-                        f"- {alerte.get('matiere', '?')}: {alerte.get('description', '')}"
-                    ).classes("text-caption")
-            else:
-                ui.label("Aucune").classes("text-caption text-grey-6")
-
-        with ui.column().classes("flex-1"):
-            ui.label("Reussites").classes("text-weight-bold")
-            reussites = synthese.get("reussites", [])
-            if reussites:
-                for reussite in reussites:
-                    ui.label(
-                        f"- {reussite.get('matiere', '?')}: {reussite.get('description', '')}"
-                    ).classes("text-caption")
-            else:
-                ui.label("Aucune").classes("text-caption text-grey-6")
-
-    # Posture and axes (compact)
-    posture = synthese.get("posture_generale")
-    axes = synthese.get("axes_travail", [])
-    if posture or axes:
-        parts = []
-        if posture:
-            parts.append(f"Posture: {posture}")
-        if axes:
-            parts.append(f"Axes: {', '.join(axes)}")
-        ui.label(" | ".join(parts)).classes("text-caption text-grey-7 q-mt-xs")
+    # Insights panel (selectable + copiable)
+    _render_insights_panel(synthese)
 
     ui.separator().classes("q-my-sm")
 

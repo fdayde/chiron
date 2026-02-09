@@ -60,7 +60,7 @@ def page_layout(title: str):
             ui.button(icon="menu", on_click=lambda: drawer.toggle()).props(
                 "flat color=white"
             )
-            ui.icon("school").classes("text-2xl")
+            ui.html('<img src="/static/chiron_logo.png" width="64" height="64">')
             ui.label("Chiron").classes("text-h6 text-white")
 
         with ui.row().classes("gap-1"):
