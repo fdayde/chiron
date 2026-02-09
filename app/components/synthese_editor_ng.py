@@ -112,7 +112,7 @@ def synthese_editor(
                 gen_btn.props(remove="loading")
 
         gen_btn = ui.button("Generer", icon="auto_awesome", on_click=_generate).props(
-            "color=primary"
+            "color=primary rounded"
         )
         return
 
@@ -189,7 +189,7 @@ def synthese_editor(
                 validate_btn.props(remove="loading")
 
         validate_btn = ui.button("Valider", icon="check", on_click=_validate).props(
-            "color=primary"
+            "color=primary rounded"
         )
 
         # Regenerate
@@ -217,5 +217,5 @@ def synthese_editor(
                 regen_btn.props(remove="loading")
 
         regen_btn = ui.button("Regenerer", icon="refresh", on_click=_regenerate).props(
-            "outline color=orange"
+            "outline color=orange rounded"
         )

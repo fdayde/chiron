@@ -149,17 +149,17 @@ def home_page():
                 "Importer des bulletins",
                 icon="upload_file",
                 on_click=lambda: ui.navigate.to("/import"),
-            ).props("outline")
+            ).props("outline rounded")
             ui.button(
                 "Synthèses",
                 icon="smart_toy",
                 on_click=lambda: ui.navigate.to("/syntheses"),
-            ).props("outline")
+            ).props("outline rounded")
             ui.button(
                 "Exporter",
                 icon="download",
                 on_click=lambda: ui.navigate.to("/export"),
-            ).props("outline")
+            ).props("outline rounded")
 
 
 def _metric_card(label: str, value: str) -> None:

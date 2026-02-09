@@ -212,7 +212,7 @@ def import_page():
 
         import_btn = (
             ui.button("Importer les fichiers", icon="upload", on_click=do_import)
-            .props("color=primary disable")
+            .props("color=primary disable rounded")
             .classes("q-mt-md")
         )
 
@@ -371,7 +371,7 @@ def import_page():
                             with ui.row().classes("justify-end q-mt-md gap-2"):
                                 ui.button("Annuler", on_click=dlg.close).props("flat")
                                 ui.button("Supprimer", on_click=_confirm).props(
-                                    "color=negative"
+                                    "color=negative rounded"
                                 )
                         dlg.open()
 
@@ -388,6 +388,6 @@ def import_page():
                         "Generer et revoir les syntheses",
                         icon="arrow_forward",
                         on_click=lambda: ui.navigate.to("/syntheses"),
-                    ).props("color=primary").classes("q-mt-sm")
+                    ).props("color=primary rounded").classes("q-mt-sm")
 
         _render_overview()

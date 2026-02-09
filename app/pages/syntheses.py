@@ -58,7 +58,7 @@ def syntheses_page():
                 "Aller a Import",
                 icon="upload",
                 on_click=lambda: ui.navigate.to("/import"),
-            )
+            ).props("rounded")
             return
 
         # Metrics
@@ -138,7 +138,7 @@ def syntheses_page():
                         icon="auto_awesome",
                         on_click=_generate_missing,
                     ).props(
-                        f"color=primary {'disable' if counts['missing'] == 0 else ''}"
+                        f"color=primary rounded {'disable' if counts['missing'] == 0 else ''}"
                     )
 
                 with ui.column().classes("flex-1"):
@@ -198,7 +198,7 @@ def syntheses_page():
                                 ui.button(
                                     "Confirmer",
                                     on_click=_do_regen,
-                                ).props("color=warning")
+                                ).props("color=warning rounded")
                         dlg.open()
 
                     regen_all_btn = ui.button(
@@ -206,7 +206,7 @@ def syntheses_page():
                         icon="refresh",
                         on_click=_confirm_regen,
                     ).props(
-                        f"outline color=orange {'disable' if counts['with_synthese'] == 0 else ''}"
+                        f"outline color=orange rounded {'disable' if counts['with_synthese'] == 0 else ''}"
                     )
                     if counts["with_synthese"] == 0:
                         regen_all_btn.tooltip(
@@ -301,20 +301,18 @@ def syntheses_page():
                     syn = None
                     syn_id = None
 
-                # Student header with real name
-                status_badge = ""
-                if current.get("synthese_status") == "validated":
-                    status_badge = " (validee)"
-                elif current.get("has_synthese"):
-                    status_badge = " (en attente)"
-
                 # Real names come from current (fetch_eleves_with_syntheses)
                 prenom = current.get("prenom") or ""
                 nom = current.get("nom") or ""
                 nom_complet = f"{prenom} {nom}".strip()
                 display_name = nom_complet if nom_complet else eleve_id
 
-                ui.label(f"{display_name}{status_badge}").classes("text-h5")
+                with ui.row().classes("items-center gap-3"):
+                    ui.label(display_name).classes("text-h5")
+                    if current.get("synthese_status") == "validated":
+                        ui.badge("validee", color="positive").props("rounded")
+                    elif current.get("has_synthese"):
+                        ui.badge("en attente", color="warning").props("rounded")
                 ui.label(f"ID: {eleve_id}").classes("text-caption text-grey-7")
 
                 # Two columns: Appreciations | Synthese
@@ -369,7 +367,9 @@ def syntheses_page():
         progress_value = (
             counts["validated"] / counts["total"] if counts["total"] > 0 else 0
         )
-        ui.linear_progress(value=progress_value, show_value=False).classes("w-full")
+        ui.linear_progress(value=progress_value, show_value=False).props(
+            "rounded color=positive"
+        ).classes("w-full")
         ui.label(
             f"Progression : {counts['validated']}/{counts['total']} validees"
         ).classes("text-caption text-grey-7")
@@ -379,4 +379,4 @@ def syntheses_page():
                 "Aller a Export",
                 icon="arrow_forward",
                 on_click=lambda: ui.navigate.to("/export"),
-            ).props("color=primary").classes("q-mt-sm")
+            ).props("color=primary rounded").classes("q-mt-sm")

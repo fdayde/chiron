@@ -95,7 +95,7 @@ def export_page():
                     "Aller generer",
                     icon="arrow_forward",
                     on_click=lambda: ui.navigate.to("/syntheses"),
-                ).props("flat size=sm")
+                ).props("flat size=sm rounded")
 
         if counts["pending"] > 0:
             pending_ids = [
@@ -123,7 +123,7 @@ def export_page():
                 "Aller a Import",
                 icon="upload",
                 on_click=lambda: ui.navigate.to("/import"),
-            )
+            ).props("rounded")
             return
 
         if counts["validated"] == 0:
@@ -134,7 +134,7 @@ def export_page():
                 "Aller valider",
                 icon="arrow_forward",
                 on_click=lambda: ui.navigate.to("/syntheses"),
-            )
+            ).props("rounded")
             return
 
         ui.separator()
@@ -265,7 +265,7 @@ def export_page():
                         f"Telecharger CSV ({counts['validated']} syntheses)",
                         icon="download",
                         on_click=_download_csv,
-                    ).props("color=primary")
+                    ).props("color=primary rounded")
 
             # Clipboard copy
             with ui.column().classes("flex-1"):
@@ -298,4 +298,4 @@ def export_page():
                     "Copier dans le presse-papiers",
                     icon="content_copy",
                     on_click=_copy_to_clipboard,
-                ).props("outline")
+                ).props("outline rounded")

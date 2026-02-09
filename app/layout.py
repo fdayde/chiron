@@ -30,17 +30,32 @@ def page_layout(title: str):
     ui.dark_mode(True)
     ui.colors(primary="#5C6BC0")
 
+    ui.add_head_html(
+        '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">'
+    )
     ui.add_head_html("""
     <style>
-    .q-card { transition: transform 0.15s, box-shadow 0.15s; }
+    body { font-family: 'Inter', sans-serif; }
+    .q-card {
+        transition: transform 0.15s, box-shadow 0.15s;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
     .q-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
     </style>
     """)
 
     # --- Header ---
     current_path = ui.context.client.page.path
 
-    with ui.header().classes("items-center justify-between"):
+    with (
+        ui.header()
+        .classes("items-center justify-between")
+        .style("background: linear-gradient(135deg, #5C6BC0, #3F51B5)")
+    ):
         with ui.row().classes("items-center gap-2"):
             ui.button(icon="menu", on_click=lambda: drawer.toggle()).props(
                 "flat color=white"
@@ -187,4 +202,6 @@ def _render_new_classe_form() -> None:
         except Exception as e:
             ui.notify(f"Erreur : {e}", type="negative")
 
-    ui.button("Créer", on_click=create_classe, icon="add").classes("w-full q-mt-sm")
+    ui.button("Créer", on_click=create_classe, icon="add").props("rounded").classes(
+        "w-full q-mt-sm"
+    )
