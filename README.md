@@ -11,30 +11,47 @@
 
 Assistant IA pour la preparation des conseils de classe — Genere des syntheses trimestrielles personnalisees a partir des bulletins scolaires (PDF PRONOTE).
 
+## Fonctionnalites cles
+
+### Anonymisation NER avant envoi cloud
+Les noms, prenoms et informations identifiantes sont detectes par un modele NER local (CamemBERT) et remplaces par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le PDF est physiquement anonymise (redaction PyMuPDF) ; le LLM ne recoit jamais de donnees personnelles.
+
+### Few-shot learning — calibration par l'enseignant
+L'enseignant peut marquer jusqu'a 3 syntheses validees comme « exemples » pour l'IA. Ces exemples sont automatiquement injectes dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de detail des syntheses suivantes. Les appreciations sont tronquees et les syntheses plafonnees a 1000 caracteres pour maitriser la taille du prompt.
+
+### Insights pedagogiques fondes sur la recherche
+Le prompt de generation est concu selon des principes issus de la recherche en education :
+- **Growth mindset** (Dweck, 2006) : valorisation des processus, pas des capacites fixes
+- **Feedforward** (Hattie & Timperley, 2007) : orientation prospective vers des strategies concretes
+- **Theorie de l'autodetermination** (Deci & Ryan, 2000) : profils d'engagement contextuels, pas d'etiquettes figees
+- **Detection des biais de genre** : identification automatique des formulations genrees dans les appreciations
+
 ## Statut du projet
 
 **Phase actuelle** : Beta fonctionnelle — packaging `.exe` disponible
 - Pipeline complet : PDF → Anonymisation → Extraction → Generation LLM → Export
-- UI NiceGUI (navigateur) : import, generation, validation, export
+- UI NiceGUI (navigateur) : import, generation, calibration few-shot, validation, export
 - API FastAPI integree (process unique)
 - RGPD : anonymisation NER locale avant envoi cloud
+- Multi-provider : OpenAI, Anthropic, Mistral
 - Distribution : `chiron.exe` (PyInstaller, `--onedir`)
 
 ## Vue d'ensemble
 
 ```
-PDF PRONOTE → Anonymisation NER → Extraction → Generation LLM → Validation → Export CSV
-     │              │                  │              │             │           │
-     │         CamemBERT          pdfplumber     OpenAI/Claude   Humain    Depseudo
-     │         (local)            (local)        (cloud)        (local)    (local)
-     ▼              ▼                  ▼              ▼             ▼           ▼
-  Bulletin    PDF anonymise      Donnees        Synthese      Validee    Noms reels
+PDF PRONOTE → Anonymisation NER → Extraction → Calibration → Generation LLM → Validation → Export CSV
+     │              │                  │            │               │             │           │
+     │         CamemBERT          pdfplumber    Few-shot       OpenAI/Claude   Humain    Depseudo
+     │         (local)            (local)       (0-3 ex.)      (cloud)        (local)    (local)
+     ▼              ▼                  ▼            ▼               ▼             ▼           ▼
+  Bulletin    PDF anonymise      Donnees      Exemples        Synthese      Validee    Noms reels
 ```
 
 **Principes** :
 - Le professeur reste dans la boucle (validation obligatoire)
 - **Donnees personnelles jamais envoyees au cloud** (anonymisation PDF avant extraction)
-- Style et ton personnalises via few-shot learning
+- Style et ton calibres via few-shot learning (exemples de l'enseignant)
+- Insights pedagogiques actionnables (alertes, reussites, strategies, biais de genre)
 - Application locale + APIs cloud (LLM)
 
 ## Prerequis (mode developpeur)
@@ -46,7 +63,7 @@ PDF PRONOTE → Anonymisation NER → Extraction → Generation LLM → Validati
 ## Installation (mode developpeur)
 
 ```bash
-git clone https://github.com/<votre-username>/chiron.git
+git clone https://github.com/fdayde/chiron.git
 cd chiron
 
 uv venv
@@ -78,10 +95,11 @@ CHIRON_PORT=9000 python run.py   # Port personnalise
 ### Workflow type
 
 1. **Import** : Uploader les PDF bulletins de la classe
-2. **Generation** : Cliquer sur "Generer" (individuel ou batch)
-3. **Review** : Relire, editer si besoin
-4. **Validation** : Valider les syntheses finales
-5. **Export** : Telecharger le CSV pour le conseil
+2. **Generation** : Generer 1-2 syntheses, relire et valider
+3. **Calibration** : Marquer 1 a 3 syntheses validees comme exemples pour l'IA
+4. **Batch** : Generer les syntheses restantes (calibrees par les exemples)
+5. **Review** : Relire, editer si besoin, valider
+6. **Export** : Telecharger le CSV pour le conseil
 
 ## Distribution (.exe)
 

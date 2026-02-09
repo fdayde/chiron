@@ -1,7 +1,12 @@
 """Construction des prompts pour la génération de synthèses."""
 
+import json
+
 from src.core.models import EleveExtraction, EleveGroundTruth, MatiereExtraction
 from src.generation.prompts import CURRENT_PROMPT, get_prompt
+
+# Max characters for synthesis text in few-shot examples
+FEWSHOT_SYNTHESE_MAX_CHARS = 1000
 
 
 def format_eleve_data(eleve: EleveExtraction) -> str:
@@ -75,6 +80,77 @@ def format_matiere(matiere: MatiereExtraction) -> str:
         parts.append(f'\n  "{matiere.appreciation}"')
 
     return "".join(parts)
+
+
+def _truncate_appreciation(appreciation: str) -> str:
+    """Truncate an appreciation to its first sentence for few-shot examples.
+
+    Args:
+        appreciation: Full teacher appreciation text.
+
+    Returns:
+        First sentence only.
+    """
+    if not appreciation:
+        return ""
+    # Split on sentence-ending punctuation followed by space
+    for end in [". ", "! ", "? "]:
+        idx = appreciation.find(end)
+        if idx != -1:
+            return appreciation[: idx + 1]
+    return appreciation
+
+
+def build_fewshot_examples(raw_examples: list[dict]) -> list[EleveGroundTruth]:
+    """Build EleveGroundTruth objects from DB rows for few-shot injection.
+
+    Truncates appreciations to 1 sentence and synthesis to FEWSHOT_SYNTHESE_MAX_CHARS.
+
+    Args:
+        raw_examples: List of dicts from SyntheseRepository.get_fewshot_examples().
+
+    Returns:
+        List of EleveGroundTruth ready for PromptBuilder.
+    """
+    results = []
+    for row in raw_examples:
+        # Parse matieres JSON
+        matieres_raw = row.get("matieres")
+        if isinstance(matieres_raw, str):
+            matieres_raw = json.loads(matieres_raw)
+        matieres_raw = matieres_raw or []
+
+        matieres = []
+        for m in matieres_raw:
+            mat = MatiereExtraction(**m)
+            # Truncate appreciation to first sentence
+            mat.appreciation = _truncate_appreciation(mat.appreciation)
+            matieres.append(mat)
+
+        # Parse engagements
+        engagements = row.get("engagements")
+        if isinstance(engagements, str):
+            engagements = json.loads(engagements)
+        engagements = engagements or []
+
+        # Truncate synthesis text
+        synthese_texte = row.get("synthese_texte", "")
+        if len(synthese_texte) > FEWSHOT_SYNTHESE_MAX_CHARS:
+            synthese_texte = synthese_texte[:FEWSHOT_SYNTHESE_MAX_CHARS] + "..."
+
+        example = EleveGroundTruth(
+            eleve_id=row["eleve_id"],
+            genre=row.get("genre"),
+            absences_demi_journees=row.get("absences_demi_journees"),
+            absences_justifiees=row.get("absences_justifiees"),
+            retards=row.get("retards"),
+            engagements=engagements,
+            matieres=matieres,
+            synthese_ground_truth=synthese_texte,
+        )
+        results.append(example)
+
+    return results
 
 
 class PromptBuilder:

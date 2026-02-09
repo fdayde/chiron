@@ -91,6 +91,17 @@ def page_layout(title: str):
         ui.separator()
         yield
 
+        # --- Footer ---
+        ui.separator().classes("q-mt-lg")
+        with ui.row().classes("w-full justify-center items-center gap-2 q-mt-sm"):
+            ui.label("© 2025 Chiron").classes("text-caption text-grey-7")
+            ui.label("·").classes("text-caption text-grey-7")
+            ui.link(
+                "GitHub",
+                "https://github.com/fdayde/chiron",
+                new_tab=True,
+            ).classes("text-caption")
+
 
 def _render_drawer_content() -> None:
     """Rendu du contenu de la sidebar : santé API, sélecteurs, formulaire."""

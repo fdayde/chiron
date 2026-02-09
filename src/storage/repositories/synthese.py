@@ -456,6 +456,107 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             for row in results
         }
 
+    def toggle_fewshot_example(self, synthese_id: str, is_example: bool) -> bool:
+        """Toggle the few-shot example flag on a synthesis.
+
+        Args:
+            synthese_id: Synthesis identifier.
+            is_example: Whether to mark as example.
+
+        Returns:
+            True if updated.
+        """
+        self._execute_write(
+            """
+            UPDATE syntheses
+            SET is_fewshot_example = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            [is_example, synthese_id],
+        )
+        return True
+
+    def count_fewshot_examples(self, classe_id: str, trimestre: int) -> int:
+        """Count few-shot examples for a class/trimester.
+
+        Args:
+            classe_id: Class identifier.
+            trimestre: Trimester number.
+
+        Returns:
+            Number of examples (0-3).
+        """
+        result = self._execute_one(
+            """
+            SELECT COUNT(*)
+            FROM syntheses s
+            JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
+            WHERE e.classe_id = ? AND s.trimestre = ?
+              AND s.is_fewshot_example = TRUE
+              AND s.status = 'validated'
+            """,
+            [classe_id, trimestre],
+        )
+        return result[0] if result else 0
+
+    def get_fewshot_examples(self, classe_id: str, trimestre: int) -> list[dict]:
+        """Get few-shot examples for a class/trimester.
+
+        Returns validated syntheses marked as examples, with student data.
+
+        Args:
+            classe_id: Class identifier.
+            trimestre: Trimester number.
+
+        Returns:
+            List of dicts with eleve_id, synthese_texte, and eleve data fields.
+        """
+        results = self._execute(
+            """
+            SELECT s.eleve_id, s.synthese_texte,
+                   e.genre, e.absences_demi_journees, e.absences_justifiees,
+                   e.retards, e.engagements, e.matieres, e.moyenne_generale
+            FROM syntheses s
+            JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
+            WHERE e.classe_id = ? AND s.trimestre = ?
+              AND s.is_fewshot_example = TRUE
+              AND s.status = 'validated'
+            ORDER BY s.validated_at
+            LIMIT 3
+            """,
+            [classe_id, trimestre],
+        )
+
+        return [
+            {
+                "eleve_id": row[0],
+                "synthese_texte": row[1],
+                "genre": row[2],
+                "absences_demi_journees": row[3],
+                "absences_justifiees": row[4],
+                "retards": row[5],
+                "engagements": row[6],
+                "matieres": row[7],
+                "moyenne_generale": row[8],
+            }
+            for row in results
+        ]
+
+    def is_fewshot_example(self, synthese_id: str) -> bool:
+        """Check if a synthesis is marked as a few-shot example.
+
+        Args:
+            synthese_id: Synthesis identifier.
+
+        Returns:
+            True if marked as example.
+        """
+        result = self._execute_one(
+            "SELECT is_fewshot_example FROM syntheses WHERE id = ?",
+            [synthese_id],
+        )
+        return bool(result and result[0])
+
     def get_stats(self, classe_id: str, trimestre: int) -> dict:
         """Get aggregated statistics for a class and trimester.
 

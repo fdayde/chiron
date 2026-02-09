@@ -4,6 +4,8 @@ from cache import check_api_health, fetch_classe_stats, fetch_classes
 from layout import page_layout
 from nicegui import ui
 
+from src.llm.config import settings as llm_settings
+
 
 @ui.page("/")
 def home_page():
@@ -12,6 +14,31 @@ def home_page():
         ui.label("Assistant IA pour la préparation des conseils de classe").classes(
             "text-subtitle1 text-grey-7"
         )
+
+        # --- API key check ---
+        has_key = any(
+            [
+                llm_settings.openai_api_key,
+                llm_settings.anthropic_api_key,
+                llm_settings.mistral_api_key,
+            ]
+        )
+        if not has_key:
+            with ui.card().classes("w-full bg-orange-1 q-mt-md"):
+                with ui.row().classes("items-center gap-2"):
+                    ui.icon("vpn_key").classes("text-orange-8 text-xl")
+                    ui.markdown(
+                        "**Clé API manquante** — Aucune clé API n'est configurée. "
+                        "La génération de synthèses ne fonctionnera pas."
+                    )
+                ui.markdown(
+                    "Créez un fichier **`.env`** à la racine du projet "
+                    "(copiez `.env.example`) et ajoutez au moins une clé :\n\n"
+                    "```\nANTHROPIC_API_KEY=sk-ant-...\n"
+                    "OPENAI_API_KEY=sk-...\n"
+                    "MISTRAL_API_KEY=...\n```\n\n"
+                    "Puis relancez l'application."
+                ).classes("text-body2 q-ml-lg")
 
         # --- API status ---
         api_ok = check_api_health()

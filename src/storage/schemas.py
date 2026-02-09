@@ -101,6 +101,9 @@ TABLES = {
             validated_at TIMESTAMP,
             edited_at TIMESTAMP,
 
+            -- Few-shot example flag
+            is_fewshot_example BOOLEAN DEFAULT FALSE,
+
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -111,6 +114,17 @@ TABLES = {
 
 # Order matters for foreign key constraints
 TABLE_ORDER = ["classes", "eleves", "syntheses"]
+
+# Migrations: idempotent ALTER statements for existing databases.
+# DuckDB supports ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
+MIGRATIONS: list[str] = [
+    "ALTER TABLE syntheses ADD COLUMN IF NOT EXISTS is_fewshot_example BOOLEAN DEFAULT FALSE",
+    # Migrate posture_generale values from v1 to v3
+    "UPDATE syntheses SET posture_generale = 'engage' WHERE posture_generale = 'actif'",
+    "UPDATE syntheses SET posture_generale = 'en_progression' WHERE posture_generale = 'variable'",
+    "UPDATE syntheses SET posture_generale = 'en_retrait' WHERE posture_generale = 'passif'",
+    "UPDATE syntheses SET posture_generale = 'en_retrait' WHERE posture_generale = 'perturbateur'",
+]
 
 # Indexes to create after tables (idempotent via IF NOT EXISTS)
 INDEXES: dict[str, list[str]] = {

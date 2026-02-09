@@ -8,8 +8,11 @@ from cache import (
     fetch_eleve,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
+    fetch_fewshot_count,
     generate_batch_direct,
     get_status_counts,
+    is_fewshot_example_direct,
+    toggle_fewshot_example_direct,
 )
 from components.appreciations_view_ng import appreciations, eleve_header
 from components.llm_selector_ng import cost_estimate_label, llm_selector
@@ -68,6 +71,26 @@ def syntheses_page():
             metric_card("Validees", counts["validated"])
             metric_card("En attente", counts["pending"])
 
+        # --- Calibration banner ---
+        fewshot_count = fetch_fewshot_count(classe_id, trimestre)
+        page_data["fewshot_count"] = fewshot_count
+
+        with (
+            ui.card()
+            .classes("w-full q-mt-md p-3")
+            .style("border-left: 3px solid var(--q-primary)")
+        ):
+            with ui.row().classes("items-center gap-2"):
+                ui.icon("school").classes("text-primary")
+                fewshot_label = ui.label(
+                    f"Calibration : {fewshot_count}/3 exemples"
+                ).classes("text-weight-bold")
+            ui.label(
+                "Modifiez et validez des syntheses puis cochez « Utiliser comme exemple » "
+                "pour calibrer le style de l'IA (max 3)."
+            ).classes("text-caption text-grey-7")
+        page_data["fewshot_label"] = fewshot_label
+
         ui.separator()
 
         # =============================================================
@@ -95,6 +118,28 @@ def syntheses_page():
             icon="smart_toy",
             value=counts["missing"] > 0,
         ).classes("w-full q-mt-md"):
+            if fewshot_count == 0:
+                with ui.row().classes("items-center gap-1 q-mb-sm"):
+                    ui.icon("info", size="xs").classes("text-orange")
+                    ui.label(
+                        "Conseil : validez et marquez 1 a 3 syntheses comme "
+                        "exemples avant la generation batch pour un meilleur "
+                        "resultat."
+                    ).classes("text-caption text-orange")
+            elif fewshot_count < 3:
+                with ui.row().classes("items-center gap-1 q-mb-sm"):
+                    ui.icon("check_circle", size="xs").classes("text-green")
+                    ui.label(
+                        f"{fewshot_count} exemple(s) de calibration actif(s). "
+                        f"Vous pouvez en ajouter jusqu'a 3."
+                    ).classes("text-caption text-green")
+            else:
+                with ui.row().classes("items-center gap-1 q-mb-sm"):
+                    ui.icon("check_circle", size="xs").classes("text-green")
+                    ui.label(
+                        "3 exemples de calibration actifs — generation optimale."
+                    ).classes("text-caption text-green")
+
             with ui.row().classes("w-full gap-8"):
                 with ui.column().classes("flex-1"):
                     cost_estimate_label(
@@ -338,6 +383,32 @@ def syntheses_page():
                             model=llm_state["model"] or "",
                             on_action=_on_editor_action,
                         )
+
+                        # Few-shot example checkbox (validated syntheses only)
+                        if syn_id and current.get("synthese_status") == "validated":
+                            is_example = is_fewshot_example_direct(syn_id)
+                            current_count = page_data.get("fewshot_count", 0)
+                            can_toggle = is_example or current_count < 3
+
+                            def _on_fewshot_toggle(
+                                e,
+                                sid=syn_id,
+                            ):
+                                toggle_fewshot_example_direct(sid, e.value)
+                                new_count = fetch_fewshot_count(classe_id, trimestre)
+                                page_data["fewshot_count"] = new_count
+                                label = page_data.get("fewshot_label")
+                                if label:
+                                    label.text = f"Calibration : {new_count}/3 exemples"
+
+                            cb = ui.checkbox(
+                                "Utiliser comme exemple pour l'IA",
+                                value=is_example,
+                                on_change=_on_fewshot_toggle,
+                            ).classes("q-mt-sm")
+                            if not can_toggle:
+                                cb.props("disable")
+                                cb.tooltip("Maximum 3 exemples atteint")
 
         def _on_editor_action():
             """Re-fetch data and re-render student view in place (keeps index)."""

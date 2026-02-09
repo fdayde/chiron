@@ -1,7 +1,9 @@
 """Page Prompt — Affiche le prompt de génération."""
 
+from cache import fetch_fewshot_count
 from layout import page_layout
 from nicegui import ui
+from state import get_classe_id, get_trimestre
 
 from src.generation.prompts import CURRENT_PROMPT, get_prompt, get_prompt_hash
 
@@ -30,11 +32,58 @@ def prompt_page():
 
         ui.separator().classes("q-my-md")
 
+        # --- Message flow diagram ---
+        with ui.row().classes("items-center gap-2"):
+            ui.icon("forum").classes("text-primary")
+            ui.label("Structure des messages envoyes au LLM").classes("text-h6")
+
+        # Few-shot count
+        classe_id = get_classe_id()
+        trimestre = get_trimestre()
+        fewshot_count = 0
+        if classe_id:
+            fewshot_count = fetch_fewshot_count(classe_id, trimestre)
+
+        flow_lines = [
+            "1.  [system]     System prompt (instructions ci-dessous)",
+        ]
+        if fewshot_count > 0:
+            for i in range(fewshot_count):
+                n = i + 1
+                flow_lines.append(
+                    f"{len(flow_lines) + 1}.  [user]       Few-shot exemple {n} — donnees eleve"
+                )
+                flow_lines.append(
+                    f"{len(flow_lines) + 1}.  [assistant]  Few-shot exemple {n} — synthese validee"
+                )
+        flow_lines.append(
+            f"{len(flow_lines) + 1}.  [user]       Eleve cible — donnees du bulletin"
+        )
+
+        with (
+            ui.card()
+            .classes("w-full q-mt-sm p-3")
+            .style("border-left: 3px solid var(--q-primary)")
+        ):
+            for line in flow_lines:
+                ui.label(line).classes("text-body2").style("font-family: monospace;")
+            if fewshot_count > 0:
+                ui.label(f"{fewshot_count} exemple(s) de calibration actif(s)").classes(
+                    "text-caption text-green q-mt-xs"
+                )
+            else:
+                ui.label(
+                    "Aucun exemple few-shot — cochez « Utiliser comme exemple » "
+                    "sur des syntheses validees pour calibrer le style."
+                ).classes("text-caption text-orange q-mt-xs")
+
+        ui.separator().classes("q-my-md")
+
         # System prompt
         with ui.row().classes("items-center gap-2"):
             ui.icon("settings").classes("text-primary")
             ui.label("System prompt").classes("text-h6")
-        ui.label("Instructions envoyées au LLM avant les données de l'élève.").classes(
+        ui.label("Instructions envoyees au LLM avant les donnees de l'eleve.").classes(
             "text-caption text-grey-6"
         )
         ui.code(template["system"]).classes("w-full q-mt-sm")
@@ -46,7 +95,7 @@ def prompt_page():
             ui.icon("person").classes("text-primary")
             ui.label("User prompt (template)").classes("text-h6")
         ui.label(
-            "Message envoyé pour chaque élève. "
-            "{eleve_data} est remplacé par les données du bulletin."
+            "Message envoye pour chaque eleve. "
+            "{eleve_data} est remplace par les donnees du bulletin."
         ).classes("text-caption text-grey-6")
         ui.code(template["user"]).classes("w-full q-mt-sm")

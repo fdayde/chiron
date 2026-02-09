@@ -21,7 +21,7 @@ from src.api.dependencies import (
     get_synthese_generator,
     get_synthese_repo,
 )
-from src.generation.prompt_builder import format_eleve_data
+from src.generation.prompt_builder import build_fewshot_examples, format_eleve_data
 from src.generation.prompts import CURRENT_PROMPT, get_prompt_hash
 from src.llm.config import settings as llm_settings
 
@@ -273,6 +273,66 @@ def clear_classes_cache() -> None:
 # --- Fonctions directes (remplacent les appels HTTP via get_api_client) ---
 
 
+def toggle_fewshot_example_direct(synthese_id: str, is_example: bool) -> bool:
+    """Toggle the few-shot example flag on a synthesis."""
+    logger.info("Few-shot toggle: %s → %s", synthese_id, is_example)
+    synthese_repo = get_synthese_repo()
+    result = synthese_repo.toggle_fewshot_example(synthese_id, is_example)
+    # Verify the write
+    actual = synthese_repo.is_fewshot_example(synthese_id)
+    logger.info("Few-shot verify: %s is_fewshot=%s", synthese_id, actual)
+    return result
+
+
+def fetch_fewshot_count(classe_id: str, trimestre: int) -> int:
+    """Count few-shot examples for a class/trimester."""
+    synthese_repo = get_synthese_repo()
+    return synthese_repo.count_fewshot_examples(classe_id, trimestre)
+
+
+def is_fewshot_example_direct(synthese_id: str) -> bool:
+    """Check if a synthesis is a few-shot example."""
+    synthese_repo = get_synthese_repo()
+    return synthese_repo.is_fewshot_example(synthese_id)
+
+
+def _get_fewshot_generator(
+    classe_id: str,
+    trimestre: int,
+    provider: str,
+    model: str | None,
+):
+    """Create a SyntheseGenerator with few-shot examples if available.
+
+    Args:
+        classe_id: Class identifier.
+        trimestre: Trimester number.
+        provider: LLM provider.
+        model: LLM model.
+
+    Returns:
+        SyntheseGenerator (with or without few-shot).
+    """
+    synthese_repo = get_synthese_repo()
+    raw_examples = synthese_repo.get_fewshot_examples(classe_id, trimestre)
+
+    generator = get_synthese_generator(provider=provider, model=model)
+
+    if raw_examples:
+        examples = build_fewshot_examples(raw_examples)
+        generator.set_exemples(examples)
+        logger.info(
+            "Few-shot: %d exemple(s) injecte(s) pour %s T%d",
+            len(examples),
+            classe_id,
+            trimestre,
+        )
+    else:
+        logger.info("Few-shot: aucun exemple pour %s T%d", classe_id, trimestre)
+
+    return generator
+
+
 def generate_synthese_direct(
     eleve_id: str,
     trimestre: int,
@@ -291,7 +351,9 @@ def generate_synthese_direct(
     if not eleve:
         raise ValueError(f"Élève {eleve_id} T{trimestre} non trouvé")
 
-    generator = get_synthese_generator(provider=provider, model=model)
+    # Use few-shot examples if available
+    classe_id = eleve.classe
+    generator = _get_fewshot_generator(classe_id or "", trimestre, provider, model)
 
     start_time = time.perf_counter()
     result = generator.generate_with_metadata(
@@ -397,7 +459,7 @@ async def generate_batch_direct(
             "duration_ms": 0,
         }
 
-    generator = get_synthese_generator(provider=provider, model=model)
+    generator = _get_fewshot_generator(classe_id, trimestre, provider, model)
 
     start_time = time.perf_counter()
     gen_results = await generator.generate_batch_async(

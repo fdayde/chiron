@@ -49,19 +49,29 @@ EleveExtraction
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 2. prompts.get_prompt()             │  Template versionné (v1, v2...)
-│    → system + user prompts          │
+│ 2. get_fewshot_examples()           │  Charge 0-3 exemples validés
+│    + build_fewshot_examples()       │  (is_fewshot_example = TRUE)
+│    → exemples tronqués             │  Appréciations: 1ère phrase
+│                                     │  Synthèse: max 1000 car.
 └─────────────────────────────────────┘
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 3. LLMManager → LLMClient._do_call │  OpenAI / Anthropic / Mistral
-│    → JSON (synthèse, alertes...)    │  Retry, rate limiting, metrics
+│ 3. prompts.get_prompt("synthese_v3")│  Prompt fondé sur recherche :
+│    → system + user prompts          │  growth mindset, feedforward,
+│                                     │  SDT, détection biais genre
 └─────────────────────────────────────┘
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 4. depseudonymize_text()            │  ELEVE_XXX → prénom réel
+│ 4. LLMManager → LLMClient._do_call │  OpenAI / Anthropic / Mistral
+│    → JSON (synthèse, alertes,       │  Retry, rate limiting, metrics
+│       réussites, stratégies, biais) │
+└─────────────────────────────────────┘
+ │
+ ▼
+┌─────────────────────────────────────┐
+│ 5. depseudonymize_text()            │  ELEVE_XXX → prénom réel
 │    + synthese_repo.create()         │  Stocke dans chiron.duckdb
 └─────────────────────────────────────┘
 ```
@@ -82,8 +92,8 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 | `src/privacy/pseudonymizer.py` | Mapping nom ↔ eleve_id |
 | `src/api/routers/exports.py` | Endpoints import/export |
 | `src/generation/generator.py` | `SyntheseGenerator` (orchestration) |
-| `src/generation/prompts.py` | Templates de prompts versionnés (v1, v2) |
-| `src/generation/prompt_builder.py` | Formatage données élève pour le prompt |
+| `src/generation/prompts.py` | Prompt synthese_v3 (growth mindset, feedforward, SDT, biais) |
+| `src/generation/prompt_builder.py` | Formatage données + construction few-shot tronqués |
 | `src/llm/manager.py` | `LLMManager` (registry, retry, rate limiting) |
 | `src/llm/base.py` | `LLMClient` ABC (template method : timing, metrics, coût) |
 | `src/llm/clients/` | Implémentations OpenAI, Anthropic, Mistral |
