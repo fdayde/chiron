@@ -31,7 +31,7 @@ def prompt_page():
         ui.separator().classes("q-my-md")
 
         # System prompt
-        ui.label("System prompt").classes("text-h5")
+        ui.label("System prompt").classes("text-h6")
         ui.label("Instructions envoyées au LLM avant les données de l'élève.").classes(
             "text-caption text-grey-6"
         )
@@ -40,7 +40,7 @@ def prompt_page():
         ui.separator().classes("q-my-md")
 
         # User template
-        ui.label("User prompt (template)").classes("text-h5")
+        ui.label("User prompt (template)").classes("text-h6")
         ui.label(
             "Message envoyé pour chaque élève. "
             "{eleve_data} est remplacé par les données du bulletin."

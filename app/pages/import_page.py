@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from cache import (
     clear_eleves_cache,
+    delete_eleve_direct,
     fetch_classe,
     fetch_eleves_with_syntheses,
     get_status_counts,
@@ -42,7 +43,7 @@ def import_page():
             from src.llm.config import settings as _llm_settings
 
             if _llm_settings.pdf_parser_type.lower() == "mistral_ocr":
-                with ui.card().classes("w-full bg-blue-1 q-mb-md"):
+                with ui.card().classes("w-full bg-blue-10 q-mb-md"):
                     ui.label(
                         "Parser actif : Mistral OCR. "
                         "Les matieres, notes et absences ne seront pas extraites "
@@ -230,8 +231,8 @@ def import_page():
         # SECTION 2: CLASS OVERVIEW (refreshable)
         # =============================================================
 
-        ui.separator().classes("q-mt-lg")
-        ui.label("Vue de la classe").classes("text-h6 q-mt-md")
+        ui.separator().classes("q-mt-md")
+        ui.label("Vue de la classe").classes("text-h6 q-mt-sm")
 
         overview_container = ui.column().classes("w-full")
 
@@ -269,6 +270,7 @@ def import_page():
                         display_name = f"{prenom} {nom}".strip() or e["eleve_id"]
                         rows.append(
                             {
+                                "eleve_id": e["eleve_id"],
                                 "eleve": display_name,
                                 "genre": e.get("genre") or "?",
                                 "absences": e.get("absences_demi_journees", 0) or 0,
@@ -277,7 +279,7 @@ def import_page():
                             }
                         )
 
-                    ui.table(
+                    table = ui.table(
                         columns=[
                             {"name": "eleve", "label": "Eleve", "field": "eleve"},
                             {"name": "genre", "label": "Genre", "field": "genre"},
@@ -296,9 +298,56 @@ def import_page():
                                 "label": "Statut",
                                 "field": "statut",
                             },
+                            {
+                                "name": "actions",
+                                "label": "Actions",
+                                "field": "actions",
+                            },
                         ],
                         rows=rows,
                     ).classes("w-full q-mt-sm")
+
+                    table.add_slot(
+                        "body-cell-actions",
+                        r"""
+                        <q-td :props="props">
+                            <q-btn flat dense round icon="delete" color="negative"
+                                   @click="$parent.$emit('delete', props.row)" />
+                        </q-td>
+                        """,
+                    )
+
+                    def _on_delete(e):
+                        row = e.args
+                        eid = row["eleve_id"]
+                        name = row["eleve"]
+
+                        with ui.dialog() as dlg, ui.card():
+                            ui.label(f"Supprimer {name} ?").classes("text-h6")
+                            ui.label(
+                                "L'eleve et ses syntheses seront definitivement supprimes."
+                            ).classes("text-body2 text-grey-7")
+
+                            def _confirm():
+                                dlg.close()
+                                try:
+                                    delete_eleve_direct(eid, trimestre)
+                                    clear_eleves_cache()
+                                    ui.notify(f"{name} supprime", type="positive")
+                                    _render_overview()
+                                except Exception as exc:
+                                    ui.notify(
+                                        f"Erreur suppression: {exc}", type="negative"
+                                    )
+
+                            with ui.row().classes("justify-end q-mt-md gap-2"):
+                                ui.button("Annuler", on_click=dlg.close).props("flat")
+                                ui.button("Supprimer", on_click=_confirm).props(
+                                    "color=negative"
+                                )
+                        dlg.open()
+
+                    table.on("delete", _on_delete)
 
                     ui.separator().classes("q-mt-md")
 

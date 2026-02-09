@@ -250,6 +250,14 @@ def import_pdf_direct(
         tmp_path.unlink(missing_ok=True)
 
 
+def delete_eleve_direct(eleve_id: str, trimestre: int) -> None:
+    """Supprime un eleve et ses syntheses (appel direct, sans HTTP)."""
+    eleve_repo = get_eleve_repo()
+    synthese_repo = get_synthese_repo()
+    synthese_repo.delete_for_eleve(eleve_id, trimestre)
+    eleve_repo.delete(eleve_id, trimestre)
+
+
 def clear_eleves_cache() -> None:
     """Vide les caches liés aux élèves."""
     _eleves_cache.clear()

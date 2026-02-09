@@ -41,7 +41,7 @@ def export_page():
         # RECAPITULATIF
         # =============================================================
 
-        ui.label("Recapitulatif").classes("text-h5 q-mt-md")
+        ui.label("Recapitulatif").classes("text-h6 q-mt-md")
 
         try:
             eleves_data = fetch_eleves_with_syntheses(classe_id, trimestre)
@@ -59,7 +59,7 @@ def export_page():
         # Cost stats
         stats = fetch_classe_stats(classe_id, trimestre)
         if stats:
-            ui.label("Couts de generation").classes("text-h6 q-mt-lg")
+            ui.label("Couts de generation").classes("text-h6 q-mt-md")
             with ui.row().classes("gap-4"):
                 metric_card("Tokens entree", f"{stats.get('tokens_input', 0):,}")
                 metric_card("Tokens sortie", f"{stats.get('tokens_output', 0):,}")
@@ -76,7 +76,7 @@ def export_page():
             missing_ids = [
                 e["eleve_id"] for e in eleves_data if not e.get("has_synthese")
             ]
-            with ui.card().classes("w-full bg-orange-1 q-mt-md"):
+            with ui.card().classes("w-full bg-orange-10 q-mt-md"):
                 ui.label(f"{counts['missing']} eleve(s) sans synthese").classes(
                     "text-weight-bold text-warning"
                 )
@@ -99,7 +99,7 @@ def export_page():
                 for e in eleves_data
                 if e.get("has_synthese") and e.get("synthese_status") != "validated"
             ]
-            with ui.card().classes("w-full bg-blue-1 q-mt-md"):
+            with ui.card().classes("w-full bg-blue-10 q-mt-md"):
                 ui.label(f"{counts['pending']} synthese(s) non validee(s)").classes(
                     "text-weight-bold text-info"
                 )
@@ -139,7 +139,7 @@ def export_page():
         # PREVIEW
         # =============================================================
 
-        ui.label("Apercu").classes("text-h5 q-mt-md")
+        ui.label("Apercu").classes("text-h6 q-mt-md")
 
         # Load syntheses for preview
         syntheses_data = []
@@ -233,7 +233,7 @@ def export_page():
         # EXPORT
         # =============================================================
 
-        ui.label("Export").classes("text-h5 q-mt-md")
+        ui.label("Export").classes("text-h6 q-mt-md")
 
         with ui.row().classes("w-full gap-8"):
             # CSV export

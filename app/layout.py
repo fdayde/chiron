@@ -27,6 +27,8 @@ def page_layout(title: str):
     Args:
         title: Titre affiché en haut de la page.
     """
+    ui.dark_mode(True)
+
     # --- Header ---
     with ui.header().classes("items-center justify-between"):
         with ui.row().classes("items-center gap-2"):
@@ -49,12 +51,12 @@ def page_layout(title: str):
                 )
 
     # --- Drawer (sidebar) ---
-    with ui.left_drawer(value=True).classes("bg-blue-1 q-pa-md") as drawer:
+    with ui.left_drawer(value=True).classes("q-pa-md") as drawer:
         _render_drawer_content()
 
     # --- Page content ---
-    with ui.column().classes("w-full p-6 max-w-7xl mx-auto"):
-        ui.label(title).classes("text-h4 q-mb-md")
+    with ui.column().classes("w-full p-4 max-w-7xl mx-auto"):
+        ui.label(title).classes("text-h5 q-mb-sm")
         ui.separator()
         yield
 

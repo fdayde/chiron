@@ -364,7 +364,7 @@ def syntheses_page():
         # FOOTER: PROGRESS
         # =============================================================
 
-        ui.separator().classes("q-mt-lg")
+        ui.separator().classes("q-mt-md")
 
         progress_value = (
             counts["validated"] / counts["total"] if counts["total"] > 0 else 0

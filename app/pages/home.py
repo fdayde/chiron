@@ -16,7 +16,7 @@ def home_page():
         # --- API status ---
         api_ok = check_api_health()
         if not api_ok:
-            with ui.card().classes("w-full bg-red-1 q-mt-md"):
+            with ui.card().classes("w-full bg-red-10 q-mt-md"):
                 ui.label("API non disponible").classes("text-negative text-bold")
                 ui.label(
                     "Les routers FastAPI sont montés dans le même process. "
@@ -25,7 +25,7 @@ def home_page():
             return
 
         # --- Metrics ---
-        ui.label("État des lieux").classes("text-h5 q-mt-lg")
+        ui.label("État des lieux").classes("text-h6 q-mt-md")
 
         classes = []
         try:
@@ -75,7 +75,7 @@ def home_page():
 
         # --- Table ---
         if table_rows:
-            ui.label("Détail par classe").classes("text-h6 q-mt-lg")
+            ui.label("Détail par classe").classes("text-h6 q-mt-md")
             ui.table(
                 columns=[
                     {"name": "classe", "label": "Classe", "field": "classe"},
@@ -95,10 +95,10 @@ def home_page():
                 "Aucune classe créée. Utilisez la barre latérale pour en créer une."
             ).classes("text-grey-6 q-mt-md")
 
-        ui.separator().classes("q-mt-lg")
+        ui.separator().classes("q-mt-md")
 
         # --- Workflow ---
-        ui.label("Comment ça marche ?").classes("text-h5 q-mt-md")
+        ui.label("Comment ça marche ?").classes("text-h6 q-mt-md")
 
         with ui.row().classes("q-mt-md gap-4 justify-center"):
             _workflow_card(
@@ -123,7 +123,7 @@ def home_page():
             )
 
         # --- Privacy notice ---
-        with ui.card().classes("w-full bg-blue-1 q-mt-lg"):
+        with ui.card().classes("w-full bg-blue-10 q-mt-lg"):
             with ui.row().classes("items-center gap-2"):
                 ui.icon("lock").classes("text-blue-8")
                 ui.markdown(
@@ -132,10 +132,10 @@ def home_page():
                     "Les données personnelles restent sur votre machine."
                 )
 
-        ui.separator().classes("q-mt-lg")
+        ui.separator().classes("q-mt-md")
 
         # --- Quick actions ---
-        ui.label("Démarrer").classes("text-h5 q-mt-md")
+        ui.label("Démarrer").classes("text-h6 q-mt-md")
         with ui.row().classes("q-mt-md gap-4"):
             ui.button(
                 "Importer des bulletins",
