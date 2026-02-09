@@ -59,6 +59,7 @@ if __name__ == "__main__":
     native = os.getenv("CHIRON_NATIVE", "0") == "1"
     ui.run(
         title="Chiron",
+        favicon="🏫",
         port=_PORT,
         native=native,
         window_size=(1400, 900),

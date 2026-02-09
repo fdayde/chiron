@@ -30,8 +30,8 @@ def home_page():
         classes = []
         try:
             classes = fetch_classes()
-        except Exception:
-            pass
+        except Exception as e:
+            ui.notify(f"Erreur chargement classes: {e}", type="negative")
 
         total_eleves = 0
         total_pending = 0

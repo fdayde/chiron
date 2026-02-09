@@ -3,9 +3,6 @@
 En mode NiceGUI, l'API et l'UI tournent dans le même process.
 Les appels HTTP à soi-même deadlockent l'event loop asyncio.
 → On appelle les repositories directement (pas de réseau).
-
-Pour les pages qui ont besoin du client HTTP (ex: appels explicites
-depuis les callbacks utilisateur), on garde get_api_client().
 """
 
 from __future__ import annotations
@@ -13,38 +10,22 @@ from __future__ import annotations
 import dataclasses
 import logging
 import threading
+import time
 
-from api_client import ChironAPIClient
 from cachetools import TTLCache, cached
 
 from src.api.dependencies import (
     get_classe_repo,
     get_eleve_repo,
     get_pseudonymizer,
+    get_synthese_generator,
     get_synthese_repo,
 )
+from src.generation.prompt_builder import format_eleve_data
+from src.generation.prompts import CURRENT_PROMPT, get_prompt_hash
+from src.llm.config import settings as llm_settings
 
 logger = logging.getLogger(__name__)
-
-# --- Singleton API client (pour les callbacks qui doivent passer par HTTP) ---
-
-_client_instance: ChironAPIClient | None = None
-_client_lock = threading.Lock()
-
-
-def get_api_client() -> ChironAPIClient:
-    """Retourne le client API (singleton thread-safe).
-
-    Utilisé uniquement dans les callbacks utilisateur (boutons),
-    PAS pendant le rendu de page (sinon deadlock event loop).
-    """
-    global _client_instance
-    if _client_instance is None:
-        with _client_lock:
-            if _client_instance is None:
-                _client_instance = ChironAPIClient()
-    return _client_instance
-
 
 # --- Caches avec TTL (remplacent @st.cache_data) ---
 
@@ -279,3 +260,217 @@ def clear_eleves_cache() -> None:
 def clear_classes_cache() -> None:
     """Vide le cache des classes."""
     _classes_cache.clear()
+
+
+# --- Fonctions directes (remplacent les appels HTTP via get_api_client) ---
+
+
+def generate_synthese_direct(
+    eleve_id: str,
+    trimestre: int,
+    provider: str = llm_settings.default_provider,
+    model: str | None = None,
+) -> dict:
+    """Génère une synthèse pour un élève (appel direct, sans HTTP).
+
+    Reproduit la logique de POST /syntheses/generate.
+    """
+    eleve_repo = get_eleve_repo()
+    synthese_repo = get_synthese_repo()
+    pseudonymizer = get_pseudonymizer()
+
+    eleve = eleve_repo.get(eleve_id, trimestre)
+    if not eleve:
+        raise ValueError(f"Élève {eleve_id} T{trimestre} non trouvé")
+
+    generator = get_synthese_generator(provider=provider, model=model)
+
+    start_time = time.perf_counter()
+    result = generator.generate_with_metadata(
+        eleve=eleve,
+        max_tokens=llm_settings.synthese_max_tokens,
+    )
+    synthese = result.synthese
+    llm_metadata = result.metadata
+    duration_ms = int((time.perf_counter() - start_time) * 1000)
+
+    # Depseudonymize
+    classe_id = eleve.classe
+    if classe_id:
+        synthese.synthese_texte = pseudonymizer.depseudonymize_text(
+            synthese.synthese_texte, classe_id
+        )
+
+    # Delete existing synthesis (allows regeneration)
+    synthese_repo.delete_for_eleve(eleve_id, trimestre)
+
+    # Prepare metadata
+    eleve_data_str = format_eleve_data(eleve)
+    prompt_hash = get_prompt_hash(CURRENT_PROMPT, eleve_data_str)
+
+    metadata = {
+        "llm_provider": llm_metadata.get("llm_provider", provider),
+        "llm_model": llm_metadata.get("llm_model", model or generator.model),
+        "llm_response_raw": llm_metadata.get("llm_response_raw"),
+        "prompt_template": CURRENT_PROMPT,
+        "prompt_hash": prompt_hash,
+        "tokens_input": llm_metadata.get("tokens_input"),
+        "tokens_output": llm_metadata.get("tokens_output"),
+        "tokens_total": llm_metadata.get("tokens_total"),
+        "llm_cost": llm_metadata.get("cost_usd"),
+        "llm_duration_ms": duration_ms,
+        "llm_temperature": llm_settings.default_temperature,
+        "retry_count": llm_metadata.get("retry_count", 1),
+    }
+
+    synthese_id = synthese_repo.create(
+        eleve_id=eleve_id,
+        synthese=synthese,
+        trimestre=trimestre,
+        metadata=metadata,
+    )
+
+    return {
+        "synthese_id": synthese_id,
+        "eleve_id": eleve_id,
+        "trimestre": trimestre,
+        "status": "generated",
+        "metadata": {
+            "provider": metadata["llm_provider"],
+            "model": metadata["llm_model"],
+            "duration_ms": duration_ms,
+            "tokens_input": metadata.get("tokens_input"),
+            "tokens_output": metadata.get("tokens_output"),
+            "tokens_total": metadata.get("tokens_total"),
+            "cost_usd": metadata.get("llm_cost"),
+        },
+    }
+
+
+async def generate_batch_direct(
+    classe_id: str,
+    trimestre: int,
+    eleve_ids: list[str] | None = None,
+    provider: str = llm_settings.default_provider,
+    model: str | None = None,
+) -> dict:
+    """Génère des synthèses en batch (appel direct, sans HTTP).
+
+    Reproduit la logique de POST /syntheses/generate-batch.
+    Async car utilise generator.generate_batch_async().
+    """
+    eleve_repo = get_eleve_repo()
+    synthese_repo = get_synthese_repo()
+    pseudonymizer = get_pseudonymizer()
+
+    all_eleves = eleve_repo.get_by_classe(classe_id, trimestre)
+    if not all_eleves:
+        raise ValueError(f"Aucun élève trouvé pour {classe_id} T{trimestre}")
+
+    # Determine which students to generate for
+    if eleve_ids is not None:
+        eleves_map = {e.eleve_id: e for e in all_eleves}
+        eleves_to_generate = []
+        for eid in eleve_ids:
+            if eid in eleves_map:
+                eleves_to_generate.append(eleves_map[eid])
+                synthese_repo.delete_for_eleve(eid, trimestre)
+    else:
+        syntheses_map = synthese_repo.get_by_classe(classe_id, trimestre)
+        eleves_to_generate = [e for e in all_eleves if e.eleve_id not in syntheses_map]
+
+    if not eleves_to_generate:
+        return {
+            "classe_id": classe_id,
+            "trimestre": trimestre,
+            "total_requested": 0,
+            "total_success": 0,
+            "total_errors": 0,
+            "duration_ms": 0,
+        }
+
+    generator = get_synthese_generator(provider=provider, model=model)
+
+    start_time = time.perf_counter()
+    gen_results = await generator.generate_batch_async(
+        eleves=eleves_to_generate,
+        max_tokens=llm_settings.synthese_max_tokens,
+    )
+    total_duration_ms = int((time.perf_counter() - start_time) * 1000)
+
+    total_success = 0
+    total_errors = 0
+
+    for eleve, gen_result in zip(eleves_to_generate, gen_results, strict=False):
+        if gen_result is None:
+            total_errors += 1
+            continue
+
+        synthese = gen_result.synthese
+        llm_metadata = gen_result.metadata
+
+        # Depseudonymize
+        eleve_classe_id = eleve.classe
+        if eleve_classe_id:
+            synthese.synthese_texte = pseudonymizer.depseudonymize_text(
+                synthese.synthese_texte, eleve_classe_id
+            )
+
+        # Prepare metadata
+        eleve_data_str = format_eleve_data(eleve)
+        prompt_hash = get_prompt_hash(CURRENT_PROMPT, eleve_data_str)
+
+        metadata = {
+            "llm_provider": llm_metadata.get("llm_provider", provider),
+            "llm_model": llm_metadata.get("llm_model", model or generator.model),
+            "llm_response_raw": llm_metadata.get("llm_response_raw"),
+            "prompt_template": CURRENT_PROMPT,
+            "prompt_hash": prompt_hash,
+            "tokens_input": llm_metadata.get("tokens_input"),
+            "tokens_output": llm_metadata.get("tokens_output"),
+            "tokens_total": llm_metadata.get("tokens_total"),
+            "llm_cost": llm_metadata.get("cost_usd"),
+            "llm_duration_ms": total_duration_ms // len(eleves_to_generate),
+            "llm_temperature": llm_settings.default_temperature,
+            "retry_count": llm_metadata.get("retry_count", 1),
+        }
+
+        synthese_repo.create(
+            eleve_id=eleve.eleve_id,
+            synthese=synthese,
+            trimestre=trimestre,
+            metadata=metadata,
+        )
+        total_success += 1
+
+    logger.info(
+        f"Batch generation: {total_success}/{len(eleves_to_generate)} succès "
+        f"en {total_duration_ms}ms"
+    )
+
+    return {
+        "classe_id": classe_id,
+        "trimestre": trimestre,
+        "total_requested": len(eleves_to_generate),
+        "total_success": total_success,
+        "total_errors": total_errors,
+        "duration_ms": total_duration_ms,
+    }
+
+
+def update_synthese_direct(synthese_id: str, synthese_texte: str) -> None:
+    """Met à jour le texte d'une synthèse (appel direct, sans HTTP)."""
+    synthese_repo = get_synthese_repo()
+    synthese_repo.update(synthese_id, synthese_texte=synthese_texte, status="edited")
+
+
+def validate_synthese_direct(synthese_id: str) -> None:
+    """Valide une synthèse (appel direct, sans HTTP)."""
+    synthese_repo = get_synthese_repo()
+    synthese_repo.update_status(synthese_id, "validated")
+
+
+def delete_synthese_direct(synthese_id: str) -> None:
+    """Supprime une synthèse (appel direct, sans HTTP)."""
+    synthese_repo = get_synthese_repo()
+    synthese_repo.delete(synthese_id)

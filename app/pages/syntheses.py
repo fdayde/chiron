@@ -8,7 +8,7 @@ from cache import (
     fetch_eleve,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
-    get_api_client,
+    generate_batch_direct,
     get_status_counts,
 )
 from components.appreciations_view_ng import appreciations, eleve_header
@@ -16,7 +16,7 @@ from components.llm_selector_ng import cost_estimate_label, llm_selector
 from components.metric_card_ng import metric_card
 from components.synthese_editor_ng import synthese_editor
 from layout import page_layout
-from nicegui import run, ui
+from nicegui import ui
 from state import get_classe_id, get_trimestre
 
 
@@ -106,9 +106,7 @@ def syntheses_page():
                     async def _generate_missing():
                         gen_missing_btn.props(add="loading")
                         try:
-                            client = get_api_client()
-                            result = await run.io_bound(
-                                client.generate_batch,
+                            result = await generate_batch_direct(
                                 classe_id=classe_id,
                                 trimestre=trimestre,
                                 provider=llm_state["provider"],
@@ -154,9 +152,7 @@ def syntheses_page():
                         regen_all_btn.props(add="loading")
                         try:
                             all_ids = [e["eleve_id"] for e in page_data["eleves"]]
-                            client = get_api_client()
-                            result = await run.io_bound(
-                                client.generate_batch,
+                            result = await generate_batch_direct(
                                 classe_id=classe_id,
                                 trimestre=trimestre,
                                 eleve_ids=all_ids,

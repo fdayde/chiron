@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from cache import clear_eleves_cache, get_api_client
+from cache import (
+    clear_eleves_cache,
+    delete_synthese_direct,
+    generate_synthese_direct,
+    update_synthese_direct,
+    validate_synthese_direct,
+)
 from nicegui import run, ui
 
 
@@ -86,9 +92,8 @@ def synthese_editor(
         async def _generate():
             gen_btn.props(add="loading")
             try:
-                client = get_api_client()
                 result = await run.io_bound(
-                    client.generate_synthese,
+                    generate_synthese_direct,
                     eleve_id,
                     trimestre,
                     provider=provider,
@@ -170,13 +175,10 @@ def synthese_editor(
                 return
             validate_btn.props(add="loading")
             try:
-                client = get_api_client()
                 new_text = text_area.value
                 if new_text != synthese_texte:
-                    await run.io_bound(
-                        client.update_synthese, synthese_id, synthese_texte=new_text
-                    )
-                await run.io_bound(client.validate_synthese, synthese_id)
+                    await run.io_bound(update_synthese_direct, synthese_id, new_text)
+                await run.io_bound(validate_synthese_direct, synthese_id)
                 ui.notify("Validee", type="positive")
                 clear_eleves_cache()
                 if on_action:
@@ -194,11 +196,10 @@ def synthese_editor(
         async def _regenerate():
             regen_btn.props(add="loading")
             try:
-                client = get_api_client()
                 if synthese_id:
-                    await run.io_bound(client.delete_synthese, synthese_id)
+                    await run.io_bound(delete_synthese_direct, synthese_id)
                 result = await run.io_bound(
-                    client.generate_synthese,
+                    generate_synthese_direct,
                     eleve_id,
                     trimestre,
                     provider=provider,
