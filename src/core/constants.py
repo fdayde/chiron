@@ -36,6 +36,22 @@ DB_LLM_METRICS = DATA_LLM_METRICS_DIR / "metrics.duckdb"
 DATA_LOGS_DIR = DATA_PROCESSED_DIR / "logs"
 
 
+def ensure_data_directories() -> None:
+    """Create all data subdirectories if they don't exist."""
+    for d in [
+        DATA_DIR,
+        DATA_RAW_DIR,
+        DATA_PROCESSED_DIR,
+        DATA_GROUND_TRUTH_DIR,
+        DATA_EXPORTS_DIR,
+        DATA_MAPPING_DIR,
+        DATA_DB_DIR,
+        DATA_LOGS_DIR,
+        DATA_LLM_METRICS_DIR,
+    ]:
+        d.mkdir(parents=True, exist_ok=True)
+
+
 def get_current_school_year() -> str:
     """Return current school year as 'YYYY-YYYY+1'.
 

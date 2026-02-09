@@ -44,7 +44,6 @@ dependencies = [
     "sentence-transformers>=5.1.1",
     "sentencepiece>=0.2.1",
     "spacy>=3.8.11",
-    "streamlit>=1.40.0",
     "tenacity>=9.1.2",
     "torch>=2.9.1",
     "tqdm>=4.67.1",
@@ -82,8 +81,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "src/api/routers/*.py" = ["B008"]  # FastAPI Depends() pattern
-"app/pages/*.py" = ["N999"]  # Streamlit: numbered page names (1_import, 2_syntheses, etc.)
-"app/main.py" = ["E402"]  # sys.path manipulation before imports
 "run.py" = ["E402"]  # sys.path manipulation before imports
 
 [tool.ruff.format]

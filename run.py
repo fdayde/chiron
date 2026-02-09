@@ -38,7 +38,11 @@ if __name__ == "__main__":
         exports_router,
         syntheses_router,
     )
+    from src.core.constants import ensure_data_directories
     from src.storage.connection import get_connection
+
+    # --- Ensure data directories exist ---
+    ensure_data_directories()
 
     # --- Database initialization ---
     get_connection()
@@ -70,6 +74,6 @@ if __name__ == "__main__":
         native=native,
         window_size=(1400, 900),
         reload=False,
-        storage_secret="chiron-local-secret",
+        storage_secret=os.getenv("CHIRON_STORAGE_SECRET", "chiron-local-secret"),
         reconnect_timeout=30.0,  # PDF import can take 30s+ (NER model loading)
     )
