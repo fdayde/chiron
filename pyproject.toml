@@ -55,6 +55,8 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit>=4.3.0",
+    "pyinstaller>=6.0.0",
+    "pyinstaller-hooks-contrib>=2025.10",
     "pytest-asyncio>=1.2.0",
     "ruff>=0.13.2",
 ]

@@ -11,10 +11,16 @@ import os
 import sys
 from pathlib import Path
 
-# Setup paths (same pattern as app/main.py)
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-sys.path.insert(0, str(project_root / "app"))
+# Setup paths — in frozen mode (PyInstaller), source files live in _internal/
+if getattr(sys, "frozen", False):
+    project_root = Path(sys.executable).parent
+    _internal = project_root / "_internal"
+    sys.path.insert(0, str(_internal))
+    sys.path.insert(0, str(_internal / "app"))
+else:
+    project_root = Path(__file__).parent
+    sys.path.insert(0, str(project_root))
+    sys.path.insert(0, str(project_root / "app"))
 
 # Configure port and API client URL before any import that might use it
 _PORT = int(os.getenv("CHIRON_PORT", "8080"))

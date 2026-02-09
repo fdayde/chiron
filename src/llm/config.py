@@ -7,6 +7,8 @@ incluant les API keys, modèles, retry, rate limits et timeouts.
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.core.constants import PROJECT_ROOT
+
 
 class LLMSettings(BaseSettings):
     """Configuration des clients LLM.
@@ -16,7 +18,7 @@ class LLMSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(PROJECT_ROOT / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

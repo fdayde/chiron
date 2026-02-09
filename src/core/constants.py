@@ -1,8 +1,17 @@
+import sys
 from datetime import date
 from pathlib import Path
 
+
+def _get_project_root() -> Path:
+    """Return project root: next to .exe when frozen, else repo root."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).parent.parent.parent
+
+
 # Chemins racine du projet
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = _get_project_root()
 
 # Chemins des données
 DATA_DIR = PROJECT_ROOT / "data"
