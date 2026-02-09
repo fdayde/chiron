@@ -7,6 +7,8 @@ incluant les API keys, modèles, retry, rate limits et timeouts.
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.core.constants import PROJECT_ROOT
+
 
 class LLMSettings(BaseSettings):
     """Configuration des clients LLM.
@@ -16,16 +18,43 @@ class LLMSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(PROJECT_ROOT / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
     )
 
-    # API Keys
-    openai_api_key: str = Field(..., description="Clé API OpenAI")
-    anthropic_api_key: str = Field(..., description="Clé API Anthropic")
-    mistral_api_key: str = Field(..., description="Clé API Mistral")
+    # API Keys (optionnelles pour permettre le dev sans toutes les clés)
+    openai_api_key: str = Field(default="", description="Clé API OpenAI")
+    anthropic_api_key: str = Field(default="", description="Clé API Anthropic")
+    mistral_api_key: str = Field(default="", description="Clé API Mistral LLM")
+    mistral_ocr_api_key: str = Field(default="", description="Clé API Mistral OCR")
+
+    # Provider par défaut (lu depuis DEFAULT_LLM_PROVIDER dans .env)
+    default_provider: str = Field(
+        default="anthropic",
+        description="Provider LLM par défaut (openai, anthropic, mistral)",
+    )
+
+    # PDF Parser configuration
+    pdf_parser_type: str = Field(
+        default="pdfplumber",
+        description="Type de parser PDF (pdfplumber ou mistral_ocr)",
+    )
+    mistral_ocr_model: str = Field(
+        default="mistral-ocr-latest",
+        description="Modèle Mistral OCR à utiliser",
+    )
+    mistral_ocr_cost_per_1000_pages: float = Field(
+        default=2.0,
+        description="Coût Mistral OCR en USD pour 1000 pages",
+    )
+
+    # Anonymization configuration
+    ner_model: str = Field(
+        default="Jean-Baptiste/camembert-ner",
+        description="Modèle HuggingFace NER pour l'anonymisation",
+    )
 
     # Modèles par défaut (production)
     default_openai_model: str = Field(
@@ -74,43 +103,40 @@ class LLMSettings(BaseSettings):
 
     # Paramètres LLM par défaut
     default_temperature: float = Field(
-        default=0.0, ge=0, le=2, description="Température par défaut"
+        default=0.2, ge=0, le=2, description="Température par défaut"
     )
     default_max_tokens: int = Field(
         default=16384,
         gt=0,
         description="Max tokens de sortie par défaut (tous modèles)",
     )
+    synthese_max_tokens: int = Field(
+        default=16000,
+        gt=0,
+        description="Max tokens pour la génération de synthèses (valeur généreuse, coût = tokens utilisés)",
+    )
 
-    # Pricing OpenAI (USD par million de tokens) - Input / Output
-    # Source: https://openai.com/api/pricing/
+    # Pricing (USD par million de tokens) - Input / Output
+    # Estimation par bulletin: ~2000 tokens input, ~500 tokens output
+    #
+    # OpenAI - Source: https://openai.com/api/pricing/ (Feb 2026)
     openai_pricing: dict[str, tuple[float, float]] = {
-        "gpt-5": (1.25, 10.00),
-        "gpt-5-mini": (0.25, 2.00),
-        "gpt-5-nano": (0.05, 0.40),
-        "gpt-5-chat-latest": (1.25, 10.00),
-        "gpt-5-codex": (1.25, 10.00),
-        "gpt-5-pro": (15.00, 120.00),
-        "gpt-4.1": (2.00, 8.00),
-        "gpt-4.1-mini": (0.40, 1.60),
-        "gpt-4.1-nano": (0.10, 0.40),
-        "gpt-4o": (2.50, 10.00),
-        "gpt-4o-mini": (0.15, 0.60),
+        "gpt-5.2": (1.75, 14.00),  # ~$0.011/bulletin - le plus puissant
+        "gpt-5-mini": (0.25, 2.00),  # ~$0.0015/bulletin - défaut
     }
 
-    # Pricing Anthropic (USD par million de tokens) - Input / Output
-    # Source: https://www.anthropic.com/pricing
+    # Anthropic - Source: https://www.anthropic.com/pricing (Feb 2026)
     anthropic_pricing: dict[str, tuple[float, float]] = {
-        "claude-sonnet-4-5": (3.00, 15.00),
-        "claude-haiku-4-5": (1.00, 5.00),
+        "claude-opus-4-6": (5.00, 25.00),  # ~$0.023/bulletin - qualité max
+        "claude-sonnet-4-5": (3.00, 15.00),  # ~$0.014/bulletin
+        "claude-haiku-4-5": (1.00, 5.00),  # ~$0.005/bulletin
     }
 
-    # Pricing Mistral (USD par million de tokens) - Input / Output
-    # Source: https://mistral.ai/technology/#pricing
+    # Mistral - Source: https://mistral.ai/technology/#pricing (Feb 2026)
     mistral_pricing: dict[str, tuple[float, float]] = {
-        "mistral-large-latest": (2.00, 6.00),
-        "mistral-medium-latest": (2.00, 5.00),
-        "mistral-small-latest": (0.50, 1.50),
+        "mistral-large-latest": (2.00, 6.00),  # ~$0.007/bulletin
+        "mistral-medium-latest": (2.00, 5.00),  # ~$0.007/bulletin
+        "mistral-small-latest": (0.50, 1.50),  # ~$0.002/bulletin
     }
 
     def get_model(self, provider: str) -> str:
@@ -162,6 +188,27 @@ class LLMSettings(BaseSettings):
             return self.anthropic_rpm
         elif provider_lower == "mistral":
             return self.mistral_rpm
+        raise ValueError(f"Provider inconnu: {provider}")
+
+    def get_pricing(self, provider: str) -> dict[str, tuple[float, float]]:
+        """Retourne la config de pricing pour un provider.
+
+        Args:
+            provider: Nom du provider (openai/anthropic/mistral)
+
+        Returns:
+            Dict {model: (input_price_per_1M, output_price_per_1M)}
+
+        Raises:
+            ValueError: Si le provider est inconnu
+        """
+        provider_lower = provider.lower()
+        if provider_lower == "openai":
+            return self.openai_pricing
+        elif provider_lower == "anthropic":
+            return self.anthropic_pricing
+        elif provider_lower == "mistral":
+            return self.mistral_pricing
         raise ValueError(f"Provider inconnu: {provider}")
 
 

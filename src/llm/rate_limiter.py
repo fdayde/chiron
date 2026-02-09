@@ -10,6 +10,7 @@ un vrai rate limiting au niveau de l'application.
 import asyncio
 import logging
 import time
+from collections import deque
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class SimpleRateLimiter:
         """
         self.rpm = rpm
         self.verbose = verbose
-        self.requests: list[float] = []  # timestamps des requêtes
+        self.requests: deque[float] = deque()  # timestamps des requêtes (O(1) popleft)
         self.lock = asyncio.Lock()
 
         logger.info(f"SimpleRateLimiter initialisé: {rpm} RPM (verbose={verbose})")
@@ -71,7 +72,9 @@ class SimpleRateLimiter:
                         now = time.monotonic()
 
                         # 1. Nettoyer les requêtes qui sont sorties de la fenêtre de 60s
-                        self.requests = [ts for ts in self.requests if now - ts < 60]
+                        # Utilise popleft() O(1) au lieu de list comprehension O(n)
+                        while self.requests and now - self.requests[0] >= 60:
+                            self.requests.popleft()
 
                         # 2. Vérifier si on peut faire la requête
                         if len(self.requests) >= self.rpm:
@@ -82,7 +85,7 @@ class SimpleRateLimiter:
                             )  # +0.1s marge de sécurité
 
                             msg = (
-                                f"⏳ Rate limit atteint ({self.rpm} RPM): "
+                                f"Rate limit atteint ({self.rpm} RPM): "
                                 f"attente de {wait_time:.1f}s "
                                 f"({len(self.requests)} requêtes dans la fenêtre)"
                             )
@@ -93,7 +96,7 @@ class SimpleRateLimiter:
                             await asyncio.sleep(wait_time)
 
                             # Message après l'attente
-                            msg_resume = "✅ Attente terminée, reprise des requêtes (fenêtre libérée)"
+                            msg_resume = "Attente terminée, reprise des requêtes (fenêtre libérée)"
                             logger.info(msg_resume)
                             if self.verbose:
                                 print(msg_resume)
@@ -150,12 +153,13 @@ class SimpleRateLimiter:
             Cette méthode n'est pas thread-safe et est destinée au monitoring.
         """
         now = time.monotonic()
-        active_requests = [ts for ts in self.requests if now - ts < 60]
-        available = max(0, self.rpm - len(active_requests))
-        usage_pct = (len(active_requests) / self.rpm) * 100 if self.rpm > 0 else 0
+        # Count active requests without modifying the deque
+        active_count = sum(1 for ts in self.requests if now - ts < 60)
+        available = max(0, self.rpm - active_count)
+        usage_pct = (active_count / self.rpm) * 100 if self.rpm > 0 else 0
 
         return {
-            "current_requests": len(active_requests),
+            "current_requests": active_count,
             "rpm_limit": self.rpm,
             "available_slots": available,
             "usage_percent": round(usage_pct, 1),
@@ -200,9 +204,7 @@ def get_shared_rate_limiter(
     if provider not in _GLOBAL_RATE_LIMITERS:
         # Créer le rate limiter pour ce provider
         _GLOBAL_RATE_LIMITERS[provider] = SimpleRateLimiter(rpm=rpm, verbose=verbose)
-        logger.info(
-            f"✨ Rate limiter PARTAGÉ créé pour {provider}: {rpm} RPM (singleton)"
-        )
+        logger.info(f"Rate limiter partagé créé pour {provider}: {rpm} RPM (singleton)")
     else:
         # Déjà existant, ne pas recréer
         logger.debug(f"Réutilisation du rate limiter partagé existant pour {provider}")

@@ -31,6 +31,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+!chiron.spec
 
 # Installer logs
 pip-log.txt
@@ -229,3 +230,14 @@ data/**/batch_*/
 
 # Prompt exports (dev/validation)
 prompts/
+
+# Claude Code temp files
+tmpclaude-*
+.claude/settings.local.json
+
+# DuckDB local databases
+data/db/*.duckdb
+data/db/*.duckdb.wal
+
+# NiceGUI
+.nicegui/
