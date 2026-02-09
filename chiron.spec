@@ -56,6 +56,8 @@ hidden_imports = [
     # pydantic / pydantic-settings
     "pydantic",
     "pydantic_settings",
+    # protobuf (needed by transformers / onnx at runtime)
+    "google.protobuf",
 ]
 
 # Collect all src.* submodules
@@ -114,6 +116,7 @@ for pkg in [
     "nest_asyncio",
     "python_multipart",
     "langdetect",
+    "protobuf",
 ]:
     try:
         datas += copy_metadata(pkg)

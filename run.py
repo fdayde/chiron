@@ -25,10 +25,12 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 if getattr(sys, "frozen", False):
     project_root = Path(sys.executable).parent
     _internal = project_root / "_internal"
+    _app_root = _internal  # app/ is inside _internal/
     sys.path.insert(0, str(_internal))
     sys.path.insert(0, str(_internal / "app"))
 else:
     project_root = Path(__file__).parent
+    _app_root = project_root  # app/ is at project root
     sys.path.insert(0, str(project_root))
     sys.path.insert(0, str(project_root / "app"))
 
@@ -71,7 +73,7 @@ if __name__ == "__main__":
                 return {"status": "ok"}
 
             # --- Static files ---
-            app.add_static_files("/static", str(project_root / "app" / "static"))
+            app.add_static_files("/static", str(_app_root / "app" / "static"))
 
             # --- Import NiceGUI pages (registers @ui.page decorators) ---
             import pages.export  # noqa: F401
@@ -84,7 +86,7 @@ if __name__ == "__main__":
             native = os.getenv("CHIRON_NATIVE", "0") == "1"
             ui.run(
                 title="Chiron",
-                favicon=str(project_root / "app" / "static" / "chiron_logo.png"),
+                favicon=str(_app_root / "app" / "static" / "chiron_logo.png"),
                 port=_PORT,
                 native=native,
                 window_size=(1400, 900),
