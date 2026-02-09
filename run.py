@@ -64,4 +64,5 @@ if __name__ == "__main__":
         window_size=(1400, 900),
         reload=False,
         storage_secret="chiron-local-secret",
+        reconnect_timeout=30.0,  # PDF import can take 30s+ (NER model loading)
     )
