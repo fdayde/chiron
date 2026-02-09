@@ -83,14 +83,23 @@ def export_csv(
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL)
 
+    # Build real-name lookup from pseudonymizer
+    mappings = pseudonymizer.list_mappings(classe_id)
+    name_by_id = {
+        m["eleve_id"]: (m.get("nom_original", ""), m.get("prenom_original", ""))
+        for m in mappings
+    }
+
     # Header
     writer.writerow(
-        ["eleve_id", "synthese_texte", "posture_generale", "alertes", "reussites"]
+        ["nom", "prenom", "synthese_texte", "posture_generale", "alertes", "reussites"]
     )
 
     # Data rows
     for item in validated:
         synthese = item["synthese"]
+        eleve_id = item["eleve_id"]
+        nom, prenom = name_by_id.get(eleve_id, ("", ""))
         # Depseudonymize the text (scoped by classe_id for security)
         text = pseudonymizer.depseudonymize_text(synthese.synthese_texte, classe_id)
         alertes = "; ".join(f"{a.matiere}: {a.description}" for a in synthese.alertes)
@@ -98,7 +107,7 @@ def export_csv(
             f"{r.matiere}: {r.description}" for r in synthese.reussites
         )
         writer.writerow(
-            [item["eleve_id"], text, synthese.posture_generale, alertes, reussites]
+            [nom, prenom, text, synthese.posture_generale, alertes, reussites]
         )
 
     csv_content = output.getvalue()
