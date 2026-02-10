@@ -1,4 +1,4 @@
-"""UI configuration for NiceGUI (no Streamlit dependency)."""
+"""UI configuration for NiceGUI."""
 
 from __future__ import annotations
 

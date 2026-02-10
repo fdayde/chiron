@@ -9,29 +9,29 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![DuckDB](https://img.shields.io/badge/DuckDB-local-FEF502)](https://duckdb.org/)
 
-Assistant IA pour la preparation des conseils de classe — Genere des syntheses trimestrielles personnalisees a partir des bulletins scolaires (PDF PRONOTE).
+Assistant IA pour la préparation des conseils de classe — Génère des synthèses trimestrielles personnalisées à partir des bulletins scolaires (PDF PRONOTE).
 
-## Fonctionnalites cles
+## Fonctionnalités clés
 
 ### Anonymisation NER avant envoi cloud
-Les noms, prenoms et informations identifiantes sont detectes par un modele NER local (CamemBERT) et remplaces par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le PDF est physiquement anonymise (redaction PyMuPDF) ; le LLM ne recoit jamais de donnees personnelles.
+Les noms, prénoms et informations identifiantes sont détectés par un modèle NER local (CamemBERT) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le PDF est physiquement anonymisé (rédaction PyMuPDF) ; le LLM ne reçoit jamais de données personnelles.
 
 ### Few-shot learning — calibration par l'enseignant
-L'enseignant peut marquer jusqu'a 3 syntheses validees comme « exemples » pour l'IA. Ces exemples sont automatiquement injectes dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de detail des syntheses suivantes. Les appreciations sont tronquees et les syntheses plafonnees a 1000 caracteres pour maitriser la taille du prompt.
+L'enseignant peut marquer jusqu'à 3 synthèses validées comme « exemples » pour l'IA. Ces exemples sont automatiquement injectés dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de détail des synthèses suivantes. Les appréciations sont tronquées et les synthèses plafonnées à 1000 caractères pour maîtriser la taille du prompt.
 
-### Insights pedagogiques fondes sur la recherche
-Le prompt de generation est concu selon des principes issus de la recherche en education :
-- **Growth mindset** (Dweck, 2006) : valorisation des processus, pas des capacites fixes
-- **Feedforward** (Hattie & Timperley, 2007) : orientation prospective vers des strategies concretes
-- **Theorie de l'autodetermination** (Deci & Ryan, 2000) : profils d'engagement contextuels, pas d'etiquettes figees
-- **Detection des biais de genre** : identification automatique des formulations genrees dans les appreciations
+### Insights pédagogiques fondés sur la recherche
+Le prompt de génération est conçu selon des principes issus de la recherche en éducation :
+- **Growth mindset** (Dweck, 2006) : valorisation des processus, pas des capacités fixes
+- **Feedforward** (Hattie & Timperley, 2007) : orientation prospective vers des stratégies concrètes
+- **Théorie de l'autodétermination** (Deci & Ryan, 2000) : profils d'engagement contextuels, pas d'étiquettes figées
+- **Détection des biais de genre** : identification automatique des formulations genrées dans les appréciations
 
 ## Statut du projet
 
-**Phase actuelle** : Beta fonctionnelle — packaging `.exe` disponible
-- Pipeline complet : PDF → Anonymisation → Extraction → Generation LLM → Export
-- UI NiceGUI (navigateur) : import, generation, calibration few-shot, validation, export
-- API FastAPI integree (process unique)
+**Phase actuelle** : Bêta fonctionnelle — packaging `.exe` disponible
+- Pipeline complet : PDF → Anonymisation → Extraction → Génération LLM → Export
+- UI NiceGUI (navigateur) : import, génération, calibration few-shot, validation, export
+- API FastAPI intégrée (process unique)
 - RGPD : anonymisation NER locale avant envoi cloud
 - Multi-provider : OpenAI, Anthropic, Mistral
 - Distribution : `chiron.exe` (PyInstaller, `--onedir`)
@@ -39,28 +39,28 @@ Le prompt de generation est concu selon des principes issus de la recherche en e
 ## Vue d'ensemble
 
 ```
-PDF PRONOTE → Anonymisation NER → Extraction → Calibration → Generation LLM → Validation → Export CSV
+PDF PRONOTE → Anonymisation NER → Extraction → Calibration → Génération LLM → Validation → Export CSV
      │              │                  │            │               │             │           │
-     │         CamemBERT          pdfplumber    Few-shot       OpenAI/Claude   Humain    Depseudo
+     │         CamemBERT          pdfplumber    Few-shot       OpenAI/Claude   Humain    Dépseudo
      │         (local)            (local)       (0-3 ex.)      (cloud)        (local)    (local)
      ▼              ▼                  ▼            ▼               ▼             ▼           ▼
-  Bulletin    PDF anonymise      Donnees      Exemples        Synthese      Validee    Noms reels
+  Bulletin    PDF anonymisé      Données      Exemples        Synthèse      Validée    Noms réels
 ```
 
 **Principes** :
 - Le professeur reste dans la boucle (validation obligatoire)
-- **Donnees personnelles jamais envoyees au cloud** (anonymisation PDF avant extraction)
-- Style et ton calibres via few-shot learning (exemples de l'enseignant)
-- Insights pedagogiques actionnables (alertes, reussites, strategies, biais de genre)
+- **Données personnelles jamais envoyées au cloud** (anonymisation PDF avant extraction)
+- Style et ton calibrés via few-shot learning (exemples de l'enseignant)
+- Insights pédagogiques actionnables (alertes, réussites, stratégies, biais de genre)
 - Application locale + APIs cloud (LLM)
 
-## Prerequis (mode developpeur)
+## Prérequis (mode développeur)
 
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
-- Cle API : OpenAI et/ou Anthropic et/ou Mistral
+- Clé API : OpenAI et/ou Anthropic et/ou Mistral
 
-## Installation (mode developpeur)
+## Installation (mode développeur)
 
 ```bash
 git clone https://github.com/fdayde/chiron.git
@@ -75,10 +75,10 @@ source .venv/bin/activate
 uv sync --group dev
 
 cp .env.example .env
-# Editer .env avec vos cles API
+# Éditer .env avec vos clés API
 ```
 
-## Demarrage rapide
+## Démarrage rapide
 
 ```bash
 python run.py
@@ -89,17 +89,17 @@ Le navigateur s'ouvre sur http://localhost:8080.
 Options :
 ```bash
 CHIRON_NATIVE=1 python run.py    # Mode desktop (pywebview)
-CHIRON_PORT=9000 python run.py   # Port personnalise
+CHIRON_PORT=9000 python run.py   # Port personnalisé
 ```
 
 ### Workflow type
 
 1. **Import** : Uploader les PDF bulletins de la classe
-2. **Generation** : Generer 1-2 syntheses, relire et valider
-3. **Calibration** : Marquer 1 a 3 syntheses validees comme exemples pour l'IA
-4. **Batch** : Generer les syntheses restantes (calibrees par les exemples)
-5. **Review** : Relire, editer si besoin, valider
-6. **Export** : Telecharger le CSV pour le conseil
+2. **Génération** : Générer 1-2 synthèses, relire et valider
+3. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
+4. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
+5. **Review** : Relire, éditer si besoin, valider
+6. **Export** : Télécharger le CSV pour le conseil
 
 ## Distribution (.exe)
 
@@ -113,24 +113,24 @@ uv pip install pyinstaller pyinstaller-hooks-contrib
 python scripts/build.py --clean
 ```
 
-Le dossier `dist/chiron/` contient tout le necessaire. Pour l'utilisateur final :
+Le dossier `dist/chiron/` contient tout le nécessaire. Pour l'utilisateur final :
 
-1. Renommer `.env.example` en `.env` et remplir sa cle API
+1. Renommer `.env.example` en `.env` et remplir sa clé API
 2. Double-cliquer sur `chiron.exe`
 
 ## Configuration (.env)
 
 ```env
-# Provider par defaut : openai, anthropic ou mistral
+# Provider par défaut : openai, anthropic ou mistral
 DEFAULT_PROVIDER=anthropic
 
-# Cles API (seule celle du provider choisi est necessaire)
+# Clés API (seule celle du provider choisi est nécessaire)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 MISTRAL_API_KEY=...
 ```
 
-Options avancees (developpeurs) : voir [.env.example](.env.example).
+Options avancées (développeurs) : voir [.env.example](.env.example).
 
 ## Structure du projet
 
@@ -139,38 +139,38 @@ chiron/
 ├── src/
 │   ├── api/                  # Backend REST FastAPI
 │   │   ├── main.py           # App FastAPI + lifespan
-│   │   ├── dependencies.py   # Injection de dependances
-│   │   └── routers/          # classes, eleves, syntheses, exports
+│   │   ├── dependencies.py   # Injection de dépendances
+│   │   └── routers/          # classes, élèves, synthèses, exports
 │   ├── core/                 # Transverse
-│   │   ├── constants.py      # Chemins, annee scolaire
-│   │   ├── models.py         # Modeles Pydantic
+│   │   ├── constants.py      # Chemins, année scolaire
+│   │   ├── models.py         # Modèles Pydantic
 │   │   └── exceptions.py     # Exceptions custom
 │   ├── document/             # Parsing PDF
 │   │   ├── pdfplumber_parser.py  # Extraction locale
 │   │   ├── mistral_parser.py     # OCR cloud (Mistral)
 │   │   └── anonymizer.py        # Anonymisation NER + PyMuPDF
-│   ├── generation/           # Generation syntheses
+│   ├── generation/           # Génération synthèses
 │   │   ├── generator.py      # SyntheseGenerator
-│   │   ├── prompts.py        # Templates de prompts versiones
-│   │   └── prompt_builder.py # Formatage donnees pour le prompt
+│   │   ├── prompts.py        # Templates de prompts versionnés
+│   │   └── prompt_builder.py # Formatage données pour le prompt
 │   ├── llm/                  # Abstraction LLM multi-provider
 │   │   ├── manager.py        # LLMManager (registry, retry, rate limiting)
-│   │   ├── config.py         # Settings (cles API, modeles, pricing)
+│   │   ├── config.py         # Settings (clés API, modèles, pricing)
 │   │   └── clients/          # OpenAI, Anthropic, Mistral
 │   ├── privacy/              # Pseudonymisation RGPD
 │   │   └── pseudonymizer.py  # Mapping nom <-> ELEVE_XXX
 │   └── storage/              # Persistance DuckDB
 │       ├── connection.py     # Connexion DuckDB
-│       ├── schemas.py        # Definitions des tables SQL
-│       └── repositories/     # CRUD (classes, eleves, syntheses)
+│       ├── schemas.py        # Définitions des tables SQL
+│       └── repositories/     # CRUD (classes, élèves, synthèses)
 ├── app/                      # Frontend NiceGUI
-│   ├── layout.py             # Layout partage (header, sidebar)
-│   ├── config_ng.py          # Settings UI (providers, couts)
+│   ├── layout.py             # Layout partagé (header, sidebar)
+│   ├── config_ng.py          # Settings UI (providers, coûts)
 │   ├── cache.py              # Cache TTL
-│   ├── state.py              # Gestion d'etat
-│   ├── pages/                # home, import, syntheses, export, prompt
+│   ├── state.py              # Gestion d'état
+│   ├── pages/                # home, import, synthèses, export, prompt
 │   └── components/           # eleve_card, synthese_editor, llm_selector...
-├── run.py                    # Point d'entree unique (API + UI)
+├── run.py                    # Point d'entrée unique (API + UI)
 ├── chiron.spec               # Spec PyInstaller
 ├── scripts/build.py          # Script de build .exe
 ├── data/
@@ -178,14 +178,14 @@ chiron/
 └── docs/                     # Documentation technique
 ```
 
-## Securite & RGPD
+## Sécurité & RGPD
 
 | Aspect | Mesure |
 |--------|--------|
-| **Anonymisation PDF** | CamemBERT NER + PyMuPDF redaction **avant** envoi cloud |
+| **Anonymisation PDF** | CamemBERT NER + PyMuPDF rédaction **avant** envoi cloud |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
-| **Mapping identites** | Base separee (`privacy.duckdb`) |
-| **LLM cloud** | Recoit uniquement donnees **pseudonymisees** (ELEVE_XXX) |
+| **Mapping identités** | Base séparée (`privacy.duckdb`) |
+| **LLM cloud** | Reçoit uniquement données **pseudonymisées** (ELEVE_XXX) |
 | **Validation humaine** | Obligatoire avant export |
 
 ## Stack technique
@@ -198,13 +198,13 @@ chiron/
 | PDF | PyMuPDF + pdfplumber |
 | Backend | FastAPI + Uvicorn |
 | Frontend | NiceGUI |
-| Base de donnees | DuckDB (local) |
+| Base de données | DuckDB (local) |
 | Packaging | PyInstaller (`--onedir`) |
 
 ## Documentation
 
-- **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de donnees, RGPD
+- **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de données, RGPD
 
 ## Licence
 
-Projet prive — Usage non commercial.
+Projet privé — Usage non commercial.

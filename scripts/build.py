@@ -10,12 +10,19 @@ import argparse
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "chiron.spec"
 DIST = ROOT / "dist" / "chiron"
 BUILD = ROOT / "build"
+
+# Read version from pyproject.toml (single source of truth)
+with open(ROOT / "pyproject.toml", "rb") as f:
+    _meta = tomllib.load(f)
+_VERSION = _meta["project"]["version"]
+_EXE_NAME = f"chiron-{_VERSION}.exe"
 
 # Directories to create inside dist/chiron/data/
 DATA_SUBDIRS = [
@@ -95,7 +102,7 @@ def print_instructions() -> None:
     print("  Next steps:")
     print(f"  1. Copy your .env to {DIST / '.env'}")
     print(f"     (see {DIST / '.env.example'} for template)")
-    print(f"  2. Run {DIST / 'chiron.exe'}")
+    print(f"  2. Run {DIST / _EXE_NAME}")
     print("     The browser will open automatically.")
     print("=" * 60)
 

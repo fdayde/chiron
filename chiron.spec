@@ -14,9 +14,15 @@ from PyInstaller.utils.hooks import (
 block_cipher = None
 
 # ---------------------------------------------------------------------------
-# Paths
+# Paths & version
 # ---------------------------------------------------------------------------
 ROOT = Path(SPECPATH)
+
+import tomllib
+
+with open(ROOT / "pyproject.toml", "rb") as f:
+    _meta = tomllib.load(f)
+_VERSION = _meta["project"]["version"]
 
 # ---------------------------------------------------------------------------
 # Hidden imports
@@ -84,6 +90,7 @@ datas += collect_data_files("transformers")
 
 # Package metadata needed at runtime
 for pkg in [
+    "chiron",
     "nicegui",
     "fastapi",
     "uvicorn",
@@ -208,7 +215,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="chiron",
+    name=f"chiron-{_VERSION}",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
