@@ -132,9 +132,8 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 MISTRAL_API_KEY=...
 
-# Provider et modèle par défaut
-DEFAULT_LLM_PROVIDER=anthropic
-DEFAULT_LLM_MODEL=claude-haiku-4-5
+# Provider par défaut
+DEFAULT_PROVIDER=anthropic
 ```
 
 ---
