@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src import __version__
 from src.api.config import api_settings
 from src.api.routers import (
     classes_router,
@@ -26,11 +27,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Chiron API",
     description="API pour l'assistant IA de préparation des conseils de classe",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
 
-# CORS middleware for Streamlit frontend
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=api_settings.cors_origins,
@@ -57,7 +58,7 @@ def root():
     """Endpoint racine avec infos de l'API."""
     return {
         "name": "Chiron API",
-        "version": "0.1.0",
+        "version": __version__,
         "docs": "/docs",
         "health": "/health",
     }

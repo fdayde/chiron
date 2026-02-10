@@ -34,6 +34,8 @@ else:
     sys.path.insert(0, str(project_root))
     sys.path.insert(0, str(project_root / "app"))
 
+from src import __version__
+
 # Configure port and API client URL before any import that might use it
 _PORT = int(os.getenv("CHIRON_PORT", "8080"))
 os.environ.setdefault("CHIRON_UI_API_BASE_URL", f"http://localhost:{_PORT}")
@@ -85,7 +87,7 @@ if __name__ == "__main__":
             # --- Launch ---
             native = os.getenv("CHIRON_NATIVE", "0") == "1"
             ui.run(
-                title="Chiron",
+                title=f"Chiron v{__version__}",
                 favicon=str(_app_root / "app" / "static" / "chiron_logo.png"),
                 port=_PORT,
                 native=native,

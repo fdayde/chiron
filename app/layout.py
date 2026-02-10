@@ -11,6 +11,8 @@ from cache import (
 from nicegui import ui
 from state import get_classe_id, get_trimestre, set_classe_id, set_trimestre
 
+from src import __version__
+
 
 def _get_current_school_year() -> str:
     """Année scolaire courante au format 'YYYY-YYYY+1' (sept à août)."""
@@ -94,7 +96,9 @@ def page_layout(title: str):
         # --- Footer ---
         ui.separator().classes("q-mt-lg")
         with ui.row().classes("w-full justify-center items-center gap-2 q-mt-sm"):
-            ui.label("© 2025 Chiron").classes("text-caption text-grey-7")
+            ui.label(
+                f"© 2025-2026 Florent Dayde — All rights reserved — v{__version__}"
+            ).classes("text-caption text-grey-7")
             ui.label("·").classes("text-caption text-grey-7")
             ui.link(
                 "GitHub",
