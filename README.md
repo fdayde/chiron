@@ -9,7 +9,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![DuckDB](https://img.shields.io/badge/DuckDB-local-FEF502)](https://duckdb.org/)
 
-Assistant IA pour la préparation des conseils de classe — Génère des synthèses trimestrielles personnalisées à partir des bulletins scolaires (PDF PRONOTE).
+Assistant IA pour la préparation des conseils de classe - Génère des synthèses trimestrielles personnalisées à partir des bulletins scolaires (PDF PRONOTE).
 
 ## Fonctionnalités clés
 
@@ -207,4 +207,5 @@ chiron/
 
 ## Licence
 
-Projet privé — Usage non commercial.
+Ce logiciel est propriétaire. Voir [LICENSE](LICENSE) pour les détails.
+Distribution et modification interdites sans autorisation écrite de l'auteur.
