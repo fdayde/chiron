@@ -86,12 +86,14 @@ if __name__ == "__main__":
 
             # --- Launch ---
             native = os.getenv("CHIRON_NATIVE", "0") == "1"
+            # window_size activates native mode in NiceGUI (pywebview),
+            # so only pass it when native mode is explicitly requested.
             ui.run(
                 title=f"Chiron v{__version__}",
                 favicon=str(_app_root / "app" / "static" / "chiron_logo.png"),
                 port=_PORT,
                 native=native,
-                window_size=(1400, 900),
+                window_size=(1400, 900) if native else None,
                 reload=False,
                 storage_secret=os.getenv(
                     "CHIRON_STORAGE_SECRET", "chiron-local-secret"

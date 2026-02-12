@@ -155,6 +155,10 @@ excludes = [
     "torchvision",
     "torchtext",
     "torchaudio",
+    # pythonnet — not needed: pywebview uses edgechromium backend on Windows
+    "pythonnet",
+    "clr",
+    "clr_loader",
 ]
 
 # ---------------------------------------------------------------------------
