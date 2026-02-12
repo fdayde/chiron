@@ -30,14 +30,21 @@ def page_layout(title: str):
         title: Titre affiché en haut de la page.
     """
     ui.dark_mode(True)
-    ui.colors(primary="#5C6BC0")
+    ui.colors(primary="#4A5899")
 
     ui.add_head_html(
-        '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">'
+        '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">'
     )
     ui.add_head_html("""
     <style>
+    :root {
+        --chiron-navy: #2D3561;
+        --chiron-blue: #4A5899;
+        --chiron-terracotta: #D4843E;
+        --chiron-gold: #C8A45C;
+    }
     body { font-family: 'Inter', sans-serif; }
+    .chiron-title { font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
     .q-card {
         transition: transform 0.15s, box-shadow 0.15s;
         border-radius: 12px !important;
@@ -52,7 +59,7 @@ def page_layout(title: str):
         position: fixed; inset: 0; z-index: 9999;
         display: flex; flex-direction: column;
         align-items: center; justify-content: center;
-        background: #1d1d1d;
+        background: #1a1e2e;
         transition: opacity 0.4s ease;
     }
     #chiron-loading.fade-out { opacity: 0; pointer-events: none; }
@@ -61,8 +68,9 @@ def page_layout(title: str):
         animation: pulse 1.8s ease-in-out infinite;
     }
     #chiron-loading p {
-        margin-top: 1.2rem; color: #9e9e9e;
-        font-family: 'Inter', sans-serif; font-size: 0.9rem;
+        margin-top: 1.2rem; color: var(--chiron-gold);
+        font-family: 'Cinzel', serif; font-size: 0.9rem;
+        letter-spacing: 0.05em;
     }
     @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
@@ -71,25 +79,30 @@ def page_layout(title: str):
     </style>
     """)
 
-    # Loading overlay — disappears once NiceGUI has connected
+    # Loading overlay — only on first page load, not on subsequent navigations
     ui.add_body_html("""
     <div id="chiron-loading">
         <img src="/static/chiron_logo.png" alt="Chiron">
         <p>Chargement en cours…</p>
     </div>
     <script>
-    const _obs = new MutationObserver(() => {
-        const app = document.getElementById('app');
-        if (app && !app.classList.contains('nicegui-unocss-loading')) {
-            const overlay = document.getElementById('chiron-loading');
-            if (overlay) {
-                overlay.classList.add('fade-out');
-                setTimeout(() => overlay.remove(), 500);
+    if (sessionStorage.getItem('chiron-loaded')) {
+        document.getElementById('chiron-loading')?.remove();
+    } else {
+        sessionStorage.setItem('chiron-loaded', '1');
+        const _obs = new MutationObserver(() => {
+            const app = document.getElementById('app');
+            if (app && !app.classList.contains('nicegui-unocss-loading')) {
+                const overlay = document.getElementById('chiron-loading');
+                if (overlay) {
+                    overlay.classList.add('fade-out');
+                    setTimeout(() => overlay.remove(), 500);
+                }
+                _obs.disconnect();
             }
-            _obs.disconnect();
-        }
-    });
-    _obs.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        });
+        _obs.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    }
     </script>
     """)
 
@@ -99,14 +112,14 @@ def page_layout(title: str):
     with (
         ui.header()
         .classes("items-center justify-between")
-        .style("background: linear-gradient(135deg, #5C6BC0, #3F51B5)")
+        .style("background: linear-gradient(135deg, #4A5899, #2D3561)")
     ):
         with ui.row().classes("items-center gap-2"):
             ui.button(icon="menu", on_click=lambda: drawer.toggle()).props(
                 "flat color=white"
             )
             ui.html('<img src="/static/chiron_logo.png" width="64" height="64">')
-            ui.label("Chiron").classes("text-h6 text-white")
+            ui.label("Chiron").classes("text-h6 text-white chiron-title")
 
         with ui.row().classes("gap-1"):
             for label, path in [

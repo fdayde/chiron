@@ -145,32 +145,39 @@ def home_page():
                 "1. Import",
                 "Déposez vos bulletins PDF",
                 ["Extraction automatique", "Anonymisation RGPD"],
-                color="green",
+                accent="#D4843E",
             )
             ui.icon("arrow_forward").classes("text-3xl text-grey-5 self-center")
             _workflow_card(
                 "2. Review",
                 "L'IA génère les synthèses",
                 ["Relecture & correction", "Validation par l'enseignant"],
-                color="blue",
+                accent="#4A5899",
             )
             ui.icon("arrow_forward").classes("text-3xl text-grey-5 self-center")
             _workflow_card(
                 "3. Export",
                 "Téléchargez le CSV final",
                 ["Noms réels restaurés", "Prêt pour le conseil"],
-                color="orange",
+                accent="#C8A45C",
             )
 
         # --- Privacy notice ---
-        with ui.card().classes("w-full bg-blue-10 q-mt-lg"):
+        with (
+            ui.card()
+            .classes("w-full q-mt-lg")
+            .style(
+                "background: rgba(74, 88, 153, 0.12); "
+                "border: 1px solid rgba(74, 88, 153, 0.3)"
+            )
+        ):
             with ui.row().classes("items-center gap-2"):
-                ui.icon("lock").classes("text-blue-8")
+                ui.icon("lock").style("color: #C8A45C")
                 ui.markdown(
                     "**Confidentialité garantie** : Les noms des élèves sont "
                     "pseudonymisés avant tout traitement IA. "
                     "Les données personnelles restent sur votre machine."
-                )
+                ).classes("text-grey-4")
 
         ui.separator().classes("q-mt-md")
 
@@ -198,25 +205,17 @@ def home_page():
 
 def _metric_card(label: str, value: str) -> None:
     """Affiche une carte métrique simple (Phase 0, sans delta)."""
-    with (
-        ui.card()
-        .classes("p-3 min-w-40")
-        .style("border-left: 3px solid var(--q-primary)")
-    ):
+    with ui.card().classes("p-3 min-w-40").style("border-left: 3px solid #D4843E"):
         ui.label(label).classes("text-caption text-grey-7")
         ui.label(value).classes("text-h5 text-weight-bold")
 
 
-def _workflow_card(title: str, subtitle: str, bullets: list[str], color: str) -> None:
+def _workflow_card(title: str, subtitle: str, bullets: list[str], accent: str) -> None:
     """Affiche une carte d'étape du workflow."""
-    with (
-        ui.card()
-        .classes(f"p-4 w-64 border-{color}-5")
-        .style(f"border-top: 3px solid var(--q-{color})")
-    ):
+    with ui.card().classes("p-4 w-64").style(f"border-top: 3px solid {accent}"):
         ui.label(title).classes("text-h6")
         ui.label(subtitle).classes("text-body2 text-grey-7")
         for bullet in bullets:
             with ui.row().classes("items-center gap-1"):
-                ui.icon("arrow_right").classes(f"text-{color}")
+                ui.icon("arrow_right").style(f"color: {accent}")
                 ui.label(bullet).classes("text-body2 text-weight-bold")
