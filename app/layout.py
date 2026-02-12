@@ -47,7 +47,50 @@ def page_layout(title: str):
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    /* Loading overlay */
+    #chiron-loading {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        background: #1d1d1d;
+        transition: opacity 0.4s ease;
+    }
+    #chiron-loading.fade-out { opacity: 0; pointer-events: none; }
+    #chiron-loading img {
+        width: 128px; height: 128px;
+        animation: pulse 1.8s ease-in-out infinite;
+    }
+    #chiron-loading p {
+        margin-top: 1.2rem; color: #9e9e9e;
+        font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.95); }
+    }
     </style>
+    """)
+
+    # Loading overlay — disappears once NiceGUI has connected
+    ui.add_body_html("""
+    <div id="chiron-loading">
+        <img src="/static/chiron_logo.png" alt="Chiron">
+        <p>Chargement en cours…</p>
+    </div>
+    <script>
+    const _obs = new MutationObserver(() => {
+        const app = document.getElementById('app');
+        if (app && !app.classList.contains('nicegui-unocss-loading')) {
+            const overlay = document.getElementById('chiron-loading');
+            if (overlay) {
+                overlay.classList.add('fade-out');
+                setTimeout(() => overlay.remove(), 500);
+            }
+            _obs.disconnect();
+        }
+    });
+    _obs.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    </script>
     """)
 
     # --- Header ---

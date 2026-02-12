@@ -24,13 +24,20 @@ def home_page():
             ]
         )
         if not has_key:
-            with ui.card().classes("w-full bg-orange-1 q-mt-md"):
+            with (
+                ui.card()
+                .classes("w-full q-mt-md")
+                .style(
+                    "background: rgba(255, 152, 0, 0.12); "
+                    "border: 1px solid rgba(255, 152, 0, 0.3)"
+                )
+            ):
                 with ui.row().classes("items-center gap-2"):
-                    ui.icon("vpn_key").classes("text-orange-8 text-xl")
+                    ui.icon("vpn_key").classes("text-orange text-xl")
                     ui.markdown(
                         "**Clé API manquante** — Aucune clé API n'est configurée. "
                         "La génération de synthèses ne fonctionnera pas."
-                    )
+                    ).classes("text-orange-3")
                 ui.markdown(
                     "Créez un fichier **`.env`** à la racine du projet "
                     "(copiez `.env.example`) et ajoutez au moins une clé :\n\n"
@@ -38,7 +45,7 @@ def home_page():
                     "OPENAI_API_KEY=sk-...\n"
                     "MISTRAL_API_KEY=...\n```\n\n"
                     "Puis relancez l'application."
-                ).classes("text-body2 q-ml-lg")
+                ).classes("text-body2 q-ml-lg text-grey-4")
 
         # --- API status ---
         api_ok = check_api_health()
