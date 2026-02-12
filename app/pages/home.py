@@ -140,21 +140,34 @@ def home_page():
             ui.icon("help_outline").classes("text-primary")
             ui.label("Comment ça marche ?").classes("text-h6")
 
-        with ui.row().classes("q-mt-md gap-4 justify-center"):
+        # CSS to hide arrows on small screens
+        ui.add_head_html("""
+        <style>
+        @media (max-width: 768px) {
+            .workflow-arrow { display: none !important; }
+        }
+        </style>
+        """)
+
+        with ui.row().classes("q-mt-md gap-4 flex-wrap justify-center"):
             _workflow_card(
                 "1. Import",
                 "Déposez vos bulletins PDF",
                 ["Extraction automatique", "Anonymisation RGPD"],
                 accent="#D4843E",
             )
-            ui.icon("arrow_forward").classes("text-3xl text-grey-5 self-center")
+            ui.icon("arrow_forward").classes(
+                "text-3xl text-grey-5 self-center workflow-arrow"
+            )
             _workflow_card(
                 "2. Review",
                 "L'IA génère les synthèses",
                 ["Relecture & correction", "Validation par l'enseignant"],
                 accent="#4A5899",
             )
-            ui.icon("arrow_forward").classes("text-3xl text-grey-5 self-center")
+            ui.icon("arrow_forward").classes(
+                "text-3xl text-grey-5 self-center workflow-arrow"
+            )
             _workflow_card(
                 "3. Export",
                 "Téléchargez le CSV final",

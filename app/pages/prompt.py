@@ -1,5 +1,7 @@
 """Page Prompt — Affiche le prompt de génération."""
 
+import json
+
 from cache import fetch_fewshot_count
 from layout import page_layout
 from nicegui import ui
@@ -83,6 +85,13 @@ def prompt_page():
         with ui.row().classes("items-center gap-2"):
             ui.icon("settings").classes("text-primary")
             ui.label("System prompt").classes("text-h6")
+            ui.button(
+                icon="content_copy",
+                on_click=lambda: ui.run_javascript(
+                    f"navigator.clipboard.writeText({json.dumps(template['system'])})"
+                    ".then(() => null)"
+                ),
+            ).props("flat dense size=sm").tooltip("Copier le system prompt")
         ui.label("Instructions envoyees au LLM avant les donnees de l'eleve.").classes(
             "text-caption text-grey-6"
         )
@@ -94,6 +103,13 @@ def prompt_page():
         with ui.row().classes("items-center gap-2"):
             ui.icon("person").classes("text-primary")
             ui.label("User prompt (template)").classes("text-h6")
+            ui.button(
+                icon="content_copy",
+                on_click=lambda: ui.run_javascript(
+                    f"navigator.clipboard.writeText({json.dumps(template['user'])})"
+                    ".then(() => null)"
+                ),
+            ).props("flat dense size=sm").tooltip("Copier le user template")
         ui.label(
             "Message envoye pour chaque eleve. "
             "{eleve_data} est remplace par les donnees du bulletin."

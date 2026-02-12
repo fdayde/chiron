@@ -314,6 +314,19 @@ def import_page():
                     )
 
                     table.add_slot(
+                        "body-cell-eleve",
+                        r"""
+                        <q-td :props="props">
+                            <a :href="'/syntheses?eleve=' + props.row.eleve_id"
+                               class="text-primary"
+                               style="text-decoration: none; cursor: pointer;">
+                                {{ props.value }}
+                            </a>
+                        </q-td>
+                        """,
+                    )
+
+                    table.add_slot(
                         "body-cell-synthese",
                         r"""
                         <q-td :props="props">

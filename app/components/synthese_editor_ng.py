@@ -87,14 +87,14 @@ def _render_insights_panel(synthese: dict) -> None:
         .style("user-select: text; cursor: text;")
     ):
         with ui.row().classes("w-full items-center justify-between q-mb-xs"):
-            ui.label("Insights").classes("text-weight-bold text-body2")
+            ui.label("Analyse").classes("text-weight-bold text-body2")
             ui.button(
                 icon="content_copy",
                 on_click=lambda: ui.run_javascript(
                     f"navigator.clipboard.writeText({json.dumps(insights_text)})"
                     ".then(() => null)"
                 ),
-            ).props("flat dense size=sm").tooltip("Copier les insights")
+            ).props("flat dense size=sm").tooltip("Copier l'analyse")
 
         # Alertes
         alertes = synthese.get("alertes", [])
@@ -229,9 +229,23 @@ def synthese_editor(
         )
         .classes("w-full")
         .props("rows=8")
+        .style("line-height: 1.8")
     )
 
-    # Insights panel (selectable + copiable)
+    # Modification indicator
+    modified_label = ui.label("Modifie").classes(
+        "text-caption text-orange q-mt-xs hidden"
+    )
+
+    def _on_text_change(e):
+        if e.value != synthese_texte:
+            modified_label.set_visibility(True)
+        else:
+            modified_label.set_visibility(False)
+
+    text_area.on_value_change(_on_text_change)
+
+    # Analyse panel (selectable + copiable)
     _render_insights_panel(synthese)
 
     ui.separator().classes("q-my-sm")

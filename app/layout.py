@@ -9,7 +9,16 @@ from cache import (
     fetch_classes,
 )
 from nicegui import ui
-from state import get_classe_id, get_trimestre, set_classe_id, set_trimestre
+from state import (
+    get_classe_id,
+    get_llm_model,
+    get_llm_provider,
+    get_trimestre,
+    set_classe_id,
+    set_llm_model,
+    set_llm_provider,
+    set_trimestre,
+)
 
 from src import __version__
 
@@ -141,7 +150,7 @@ def page_layout(title: str):
         .classes("q-pa-sm")
         .style("border-right: 1px solid rgba(255,255,255,0.1)") as drawer
     ):
-        _render_drawer_content()
+        _render_drawer_content(current_path)
 
     # --- Page content ---
     with ui.column().classes("w-full p-4 max-w-7xl mx-auto"):
@@ -163,7 +172,7 @@ def page_layout(title: str):
             ).classes("text-caption")
 
 
-def _render_drawer_content() -> None:
+def _render_drawer_content(current_path: str = "") -> None:
     """Rendu du contenu de la sidebar : santé API, sélecteurs, formulaire."""
     # API health indicator
     api_ok = check_api_health()
@@ -218,11 +227,80 @@ def _render_drawer_content() -> None:
         on_change=_on_trimestre_change,
     ).classes("w-full q-mt-sm")
 
+    # --- LLM selector (only on /syntheses) ---
+    if current_path == "/syntheses":
+        ui.separator().classes("q-my-md")
+        _render_llm_selector()
+
     ui.separator().classes("q-my-md")
 
     # --- New class form ---
     with ui.expansion("Nouvelle classe", icon="add").classes("w-full"):
         _render_new_classe_form()
+
+
+def _render_llm_selector() -> None:
+    """Render LLM provider/model selectors in the sidebar."""
+    from config_ng import LLM_PROVIDERS, format_model_label
+
+    with ui.row().classes("items-center gap-1"):
+        ui.icon("smart_toy", size="xs").classes("text-primary")
+        ui.label("Modele IA").classes("text-weight-bold text-caption")
+
+    provider_keys = list(LLM_PROVIDERS.keys())
+    provider_options = {k: LLM_PROVIDERS[k]["name"] for k in provider_keys}
+
+    current_provider = get_llm_provider()
+    if current_provider not in provider_options:
+        current_provider = provider_keys[0]
+
+    current_model = get_llm_model()
+    models = LLM_PROVIDERS[current_provider]["models"]
+    model_options = {m: format_model_label(current_provider, m) for m in models}
+    if current_model not in model_options:
+        current_model = LLM_PROVIDERS[current_provider].get("default", "")
+        if current_model not in model_options and models:
+            current_model = models[0]
+
+    # Initialize state
+    set_llm_provider(current_provider)
+    set_llm_model(current_model)
+
+    model_select = None
+
+    def _on_provider_change(e):
+        nonlocal model_select
+        prov = e.value
+        set_llm_provider(prov)
+        new_models = LLM_PROVIDERS[prov]["models"]
+        new_options = {m: format_model_label(prov, m) for m in new_models}
+        model_select.options = new_options
+        new_default = LLM_PROVIDERS[prov].get("default", "")
+        new_val = (
+            new_default
+            if new_default in new_options
+            else (new_models[0] if new_models else None)
+        )
+        model_select.value = new_val
+        model_select.update()
+        set_llm_model(new_val)
+
+    def _on_model_change(e):
+        set_llm_model(e.value)
+
+    ui.select(
+        options=provider_options,
+        label="Provider",
+        value=current_provider,
+        on_change=_on_provider_change,
+    ).classes("w-full q-mt-xs")
+
+    model_select = ui.select(
+        options=model_options,
+        label="Modele",
+        value=current_model,
+        on_change=_on_model_change,
+    ).classes("w-full q-mt-xs")
 
 
 def _render_new_classe_form() -> None:
