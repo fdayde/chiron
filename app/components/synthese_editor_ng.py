@@ -53,7 +53,7 @@ def _build_insights_text(synthese: dict) -> str:
     if axes:
         if parts:
             parts.append("")
-        parts.append("STRATÉGIES D'APPRENTISSAGE :")
+        parts.append("CONSEILS & PISTES DE PROGRESSION :")
         for axe in axes:
             parts.append(f"  - {axe}")
 
@@ -120,17 +120,17 @@ def _render_insights_panel(synthese: dict) -> None:
                     f"  {reussite.get('matiere', '?')} : {reussite.get('description', '')}"
                 ).classes("text-caption text-green").style("user-select: text;")
 
-        # Engagement + Strategies
+        # Conseils & pistes de progression
         posture = synthese.get("posture_generale")
         axes = synthese.get("axes_travail", [])
         if posture or axes:
             with ui.row().classes("items-center gap-1 q-mt-xs q-mb-xs"):
                 ui.icon("psychology", size="xs").classes("text-blue")
-                ui.label("Engagement & stratégies").classes(
+                ui.label("Conseils & pistes de progression").classes(
                     "text-weight-bold text-caption"
                 )
             if posture:
-                ui.label(f"  Profil : {posture}").classes("text-caption").style(
+                ui.label(f"  Profil engagé : {posture}").classes("text-caption").style(
                     "user-select: text;"
                 )
             for axe in axes:

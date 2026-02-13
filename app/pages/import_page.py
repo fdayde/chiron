@@ -1,9 +1,11 @@
-"""Page Import — Upload et import des bulletins PDF."""
+"""Page Classe — Import des bulletins PDF et vue de la classe."""
 
 from __future__ import annotations
 
 from cache import (
+    clear_classes_cache,
     clear_eleves_cache,
+    delete_classe_direct,
     delete_eleve_direct,
     fetch_classe,
     fetch_eleves_with_syntheses,
@@ -18,7 +20,7 @@ from state import get_classe_id, get_trimestre
 
 @ui.page("/import")
 def import_page():
-    with page_layout("Import des bulletins"):
+    with page_layout("Classe"):
         classe_id = get_classe_id()
         trimestre = get_trimestre()
 
@@ -59,10 +61,7 @@ def import_page():
         # Collected files (name, bytes) — filled by on_upload callback (per file)
         pending_files: list[tuple[str, bytes]] = []
 
-        upload_results = ui.column().classes("w-full q-mt-md")
-        overwrite_checkbox = ui.checkbox(
-            "Ecraser les donnees existantes en cas de doublon", value=True
-        )
+        upload_results = ui.column().classes("w-full")
 
         file_count_label = ui.label("").classes("text-caption text-grey-7")
 
@@ -74,12 +73,16 @@ def import_page():
             import_btn.props(remove="disable")
             import_btn.update()
 
-        ui.upload(
-            label="Deposez les fichiers PDF des bulletins",
-            multiple=True,
-            auto_upload=True,
-            on_upload=_on_file_uploaded,
-        ).props('accept=".pdf"').classes("w-full q-mt-md")
+        with ui.row().classes("w-full items-center gap-2 q-mt-md"):
+            ui.icon("cloud_upload", size="md").classes("text-primary")
+            ui.upload(
+                label="Glissez vos PDF ici ou cliquez pour parcourir",
+                multiple=True,
+                auto_upload=True,
+                on_upload=_on_file_uploaded,
+            ).props('accept=".pdf" color=primary flat bordered').classes(
+                "w-full"
+            ).style("border: 2px dashed var(--q-primary); border-radius: 8px")
 
         progress = ui.linear_progress(value=0, show_value=False).classes(
             "w-full hidden"
@@ -210,11 +213,13 @@ def import_page():
                         type="warning",
                     )
 
-        import_btn = (
-            ui.button("Importer les fichiers", icon="upload", on_click=do_import)
-            .props("color=primary disable rounded")
-            .classes("q-mt-md")
-        )
+        with ui.row().classes("items-center gap-4 q-mt-md"):
+            import_btn = ui.button(
+                "Importer les fichiers", icon="upload", on_click=do_import
+            ).props("color=primary disable rounded")
+            overwrite_checkbox = ui.checkbox(
+                "Remplacer les données existantes en cas de doublon", value=True
+            )
 
         # Instructions
         with ui.expansion("Instructions").classes("w-full q-mt-md"):
@@ -232,9 +237,44 @@ def import_page():
         # =============================================================
 
         ui.separator().classes("q-mt-md")
-        with ui.row().classes("items-center gap-2 q-mt-sm"):
+        with ui.row().classes("items-center gap-2 q-mt-sm w-full"):
             ui.icon("groups").classes("text-primary")
             ui.label("Vue de la classe").classes("text-h6")
+            ui.space()
+
+            def _on_delete_classe():
+                with ui.dialog() as dlg, ui.card():
+                    ui.label(f"Supprimer la classe {classe_nom} ?").classes("text-h6")
+                    ui.label(
+                        "Tous les eleves, syntheses et donnees associees "
+                        "seront definitivement supprimes (tous trimestres)."
+                    ).classes("text-body2 text-grey-7")
+
+                    def _confirm():
+                        dlg.close()
+                        try:
+                            result = delete_classe_direct(classe_id)
+                            clear_eleves_cache()
+                            clear_classes_cache()
+                            n = result["deleted_eleves"]
+                            ui.notify(
+                                f"Classe {classe_nom} supprimee ({n} eleve(s))",
+                                type="positive",
+                            )
+                            ui.navigate.to("/")
+                        except Exception as exc:
+                            ui.notify(f"Erreur suppression: {exc}", type="negative")
+
+                    with ui.row().classes("justify-end q-mt-md gap-2"):
+                        ui.button("Annuler", on_click=dlg.close).props("flat")
+                        ui.button("Supprimer", on_click=_confirm).props(
+                            "color=negative rounded"
+                        )
+                dlg.open()
+
+            ui.button(
+                "Supprimer la classe", icon="delete", on_click=_on_delete_classe
+            ).props("flat dense color=negative")
 
         overview_container = ui.column().classes("w-full")
 

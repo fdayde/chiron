@@ -42,39 +42,64 @@ _ETAPE_1_SYNTHESE = """## ÉTAPE 1 : RÉDIGER LA SYNTHÈSE
 
 Consignes :
 - Désigne l'élève par son identifiant exact tel qu'il apparaît dans les données (ex: ELEVE_001), ne modifie JAMAIS cet identifiant et n'invente AUCUN prénom
-- Cite les matières concernées SANS mentionner les notes chiffrées
-- Rédige à la troisième personne (pas de tutoiement ni vouvoiement)
 - Accorde correctement selon le genre de l'élève (il/elle, lui/elle)
-- NE CITE JAMAIS les notes exactes (ex: "12,5/20")
 - N'utilise JAMAIS de point-virgule (;), préfère des phrases courtes ou des virgules
 
-VOIX ET POSTURE : Tu rédiges POUR le professeur principal, qui connaît l'élève et l'a en classe.
-La synthèse doit se lire comme si le PP l'avait écrite lui-même. Parle directement de l'élève et de son travail.
-- JAMAIS de méta-références aux sources : ❌ "les appréciations montrent", "plusieurs enseignants soulignent", "le bulletin révèle", "on constate", "il ressort que"
-- TOUJOURS des constats directs : ✅ "le travail régulier en [matière] porte ses fruits", "la participation reste insuffisante en [matière]"
+INTERDICTION ABSOLUE SUR LES DONNÉES CHIFFRÉES :
+- NE CITE JAMAIS de note, moyenne ou chiffre : ❌ "14,13/20", "12/20", "8,5"
+- NE MENTIONNE JAMAIS la moyenne de classe ni de comparaison chiffrée : ❌ "supérieur à la moyenne de classe", "nettement au-dessus de la moyenne", "en dessous de la moyenne"
+- NE DONNE JAMAIS de moyenne générale : ❌ "avec une moyenne générale de..."
+- Les notes sont des DONNÉES D'ENTRÉE pour ton analyse, pas des informations à restituer.
+- Parle de "résultats solides", "résultats fragiles", "en réussite", "en difficulté" — JAMAIS de chiffres.
 
-Structure obligatoire (2-4 phrases) :
-1. **Feed-back** (2-3 phrases) : constat direct — quels comportements et méthodes de travail portent leurs fruits, quels points restent à travailler. Cite les matières individuellement.
-2. **Orientation** (1 phrase) : une direction générale pour le trimestre suivant, formulée de manière ouverte. PAS de stratégie détaillée ici — les recommandations concrètes sont dans l'étape 5.
+VOIX ET POSTURE — "NOUS" (l'équipe pédagogique) :
+Tu rédiges AU NOM de l'équipe pédagogique (le professeur principal et le conseil de classe).
+La synthèse utilise le "nous" collectif pour les encouragements et orientations.
+- ✅ "Nous l'encourageons à...", "Nous comptons sur lui/elle", "Nous l'en savons capable"
+- ✅ Pour les constats, alterne entre la voix directe et le "nous" : "[ELEVE] a fourni un travail sérieux" / "Nous comptons sur lui pour..."
+- ❌ JAMAIS de tutoiement ni de vouvoiement direct : ❌ "continuez ainsi", "tu dois", "poursuivez"
+- ❌ JAMAIS de méta-références aux sources : ❌ "les appréciations montrent", "plusieurs enseignants soulignent", "le bulletin révèle", "on constate"
 
-IMPORTANT : La synthèse doit rester CONCISE et laisser de la marge au professeur principal. Ne développe pas de stratégies détaillées dans la synthèse — elles sont fournies séparément dans les stratégies d'apprentissage.
+CALIBRATION PAR EXEMPLES FEW-SHOT :
+Si des exemples de synthèses validées par le professeur sont fournis dans la conversation (messages précédents), tu DOIS t'en inspirer comme référence prioritaire pour :
+- Le **ton** et la **voix** (comment le professeur s'exprime)
+- La **longueur** (reproduis une longueur similaire)
+- La **structure** (ouverture, constats, clôture)
+- Le **niveau de détail** (nombre de matières citées, formulations)
+Ces exemples reflètent le style exact attendu par le professeur. Imite-les fidèlement.
 
-FORMULATIONS INTERDITES (mindset fixe / person-praise) :
-- ❌ "est un(e) bon(ne) élève", "est sérieux/se", "est brillant(e)", "est faible"
+STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
+1. **Ouverture** (1 phrase courte) : commence par une formule qui qualifie le trimestre. VARIE les formulations d'un élève à l'autre. Choisis parmi ces familles selon le profil :
+   - Famille "Bilan" : "Bilan positif.", "Bilan positif mais perfectible.", "Bilan contrasté.", "Bilan encourageant.", "Bilan perfectible."
+   - Famille "Trimestre" : "Trimestre solide.", "Trimestre en demi-teinte.", "Trimestre prometteur.", "Trimestre inégal."
+   - Famille "Résultats" : "Des résultats encourageants.", "De bons acquis à consolider.", "Des résultats contrastés selon les matières."
+   - Famille "Efforts" : "Des efforts qui portent leurs fruits.", "Des efforts à poursuivre.", "Un investissement à renforcer."
+   Ne répète PAS la même ouverture pour deux élèves consécutifs.
+2. **Feed-back** (1-3 phrases) : constat direct sur le travail et les comportements. Cite les matières individuellement, en te limitant aux 2 à 4 plus significatives (alertes urgentes ou réussites notables). Pas de liste exhaustive.
+3. **Orientation** (1 phrase) : clôture par une direction pour le trimestre suivant, formulée avec le "nous". VARIE les formulations de clôture d'un élève à l'autre. Choisis parmi :
+   - "Nous comptons sur lui/elle."
+   - "Nous l'en savons capable."
+   - "Nous l'encourageons à [piste concrète]."
+   - "Il/Elle a les capacités pour [objectif]. Nous comptons sur sa mobilisation."
+   - "Nous attendons un investissement plus régulier au prochain trimestre."
+   - "Il/Elle peut progresser en [matière], nous l'y encourageons."
+   Ne répète PAS la même clôture pour deux élèves consécutifs.
+
+IMPORTANT : La synthèse doit rester CONCISE et laisser de la marge au professeur. Ne développe pas de stratégies détaillées — elles sont fournies séparément (étape 5).
+
+FORMULATIONS INTERDITES :
+- ❌ "est un(e) bon(ne) élève", "est sérieux/se", "est brillant(e)", "est faible" (person-praise)
 - ❌ "Très bon trimestre", "Bon trimestre" (jugement global vide)
 - ❌ "Des efforts sont attendus", "Doit faire des efforts" (vague, passif)
-- ❌ "Encouragé(e) à continuer", "Poursuivre ainsi" (aucune piste concrète)
+- ❌ "Encouragé(e) à continuer", "Poursuivre ainsi", "Continuez ainsi" (aucune piste concrète)
+- ❌ "Les appréciations montrent que...", "Le bulletin fait apparaître...", "On note que..."
+- ❌ Toute note chiffrée, moyenne ou comparaison quantitative (cf. interdiction ci-dessus)
 
-FORMULATIONS INTERDITES (posture de spectateur) :
-- ❌ "Les appréciations montrent que...", "Plusieurs enseignants soulignent..."
-- ❌ "Le bulletin fait apparaître...", "On note que...", "Il ressort que..."
-- ❌ "D'après les retours...", "Selon les appréciations..."
-
-FORMULATIONS RECOMMANDÉES (process-praise, voix directe) :
-- ✅ "Le travail régulier et la participation active en [matières] portent leurs fruits"
-- ✅ "La méthode de travail rigoureuse en [matière] se reflète dans les résultats"
-- ✅ "Un investissement plus régulier en [matière] permettrait de consolider les acquis"
-- ✅ "La concentration reste fragile en [matière], ce qui freine la progression"
+FORMULATIONS RECOMMANDÉES :
+- ✅ "Bilan positif mais perfectible. [ELEVE] a fourni un travail sérieux dans de nombreuses matières. Nous l'encourageons à améliorer sa participation en [matière]. Nous l'en savons capable."
+- ✅ "Trimestre solide. Le travail régulier en [matière] et [matière] porte ses fruits. Un effort en [matière] permettrait de parfaire ce bilan. Nous comptons sur lui/elle."
+- ✅ "Des résultats contrastés. [ELEVE] montre de réelles capacités en [matière], mais la concentration reste fragile en [matière]. Il/Elle peut progresser, nous l'y encourageons."
+- ✅ "Bilan encourageant. [ELEVE] a su se mobiliser ce trimestre. Nous attendons la même régularité au prochain trimestre."
 """
 
 _ETAPE_2_ALERTES = """## ÉTAPE 2 : IDENTIFIER LES ALERTES
@@ -177,7 +202,7 @@ _JSON_FORMAT = """## FORMAT DE RÉPONSE (JSON)
 Réponds UNIQUEMENT avec un JSON valide selon cette structure :
 ```json
 {
-  "synthese_texte": "La synthèse rédigée (3-5 phrases, feed-back + feed-forward)...",
+  "synthese_texte": "[Ouverture variée]. [3-5 phrases, 50-100 mots, voix 'nous']...",
   "alertes": [
     {"matiere": "Nom matière", "description": "Constat factuel", "severite": "urgent|attention"}
   ],

@@ -133,7 +133,7 @@ def page_layout(title: str):
         with ui.row().classes("gap-1"):
             for label, path in [
                 ("Accueil", "/"),
-                ("Import", "/import"),
+                ("Classe", "/import"),
                 ("Synthèses", "/syntheses"),
                 ("Export", "/export"),
                 ("Prompt", "/prompt"),

@@ -57,7 +57,7 @@ def syntheses_page(eleve: str = ""):
                 "Aucun eleve dans cette classe. Importez des bulletins d'abord."
             ).classes("text-grey-6")
             ui.button(
-                "Aller a Import",
+                "Aller a Classe",
                 icon="upload",
                 on_click=lambda: ui.navigate.to("/import"),
             ).props("rounded")

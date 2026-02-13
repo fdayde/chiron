@@ -151,8 +151,8 @@ def home_page():
 
         with ui.row().classes("q-mt-md gap-4 flex-wrap justify-center"):
             _workflow_card(
-                "1. Import",
-                "Déposez vos bulletins PDF",
+                "1. Classe",
+                "Importez vos bulletins PDF",
                 ["Extraction automatique", "Anonymisation RGPD"],
                 accent="#D4843E",
             )
