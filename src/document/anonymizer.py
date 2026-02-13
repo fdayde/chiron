@@ -209,11 +209,15 @@ def _replace_names_in_pdf(
                 instances = page.search_for(nom)
 
                 for rect in instances:
+                    # fontname="helv" force Helvetica (police base-14) pour
+                    # éviter le dédoublement de caractères lié aux polices
+                    # TrueType/CID du PDF source
                     page.add_redact_annot(
                         rect,
                         text=nom_anonyme,
-                        fill=(1, 1, 1),  # Fond blanc
+                        fontname="helv",
                         fontsize=10,
+                        fill=(1, 1, 1),
                     )
                     total_replacements += 1
 

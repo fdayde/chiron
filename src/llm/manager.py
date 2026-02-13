@@ -451,3 +451,18 @@ class LLMManager:
             dict avec stats par provider
         """
         return metrics_collector.get_summary()
+
+
+# ---------------------------------------------------------------------------
+# Module-level singleton — avoids creating multiple AsyncAnthropic / httpx
+# clients that cause "Event loop is closed" errors on garbage collection.
+# ---------------------------------------------------------------------------
+_shared_manager: LLMManager | None = None
+
+
+def get_shared_llm_manager() -> LLMManager:
+    """Return the shared LLMManager singleton."""
+    global _shared_manager
+    if _shared_manager is None:
+        _shared_manager = LLMManager()
+    return _shared_manager

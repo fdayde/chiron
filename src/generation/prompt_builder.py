@@ -190,7 +190,7 @@ class PromptBuilder:
 
         messages.append({"role": "system", "content": system_content})
 
-        # Few-shot examples
+        # Few-shot examples — wrap in JSON format matching the expected output
         for exemple in self.exemples:
             messages.append(
                 {
@@ -200,10 +200,23 @@ class PromptBuilder:
                     ),
                 }
             )
+            # Wrap the ground truth text in the expected JSON structure
+            # so the model learns both the style AND the output format
+            fewshot_response = json.dumps(
+                {
+                    "synthese_texte": exemple.synthese_ground_truth,
+                    "alertes": [],
+                    "reussites": [],
+                    "posture_generale": "engage",
+                    "axes_travail": [],
+                    "biais_detectes": [],
+                },
+                ensure_ascii=False,
+            )
             messages.append(
                 {
                     "role": "assistant",
-                    "content": exemple.synthese_ground_truth,
+                    "content": fewshot_response,
                 }
             )
 

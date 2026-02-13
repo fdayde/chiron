@@ -2,21 +2,53 @@
 
 from __future__ import annotations
 
-from components.metric_card_ng import metric_card
 from nicegui import ui
 
 
 def eleve_header(eleve: dict) -> None:
-    """Render compact student header with key metrics.
+    """Render compact student header with key metrics on one line.
 
     Args:
         eleve: Student data dict.
     """
-    with ui.row().classes("gap-4"):
-        metric_card("Genre", eleve.get("genre") or "?")
-        metric_card("Absences", eleve.get("absences_demi_journees", 0) or 0)
-        metric_card("Retards", eleve.get("retards", 0) or 0)
-        metric_card("Matieres", len(eleve.get("matieres", [])))
+    genre = eleve.get("genre") or "?"
+    absences = eleve.get("absences_demi_journees", 0) or 0
+    retards = eleve.get("retards", 0) or 0
+    matieres = eleve.get("matieres", [])
+    nb_matieres = len(matieres)
+
+    # Calculate averages
+    moy_eleve = _calc_moyenne_eleve(matieres)
+    moy_classe = _calc_moyenne_classe(matieres)
+
+    with ui.row().classes("items-center gap-2 flex-wrap"):
+        ui.label(
+            f"{genre} · {absences} abs. · {retards} retard{'s' if retards != 1 else ''}"
+            f" · {nb_matieres} matière{'s' if nb_matieres != 1 else ''}"
+        ).classes("text-body2 text-grey-5")
+
+        if moy_eleve is not None:
+            ui.label(f"Moy. élève : {moy_eleve:.1f}/20").classes(
+                "text-body2 text-weight-bold"
+            )
+        if moy_classe is not None:
+            ui.label(f"Moy. classe : {moy_classe:.1f}/20").classes(
+                "text-body2 text-grey-6"
+            )
+
+
+def _calc_moyenne_eleve(matieres: list[dict]) -> float | None:
+    """Calculate student average across all subjects."""
+    notes = [m["moyenne_eleve"] for m in matieres if m.get("moyenne_eleve") is not None]
+    return sum(notes) / len(notes) if notes else None
+
+
+def _calc_moyenne_classe(matieres: list[dict]) -> float | None:
+    """Calculate class average across all subjects."""
+    notes = [
+        m["moyenne_classe"] for m in matieres if m.get("moyenne_classe") is not None
+    ]
+    return sum(notes) / len(notes) if notes else None
 
 
 def appreciations(eleve: dict) -> None:
@@ -30,32 +62,35 @@ def appreciations(eleve: dict) -> None:
     matieres = eleve.get("matieres", [])
 
     if not matieres:
-        ui.label("Aucune matiere disponible.").classes("text-grey-6")
+        ui.label("Aucune matière disponible.").classes("text-grey-6")
         return
 
+    # Legend
+    ui.label("Note élève / écart avec la classe").classes(
+        "text-caption text-grey-6 q-mb-xs"
+    )
+
     for matiere in matieres:
-        with ui.card().classes("w-full p-3 q-mb-xs"):
-            with ui.row().classes("w-full items-start justify-between"):
+        with ui.card().classes("w-full q-mb-xs").style("padding: 8px 12px"):
+            with ui.row().classes("w-full items-center justify-between"):
                 # Left: subject + teacher
                 with ui.column().classes("gap-0"):
-                    ui.label(matiere["nom"]).classes("text-weight-bold")
+                    ui.label(matiere["nom"]).classes("text-weight-bold text-body2")
                     prof = matiere.get("professeur", "")
                     if prof:
                         ui.label(prof).classes("text-caption text-grey-7")
 
-                # Right: grade with delta
+                # Right: grade inline with delta
                 note = matiere.get("moyenne_eleve")
                 moy_classe = matiere.get("moyenne_classe")
                 if note is not None:
-                    delta = None
-                    delta_color = "positive"
-                    if moy_classe is not None:
-                        diff = note - moy_classe
-                        delta = f"{diff:+.1f}"
-                        delta_color = "positive" if diff >= 0 else "negative"
-                    metric_card(
-                        "Note", f"{note}/20", delta=delta, delta_color=delta_color
-                    )
+                    with ui.row().classes("items-center gap-1"):
+                        ui.label(f"{note}/20").classes("text-weight-bold text-body2")
+                        if moy_classe is not None:
+                            diff = note - moy_classe
+                            delta_text = f"({diff:+.1f})"
+                            delta_color = "text-green" if diff >= 0 else "text-red"
+                            ui.label(delta_text).classes(f"text-caption {delta_color}")
 
             # Appreciation text
             appreciation = matiere.get("appreciation", "")
@@ -76,7 +111,7 @@ def appreciations_compact(eleve: dict, max_display: int = 5) -> None:
     with_appreciation = [m for m in matieres if m.get("appreciation")]
 
     if not with_appreciation:
-        ui.label("Aucune appreciation disponible.").classes("text-caption text-grey-6")
+        ui.label("Aucune appréciation disponible.").classes("text-caption text-grey-6")
         return
 
     for matiere in with_appreciation[:max_display]:
@@ -87,6 +122,6 @@ def appreciations_compact(eleve: dict, max_display: int = 5) -> None:
 
     remaining = len(with_appreciation) - max_display
     if remaining > 0:
-        ui.label(f"... et {remaining} autre(s) matiere(s)").classes(
+        ui.label(f"... et {remaining} autre(s) matière(s)").classes(
             "text-caption text-grey-6"
         )

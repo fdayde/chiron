@@ -13,8 +13,8 @@ Assistant IA pour la préparation des conseils de classe - Génère des synthès
 
 ## Fonctionnalités clés
 
-### Anonymisation NER avant envoi cloud
-Les noms, prénoms et informations identifiantes sont détectés par un modèle NER local (CamemBERT) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le PDF est physiquement anonymisé (rédaction PyMuPDF) ; le LLM ne reçoit jamais de données personnelles.
+### Pseudonymisation avant envoi cloud
+Les noms, prénoms et informations identifiantes sont détectés par un modèle NER local (CamemBERT) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le LLM ne reçoit jamais de données nominatives. Les noms réels sont restaurés automatiquement à l'export.
 
 ### Few-shot learning — calibration par l'enseignant
 L'enseignant peut marquer jusqu'à 3 synthèses validées comme « exemples » pour l'IA. Ces exemples sont automatiquement injectés dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de détail des synthèses suivantes. Les appréciations sont tronquées et les synthèses plafonnées à 1000 caractères pour maîtriser la taille du prompt.
@@ -29,27 +29,27 @@ Le prompt de génération est conçu selon des principes issus de la recherche e
 ## Statut du projet
 
 **Phase actuelle** : Bêta fonctionnelle — packaging `.exe` disponible
-- Pipeline complet : PDF → Anonymisation → Extraction → Génération LLM → Export
+- Pipeline complet : PDF → Pseudonymisation → Extraction → Génération LLM → Export
 - UI NiceGUI (navigateur) : import, génération, calibration few-shot, validation, export
 - API FastAPI intégrée (process unique)
-- RGPD : anonymisation NER locale avant envoi cloud
+- RGPD : pseudonymisation NER locale avant envoi cloud
 - Multi-provider : OpenAI, Anthropic, Mistral
 - Distribution : `chiron.exe` (PyInstaller, `--onedir`)
 
 ## Vue d'ensemble
 
 ```
-PDF PRONOTE → Anonymisation NER → Extraction → Calibration → Génération LLM → Validation → Export CSV
+PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export CSV
      │              │                  │            │               │             │           │
      │         CamemBERT          pdfplumber    Few-shot       OpenAI/Claude   Humain    Dépseudo
      │         (local)            (local)       (0-3 ex.)      (cloud)        (local)    (local)
      ▼              ▼                  ▼            ▼               ▼             ▼           ▼
-  Bulletin    PDF anonymisé      Données      Exemples        Synthèse      Validée    Noms réels
+  Bulletin    PDF pseudonymisé   Données      Exemples        Synthèse      Validée    Noms réels
 ```
 
 **Principes** :
 - Le professeur reste dans la boucle (validation obligatoire)
-- **Données personnelles jamais envoyées au cloud** (anonymisation PDF avant extraction)
+- **Données nominatives jamais envoyées au cloud** (pseudonymisation avant envoi à l'IA)
 - Style et ton calibrés via few-shot learning (exemples de l'enseignant)
 - Insights pédagogiques actionnables (alertes, réussites, stratégies, biais de genre)
 - Application locale + APIs cloud (LLM)
@@ -94,12 +94,12 @@ CHIRON_PORT=9000 python run.py   # Port personnalisé
 
 ### Workflow type
 
-1. **Import** : Uploader les PDF bulletins de la classe
+1. **Classe** : Importer les PDF bulletins de la classe (pseudonymisation automatique)
 2. **Génération** : Générer 1-2 synthèses, relire et valider
 3. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
 4. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
 5. **Review** : Relire, éditer si besoin, valider
-6. **Export** : Télécharger le CSV pour le conseil
+6. **Export** : Télécharger les synthèses (noms réels restaurés automatiquement)
 
 ## Distribution (.exe)
 
@@ -148,7 +148,7 @@ chiron/
 │   ├── document/             # Parsing PDF
 │   │   ├── pdfplumber_parser.py  # Extraction locale
 │   │   ├── mistral_parser.py     # OCR cloud (Mistral)
-│   │   └── anonymizer.py        # Anonymisation NER + PyMuPDF
+│   │   └── anonymizer.py        # Pseudonymisation NER + PyMuPDF
 │   ├── generation/           # Génération synthèses
 │   │   ├── generator.py      # SyntheseGenerator
 │   │   ├── prompts.py        # Templates de prompts versionnés
@@ -182,11 +182,33 @@ chiron/
 
 | Aspect | Mesure |
 |--------|--------|
-| **Anonymisation PDF** | CamemBERT NER + PyMuPDF rédaction **avant** envoi cloud |
+| **Pseudonymisation** | CamemBERT NER **avant** envoi cloud (ELEVE_XXX) |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
 | **Mapping identités** | Base séparée (`privacy.duckdb`) |
-| **LLM cloud** | Reçoit uniquement données **pseudonymisées** (ELEVE_XXX) |
+| **LLM cloud** | Reçoit uniquement données **pseudonymisées** |
 | **Validation humaine** | Obligatoire avant export |
+
+### Détail des données personnelles
+
+| Donnée | Traitement |
+|--------|------------|
+| Nom, prénom | Pseudonymisé (ELEVE_XXX) avant envoi à l'IA |
+| Genre (F/G) | Transmis à l'IA (accord grammatical) |
+| Absences, retards | Transmis à l'IA (analyse du profil) |
+| Notes et moyennes | Transmis à l'IA (analyse des résultats) |
+| Appréciations enseignantes | Transmises pseudonymisées à l'IA |
+| Engagements (délégué...) | Transmis à l'IA |
+| Nom des professeurs | Stocké localement, **non transmis** |
+| Établissement | Stocké localement, **non transmis** |
+| Classe (niveau, groupe) | Stocké localement, **non transmis** |
+| Année scolaire | Stocké localement, **non transmis** |
+| Trimestre | Stocké localement, **non transmis** |
+
+## Adapter à un autre format de bulletin
+
+Le parsing est conçu pour les bulletins **PRONOTE** avec un certain format. Pour l'adapter  consultez le guide dédié :
+
+**[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)**
 
 ## Stack technique
 

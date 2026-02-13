@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from src.core.models import EleveExtraction, EleveGroundTruth, SyntheseGeneree
 from src.generation.prompt_builder import PromptBuilder
 from src.llm.config import settings as llm_settings
-from src.llm.manager import LLMManager
+from src.llm.manager import LLMManager, get_shared_llm_manager
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class SyntheseGenerator:
         """
         self.provider = provider
         self.model = model
-        self._llm = llm_manager or LLMManager()
+        self._llm = llm_manager or get_shared_llm_manager()
         self._prompt_builder = prompt_builder or PromptBuilder()
 
     def set_exemples(self, exemples: list[EleveGroundTruth]) -> None:

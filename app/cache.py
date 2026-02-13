@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import re
 import threading
 import time
 
@@ -142,6 +143,19 @@ def fetch_eleve(eleve_id: str) -> dict | None:
     return e.model_dump() if e else None
 
 
+def fetch_eleve_depseudo(eleve_id: str, classe_id: str) -> dict | None:
+    """Récupère un élève avec appréciations dépseudonymisées."""
+    data = fetch_eleve(eleve_id)
+    if not data:
+        return None
+    pseudonymizer = get_pseudonymizer()
+    for matiere in data.get("matieres", []):
+        appr = matiere.get("appreciation")
+        if appr:
+            matiere["appreciation"] = pseudonymizer.depseudonymize_text(appr, classe_id)
+    return data
+
+
 @cached(_eleve_synthese_cache, lock=_lock)
 def fetch_eleve_synthese(eleve_id: str, trimestre: int) -> dict:
     """Récupère la synthèse d'un élève (cache 30s).
@@ -258,6 +272,45 @@ def delete_eleve_direct(eleve_id: str, trimestre: int) -> None:
     eleve_repo.delete(eleve_id, trimestre)
 
 
+def delete_classe_direct(classe_id: str) -> dict:
+    """Supprime une classe et toutes ses données (élèves, synthèses, mappings)."""
+    eleve_repo = get_eleve_repo()
+    synthese_repo = get_synthese_repo()
+    classe_repo = get_classe_repo()
+    pseudonymizer = get_pseudonymizer()
+
+    # Get all students for this class (all trimesters)
+    deleted_eleves = 0
+    deleted_syntheses = 0
+    for trimestre in [1, 2, 3]:
+        eleves = eleve_repo.get_by_classe(classe_id, trimestre)
+        for eleve in eleves:
+            deleted_syntheses += synthese_repo.delete_for_eleve(
+                eleve.eleve_id, trimestre
+            )
+            eleve_repo.delete(eleve.eleve_id, trimestre)
+            deleted_eleves += 1
+
+    # Clear privacy mappings for this class
+    pseudonymizer.clear_mappings(classe_id)
+
+    # Delete the class itself
+    classe_repo.delete(classe_id)
+
+    logger.info(
+        "Classe %s supprimée: %d élèves, %d synthèses",
+        classe_id,
+        deleted_eleves,
+        deleted_syntheses,
+    )
+
+    return {
+        "classe_id": classe_id,
+        "deleted_eleves": deleted_eleves,
+        "deleted_syntheses": deleted_syntheses,
+    }
+
+
 def clear_eleves_cache() -> None:
     """Vide les caches liés aux élèves."""
     _eleves_cache.clear()
@@ -319,10 +372,52 @@ def _get_fewshot_generator(
     generator = get_synthese_generator(provider=provider, model=model)
 
     if raw_examples:
+        # Re-pseudonymize synthese_texte before sending to LLM
+        # (DB stores real names after depseudonymization)
+        pseudonymizer = get_pseudonymizer()
+        mappings = pseudonymizer.list_mappings(classe_id)
+        for row in raw_examples:
+            texte = row.get("synthese_texte", "")
+            if texte:
+                for m in mappings:
+                    eid = m["eleve_id"]
+                    nom = m.get("nom_original", "")
+                    prenom = m.get("prenom_original", "")
+                    if prenom and nom:
+                        # Full name (both orders)
+                        texte = re.sub(
+                            rf"\b{re.escape(prenom)}\s+{re.escape(nom)}\b",
+                            eid,
+                            texte,
+                            flags=re.IGNORECASE,
+                        )
+                        texte = re.sub(
+                            rf"\b{re.escape(nom)}\s+{re.escape(prenom)}\b",
+                            eid,
+                            texte,
+                            flags=re.IGNORECASE,
+                        )
+                    if nom:
+                        texte = re.sub(
+                            rf"\b{re.escape(nom)}\b",
+                            eid,
+                            texte,
+                            flags=re.IGNORECASE,
+                        )
+                    if prenom:
+                        # Also match first name alone (exact word boundary)
+                        texte = re.sub(
+                            rf"\b{re.escape(prenom)}\b",
+                            eid,
+                            texte,
+                            flags=re.IGNORECASE,
+                        )
+                row["synthese_texte"] = texte
+
         examples = build_fewshot_examples(raw_examples)
         generator.set_exemples(examples)
         logger.info(
-            "Few-shot: %d exemple(s) injecte(s) pour %s T%d",
+            "Few-shot: %d exemple(s) re-pseudonymise(s) et injecte(s) pour %s T%d",
             len(examples),
             classe_id,
             trimestre,
