@@ -153,16 +153,16 @@ def home_page():
             _workflow_card(
                 "1. Classe",
                 "Importez vos bulletins PDF",
-                ["Extraction automatique", "Anonymisation RGPD"],
+                ["Extraction automatique des notes", "Pseudonymisation RGPD"],
                 accent="#D4843E",
             )
             ui.icon("arrow_forward").classes(
                 "text-3xl text-grey-5 self-center workflow-arrow"
             )
             _workflow_card(
-                "2. Review",
-                "L'IA génère les synthèses",
-                ["Relecture & correction", "Validation par l'enseignant"],
+                "2. Syntheses",
+                "L'IA genere, vous validez",
+                ["Donnees pseudonymisees", "Calibrage par vos corrections"],
                 accent="#4A5899",
             )
             ui.icon("arrow_forward").classes(
@@ -170,8 +170,8 @@ def home_page():
             )
             _workflow_card(
                 "3. Export",
-                "Téléchargez le CSV final",
-                ["Noms réels restaurés", "Prêt pour le conseil"],
+                "Telechargez les syntheses",
+                ["Noms reels restaures", "Pret pour le conseil"],
                 accent="#C8A45C",
             )
 
@@ -187,10 +187,76 @@ def home_page():
             with ui.row().classes("items-center gap-2"):
                 ui.icon("lock").style("color: #C8A45C")
                 ui.markdown(
-                    "**Confidentialité garantie** : Les noms des élèves sont "
-                    "pseudonymisés avant tout traitement IA. "
-                    "Les données personnelles restent sur votre machine."
+                    "**Confidentialite garantie** : Les noms des eleves sont "
+                    "pseudonymises avant tout traitement IA. "
+                    "Les donnees personnelles restent sur votre machine."
                 ).classes("text-grey-4")
+
+            with ui.expansion("Detail des donnees personnelles").classes(
+                "w-full q-mt-sm"
+            ):
+                ui.table(
+                    columns=[
+                        {
+                            "name": "donnee",
+                            "label": "Donnee",
+                            "field": "donnee",
+                            "align": "left",
+                        },
+                        {
+                            "name": "statut",
+                            "label": "Traitement",
+                            "field": "statut",
+                            "align": "left",
+                        },
+                    ],
+                    rows=[
+                        {
+                            "donnee": "Nom, prenom",
+                            "statut": "Pseudonymise (ELEVE_XXX) avant envoi a l'IA",
+                        },
+                        {
+                            "donnee": "Genre (F/G)",
+                            "statut": "Transmis a l'IA (accord grammatical)",
+                        },
+                        {
+                            "donnee": "Absences, retards",
+                            "statut": "Transmis a l'IA (analyse du profil)",
+                        },
+                        {
+                            "donnee": "Notes et moyennes",
+                            "statut": "Transmis a l'IA (analyse des resultats)",
+                        },
+                        {
+                            "donnee": "Appreciations enseignantes",
+                            "statut": "Transmises pseudonymisees a l'IA",
+                        },
+                        {
+                            "donnee": "Engagements (delegue...)",
+                            "statut": "Transmis a l'IA",
+                        },
+                        {
+                            "donnee": "Nom des professeurs",
+                            "statut": "Stocke localement, non transmis",
+                        },
+                        {
+                            "donnee": "Etablissement",
+                            "statut": "Stocke localement, non transmis",
+                        },
+                        {
+                            "donnee": "Classe (niveau, groupe)",
+                            "statut": "Stocke localement, non transmis",
+                        },
+                        {
+                            "donnee": "Annee scolaire",
+                            "statut": "Stocke localement, non transmis",
+                        },
+                        {
+                            "donnee": "Trimestre",
+                            "statut": "Stocke localement, non transmis",
+                        },
+                    ],
+                ).props("flat bordered dense").classes("w-full")
 
         ui.separator().classes("q-mt-md")
 
@@ -229,6 +295,6 @@ def _workflow_card(title: str, subtitle: str, bullets: list[str], accent: str) -
         ui.label(title).classes("text-h6")
         ui.label(subtitle).classes("text-body2 text-grey-7")
         for bullet in bullets:
-            with ui.row().classes("items-center gap-1"):
-                ui.icon("arrow_right").style(f"color: {accent}")
+            with ui.row().classes("items-center gap-1 no-wrap"):
+                ui.icon("arrow_right").classes("flex-none").style(f"color: {accent}")
                 ui.label(bullet).classes("text-body2 text-weight-bold")
