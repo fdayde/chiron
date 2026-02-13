@@ -24,11 +24,11 @@ def eleve_header(eleve: dict) -> None:
     with ui.row().classes("items-center gap-2 flex-wrap"):
         ui.label(
             f"{genre} · {absences} abs. · {retards} retard{'s' if retards != 1 else ''}"
-            f" · {nb_matieres} matiere{'s' if nb_matieres != 1 else ''}"
+            f" · {nb_matieres} matière{'s' if nb_matieres != 1 else ''}"
         ).classes("text-body2 text-grey-5")
 
         if moy_eleve is not None:
-            ui.label(f"Moy. eleve : {moy_eleve:.1f}/20").classes(
+            ui.label(f"Moy. élève : {moy_eleve:.1f}/20").classes(
                 "text-body2 text-weight-bold"
             )
         if moy_classe is not None:
@@ -62,11 +62,11 @@ def appreciations(eleve: dict) -> None:
     matieres = eleve.get("matieres", [])
 
     if not matieres:
-        ui.label("Aucune matiere disponible.").classes("text-grey-6")
+        ui.label("Aucune matière disponible.").classes("text-grey-6")
         return
 
     # Legend
-    ui.label("Note eleve / ecart avec la classe").classes(
+    ui.label("Note élève / écart avec la classe").classes(
         "text-caption text-grey-6 q-mb-xs"
     )
 
@@ -111,7 +111,7 @@ def appreciations_compact(eleve: dict, max_display: int = 5) -> None:
     with_appreciation = [m for m in matieres if m.get("appreciation")]
 
     if not with_appreciation:
-        ui.label("Aucune appreciation disponible.").classes("text-caption text-grey-6")
+        ui.label("Aucune appréciation disponible.").classes("text-caption text-grey-6")
         return
 
     for matiere in with_appreciation[:max_display]:
@@ -122,6 +122,6 @@ def appreciations_compact(eleve: dict, max_display: int = 5) -> None:
 
     remaining = len(with_appreciation) - max_display
     if remaining > 0:
-        ui.label(f"... et {remaining} autre(s) matiere(s)").classes(
+        ui.label(f"... et {remaining} autre(s) matière(s)").classes(
             "text-caption text-grey-6"
         )

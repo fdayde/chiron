@@ -21,7 +21,7 @@ def export_page():
         trimestre = get_trimestre()
 
         if not classe_id:
-            ui.label("Selectionnez une classe dans la barre laterale.").classes(
+            ui.label("Sélectionnez une classe dans la barre latérale.").classes(
                 "text-grey-6"
             )
             return
@@ -51,9 +51,9 @@ def export_page():
         stats = fetch_classe_stats(classe_id, trimestre)
         with ui.row().classes("items-center gap-4 q-mt-md flex-wrap"):
             ui.label(
-                f"{counts['total']} eleves · "
-                f"{counts['with_synthese']} generees · "
-                f"{counts['validated']} validees · "
+                f"{counts['total']} élèves · "
+                f"{counts['with_synthese']} générées · "
+                f"{counts['validated']} validées · "
                 f"{counts['pending']} en attente"
             ).classes("text-body2")
 
@@ -62,11 +62,11 @@ def export_page():
                 tokens_in = stats.get("tokens_input", 0)
                 tokens_out = stats.get("tokens_output", 0)
                 tokens_total = stats.get("tokens_total", 0)
-                cost_label = ui.label(f"Cout total : ${cost_usd:.4f}").classes(
+                cost_label = ui.label(f"Coût total : ${cost_usd:.4f}").classes(
                     "text-body2 text-weight-bold"
                 )
                 cost_label.tooltip(
-                    f"Tokens entree : {tokens_in:,} · "
+                    f"Tokens entrée : {tokens_in:,} · "
                     f"Tokens sortie : {tokens_out:,} · "
                     f"Tokens total : {tokens_total:,}"
                 )
@@ -82,7 +82,7 @@ def export_page():
                 e["eleve_id"] for e in eleves_data if not e.get("has_synthese")
             ]
             with ui.card().classes("w-full bg-orange-10 q-mt-md"):
-                ui.label(f"{counts['missing']} eleve(s) sans synthese").classes(
+                ui.label(f"{counts['missing']} élève(s) sans synthèse").classes(
                     "text-weight-bold text-warning"
                 )
                 ui.label(f"IDs: {', '.join(missing_ids[:10])}").classes(
@@ -93,7 +93,7 @@ def export_page():
                         "text-caption text-grey-7"
                     )
                 ui.button(
-                    "Aller generer",
+                    "Aller générer",
                     icon="arrow_forward",
                     on_click=lambda: ui.navigate.to("/syntheses"),
                 ).props("flat size=sm rounded")
@@ -105,7 +105,7 @@ def export_page():
                 if e.get("has_synthese") and e.get("synthese_status") != "validated"
             ]
             with ui.card().classes("w-full bg-blue-10 q-mt-md"):
-                ui.label(f"{counts['pending']} synthese(s) non validee(s)").classes(
+                ui.label(f"{counts['pending']} synthèse(s) non validée(s)").classes(
                     "text-weight-bold text-info"
                 )
                 ui.label(f"IDs: {', '.join(pending_ids[:10])}").classes(
@@ -118,17 +118,17 @@ def export_page():
 
         if counts["total"] == 0:
             ui.label(
-                "Aucun eleve importe. Commencez par importer des bulletins."
+                "Aucun élève importé. Commencez par importer des bulletins."
             ).classes("text-grey-6 q-mt-md")
             ui.button(
-                "Aller a Classe",
+                "Aller à Classe",
                 icon="upload",
                 on_click=lambda: ui.navigate.to("/import"),
             ).props("rounded")
             return
 
         if counts["validated"] == 0:
-            ui.label("Aucune synthese validee a exporter.").classes(
+            ui.label("Aucune synthèse validée à exporter.").classes(
                 "text-warning q-mt-md"
             )
             ui.button(
@@ -173,12 +173,12 @@ def export_page():
             # CSV export
             with ui.column().classes("flex-1"):
                 ui.label("CSV").classes("text-h6")
-                ui.label("Export des syntheses validees au format CSV").classes(
+                ui.label("Export des synthèses validées au format CSV").classes(
                     "text-caption text-grey-7"
                 )
 
                 if counts["validated"] == 0:
-                    ui.label("Aucune synthese validee").classes("text-warning")
+                    ui.label("Aucune synthèse validée").classes("text-warning")
                 else:
 
                     async def _download_csv():
@@ -188,7 +188,7 @@ def export_page():
                         )
 
                     ui.button(
-                        f"Telecharger CSV ({counts['validated']} syntheses)",
+                        f"Télécharger CSV ({counts['validated']} synthèses)",
                         icon="download",
                         on_click=_download_csv,
                     ).props("color=primary rounded")
@@ -196,7 +196,7 @@ def export_page():
             # Clipboard copy
             with ui.column().classes("flex-1"):
                 ui.label("Presse-papiers").classes("text-h6")
-                ui.label("Copier les syntheses pour coller dans un document").classes(
+                ui.label("Copier les synthèses pour coller dans un document").classes(
                     "text-caption text-grey-7"
                 )
 
@@ -234,12 +234,12 @@ def export_page():
 
         with ui.row().classes("items-center gap-2 q-mt-md"):
             ui.icon("visibility").classes("text-primary")
-            ui.label("Apercu").classes("text-h6")
+            ui.label("Aperçu").classes("text-h6")
 
         # Filter
         filter_options = {
             "all": "Toutes",
-            "validated": "Validees uniquement",
+            "validated": "Validées uniquement",
             "pending": "En attente uniquement",
         }
         preview_filter = ui.select(
@@ -261,7 +261,7 @@ def export_page():
                 filtered = syntheses_data
 
             with preview_container:
-                ui.label(f"{len(filtered)} synthese(s)").classes(
+                ui.label(f"{len(filtered)} synthèse(s)").classes(
                     "text-caption text-grey-7"
                 )
 

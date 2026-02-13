@@ -41,7 +41,7 @@ def llm_selector(on_change: callable | None = None) -> tuple[ui.select, ui.selec
 
         model_select = ui.select(
             options=model_options,
-            label="Modele",
+            label="Modèle",
             value=default_model if default_model in model_options else None,
         ).classes("w-64")
 
@@ -85,6 +85,6 @@ def cost_estimate_label(provider: str, model: str, nb_eleves: int) -> ui.label |
         return None
 
     cost = estimate_total_cost(provider, model, nb_eleves)
-    return ui.label(f"Cout estime : ~${cost:.4f} pour {nb_eleves} eleve(s)").classes(
+    return ui.label(f"Coût estimé : ~${cost:.4f} pour {nb_eleves} élève(s)").classes(
         "text-caption text-grey-7"
     )

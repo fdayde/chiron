@@ -160,9 +160,9 @@ def home_page():
                 "text-3xl text-grey-5 self-center workflow-arrow"
             )
             _workflow_card(
-                "2. Syntheses",
-                "L'IA genere, vous validez",
-                ["Donnees pseudonymisees", "Calibrage par vos corrections"],
+                "2. Synthèses",
+                "L'IA génère, vous validez",
+                ["Données pseudonymisées", "Calibrage par vos corrections"],
                 accent="#4A5899",
             )
             ui.icon("arrow_forward").classes(
@@ -170,8 +170,8 @@ def home_page():
             )
             _workflow_card(
                 "3. Export",
-                "Telechargez les syntheses",
-                ["Noms reels restaures", "Pret pour le conseil"],
+                "Téléchargez les synthèses",
+                ["Noms réels restaurés", "Prêt pour le conseil"],
                 accent="#C8A45C",
             )
 
@@ -187,19 +187,19 @@ def home_page():
             with ui.row().classes("items-center gap-2"):
                 ui.icon("lock").style("color: #C8A45C")
                 ui.markdown(
-                    "**Confidentialite garantie** : Les noms des eleves sont "
-                    "pseudonymises avant tout traitement IA. "
-                    "Les donnees personnelles restent sur votre machine."
+                    "**Confidentialité garantie** : Les noms des élèves sont "
+                    "pseudonymisés avant tout traitement IA. "
+                    "Les données personnelles restent sur votre machine."
                 ).classes("text-grey-4")
 
-            with ui.expansion("Detail des donnees personnelles").classes(
+            with ui.expansion("Détail des données personnelles").classes(
                 "w-full q-mt-sm"
             ):
                 ui.table(
                     columns=[
                         {
                             "name": "donnee",
-                            "label": "Donnee",
+                            "label": "Donnée",
                             "field": "donnee",
                             "align": "left",
                         },
@@ -212,48 +212,48 @@ def home_page():
                     ],
                     rows=[
                         {
-                            "donnee": "Nom, prenom",
-                            "statut": "Pseudonymise (ELEVE_XXX) avant envoi a l'IA",
+                            "donnee": "Nom, prénom",
+                            "statut": "Pseudonymisé (ELEVE_XXX) avant envoi à l'IA",
                         },
                         {
                             "donnee": "Genre (F/G)",
-                            "statut": "Transmis a l'IA (accord grammatical)",
+                            "statut": "Transmis à l'IA (accord grammatical)",
                         },
                         {
                             "donnee": "Absences, retards",
-                            "statut": "Transmis a l'IA (analyse du profil)",
+                            "statut": "Transmis à l'IA (analyse du profil)",
                         },
                         {
                             "donnee": "Notes et moyennes",
-                            "statut": "Transmis a l'IA (analyse des resultats)",
+                            "statut": "Transmis à l'IA (analyse des résultats)",
                         },
                         {
-                            "donnee": "Appreciations enseignantes",
-                            "statut": "Transmises pseudonymisees a l'IA",
+                            "donnee": "Appréciations enseignantes",
+                            "statut": "Transmises pseudonymisées à l'IA",
                         },
                         {
-                            "donnee": "Engagements (delegue...)",
-                            "statut": "Transmis a l'IA",
+                            "donnee": "Engagements (délégué...)",
+                            "statut": "Transmis à l'IA",
                         },
                         {
                             "donnee": "Nom des professeurs",
-                            "statut": "Stocke localement, non transmis",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
-                            "donnee": "Etablissement",
-                            "statut": "Stocke localement, non transmis",
+                            "donnee": "Établissement",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
                             "donnee": "Classe (niveau, groupe)",
-                            "statut": "Stocke localement, non transmis",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
-                            "donnee": "Annee scolaire",
-                            "statut": "Stocke localement, non transmis",
+                            "donnee": "Année scolaire",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
                             "donnee": "Trimestre",
-                            "statut": "Stocke localement, non transmis",
+                            "statut": "Stocké localement, non transmis",
                         },
                     ],
                 ).props("flat bordered dense").classes("w-full")

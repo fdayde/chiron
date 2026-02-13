@@ -25,7 +25,7 @@ def import_page():
         trimestre = get_trimestre()
 
         if not classe_id:
-            ui.label("Selectionnez une classe dans la barre laterale.").classes(
+            ui.label("Sélectionnez une classe dans la barre latérale.").classes(
                 "text-grey-6"
             )
             return
@@ -48,7 +48,7 @@ def import_page():
                 with ui.card().classes("w-full bg-blue-10 q-mb-md"):
                     ui.label(
                         "Parser actif : Mistral OCR. "
-                        "Les matieres, notes et absences ne seront pas extraites "
+                        "Les matières, notes et absences ne seront pas extraites "
                         "automatiquement. Seul le texte brut sera disponible."
                     ).classes("text-body2")
         except Exception:
@@ -69,7 +69,7 @@ def import_page():
             """Called once per file after it is uploaded to the NiceGUI server."""
             content = await e.file.read()
             pending_files.append((e.file.name, content))
-            file_count_label.text = f"{len(pending_files)} fichier(s) pret(s)"
+            file_count_label.text = f"{len(pending_files)} fichier(s) prêt(s)"
             import_btn.props(remove="disable")
             import_btn.update()
 
@@ -92,7 +92,7 @@ def import_page():
         async def do_import():
             """Import collected files via HTTP API."""
             if not pending_files:
-                ui.notify("Aucun fichier selectionne", type="warning")
+                ui.notify("Aucun fichier sélectionné", type="warning")
                 return
 
             force_overwrite = overwrite_checkbox.value
@@ -148,17 +148,17 @@ def import_page():
             with upload_results:
                 upload_results.clear()
 
-                ui.label("Resultats de l'import").classes("text-h6 q-mt-md")
+                ui.label("Résultats de l'import").classes("text-h6 q-mt-md")
 
                 with ui.row().classes("gap-4 q-mt-sm"):
-                    metric_card("PDFs traites", len(results))
-                    metric_card("Eleves importes", imported_count)
-                    metric_card("Ecrases", overwritten_count)
+                    metric_card("PDFs traités", len(results))
+                    metric_card("Élèves importés", imported_count)
+                    metric_card("Écrasés", overwritten_count)
                     metric_card("Erreurs", error_count)
 
                 if overwritten_count > 0:
                     ui.label(
-                        f"{overwritten_count} eleve(s) existant(s) ecrase(s)."
+                        f"{overwritten_count} élève(s) existant(s) écrasé(s)."
                     ).classes("text-body2 text-info q-mt-sm")
 
                 if error_count > 0:
@@ -169,7 +169,7 @@ def import_page():
                             )
 
                 # Detail per file
-                with ui.expansion("Detail par fichier").classes("w-full q-mt-sm"):
+                with ui.expansion("Détail par fichier").classes("w-full q-mt-sm"):
                     for r in results:
                         if r["status"] == "success":
                             result = r["result"]
@@ -180,18 +180,18 @@ def import_page():
 
                             if skipped_ids:
                                 ui.label(
-                                    f"{r['file']}: eleve ignore (deja existant)"
+                                    f"{r['file']}: élève ignoré (déjà existant)"
                                 ).classes("text-info")
                             elif overwritten_ids:
                                 ui.label(
-                                    f"{r['file']}: {len(eleve_ids)} eleve(s) ecrase(s)"
+                                    f"{r['file']}: {len(eleve_ids)} élève(s) écrasé(s)"
                                 ).classes("text-info")
                             elif eleve_ids:
                                 ui.label(
-                                    f"{r['file']}: {len(eleve_ids)} eleve(s) importe(s)"
+                                    f"{r['file']}: {len(eleve_ids)} élève(s) importé(s)"
                                 ).classes("text-positive")
                             elif parsed == 0:
-                                ui.label(f"{r['file']}: aucun eleve detecte").classes(
+                                ui.label(f"{r['file']}: aucun élève détecté").classes(
                                     "text-warning"
                                 )
 
@@ -203,9 +203,9 @@ def import_page():
                             )
 
                 if error_count == 0:
-                    ui.notify("Import termine. Passez aux syntheses.", type="positive")
+                    ui.notify("Import terminé. Passez aux synthèses.", type="positive")
                 elif error_count == len(results):
-                    ui.notify("Aucun fichier importe.", type="negative")
+                    ui.notify("Aucun fichier importé.", type="negative")
                 else:
                     ui.notify(
                         f"Import partiel : {len(results) - error_count} OK, "
@@ -224,12 +224,12 @@ def import_page():
         # Instructions
         with ui.expansion("Instructions").classes("w-full q-mt-md"):
             ui.markdown(
-                "1. Selectionnez la classe et le trimestre dans la barre laterale\n"
-                "2. Deposez les fichiers PDF des bulletins ci-dessus\n"
+                "1. Sélectionnez la classe et le trimestre dans la barre latérale\n"
+                "2. Déposez les fichiers PDF des bulletins ci-dessus\n"
                 "3. Cliquez sur **Importer les fichiers**\n"
-                "4. Verifiez les resultats\n"
-                "5. Passez a la page **Syntheses** pour generer et revoir\n\n"
-                "Les noms des eleves sont pseudonymises automatiquement (conformite RGPD)."
+                "4. Vérifiez les résultats\n"
+                "5. Passez à la page **Synthèses** pour générer et revoir\n\n"
+                "Les noms des élèves sont pseudonymisés automatiquement (conformité RGPD)."
             )
 
         # =============================================================
@@ -246,8 +246,8 @@ def import_page():
                 with ui.dialog() as dlg, ui.card():
                     ui.label(f"Supprimer la classe {classe_nom} ?").classes("text-h6")
                     ui.label(
-                        "Tous les eleves, syntheses et donnees associees "
-                        "seront definitivement supprimes (tous trimestres)."
+                        "Tous les élèves, synthèses et données associées "
+                        "seront définitivement supprimés (tous trimestres)."
                     ).classes("text-body2 text-grey-7")
 
                     def _confirm():
@@ -258,7 +258,7 @@ def import_page():
                             clear_classes_cache()
                             n = result["deleted_eleves"]
                             ui.notify(
-                                f"Classe {classe_nom} supprimee ({n} eleve(s))",
+                                f"Classe {classe_nom} supprimée ({n} élève(s))",
                                 type="positive",
                             )
                             ui.navigate.to("/")
@@ -296,13 +296,13 @@ def import_page():
 
                 if counts["total"] == 0:
                     ui.label(
-                        "Aucun eleve importe pour cette classe/trimestre."
+                        "Aucun élève importé pour cette classe/trimestre."
                     ).classes("text-grey-6 q-mt-sm")
                 else:
                     with ui.row().classes("gap-4 q-mt-sm"):
-                        metric_card("Eleves", counts["total"])
-                        metric_card("Syntheses", counts["with_synthese"])
-                        metric_card("Validees", counts["validated"])
+                        metric_card("Élèves", counts["total"])
+                        metric_card("Synthèses", counts["with_synthese"])
+                        metric_card("Validées", counts["validated"])
                         metric_card("Manquantes", counts["missing"])
 
                     rows = []
@@ -324,7 +324,7 @@ def import_page():
                     table = (
                         ui.table(
                             columns=[
-                                {"name": "eleve", "label": "Eleve", "field": "eleve"},
+                                {"name": "eleve", "label": "Élève", "field": "eleve"},
                                 {"name": "genre", "label": "Genre", "field": "genre"},
                                 {
                                     "name": "absences",
@@ -333,7 +333,7 @@ def import_page():
                                 },
                                 {
                                     "name": "synthese",
-                                    "label": "Synthese",
+                                    "label": "Synthèse",
                                     "field": "synthese",
                                 },
                                 {
@@ -406,7 +406,7 @@ def import_page():
                         with ui.dialog() as dlg, ui.card():
                             ui.label(f"Supprimer {name} ?").classes("text-h6")
                             ui.label(
-                                "L'eleve et ses syntheses seront definitivement supprimes."
+                                "L'élève et ses synthèses seront définitivement supprimés."
                             ).classes("text-body2 text-grey-7")
 
                             def _confirm():
@@ -414,7 +414,7 @@ def import_page():
                                 try:
                                     delete_eleve_direct(eid, trimestre)
                                     clear_eleves_cache()
-                                    ui.notify(f"{name} supprime", type="positive")
+                                    ui.notify(f"{name} supprimé", type="positive")
                                     _render_overview()
                                 except Exception as exc:
                                     ui.notify(
@@ -433,12 +433,12 @@ def import_page():
                     ui.separator().classes("q-mt-md")
 
                     if counts["missing"] > 0:
-                        ui.label(f"{counts['missing']} eleve(s) sans synthese").classes(
+                        ui.label(f"{counts['missing']} élève(s) sans synthèse").classes(
                             "text-info"
                         )
 
                     ui.button(
-                        "Generer et revoir les syntheses",
+                        "Générer et revoir les synthèses",
                         icon="arrow_forward",
                         on_click=lambda: ui.navigate.to("/syntheses"),
                     ).props("color=primary rounded").classes("q-mt-sm")

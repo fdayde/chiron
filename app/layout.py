@@ -245,7 +245,7 @@ def _render_llm_selector() -> None:
 
     with ui.row().classes("items-center gap-1"):
         ui.icon("smart_toy", size="xs").classes("text-primary")
-        ui.label("Modele IA").classes("text-weight-bold text-caption")
+        ui.label("Modèle IA").classes("text-weight-bold text-caption")
 
     provider_keys = list(LLM_PROVIDERS.keys())
     provider_options = {k: LLM_PROVIDERS[k]["name"] for k in provider_keys}
@@ -297,7 +297,7 @@ def _render_llm_selector() -> None:
 
     model_select = ui.select(
         options=model_options,
-        label="Modele",
+        label="Modèle",
         value=current_model,
         on_change=_on_model_change,
     ).classes("w-full q-mt-xs")
@@ -305,12 +305,12 @@ def _render_llm_selector() -> None:
 
 def _render_new_classe_form() -> None:
     """Formulaire de création de classe dans le drawer."""
-    niveaux = ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "Terminale"]
+    niveaux = ["6ème", "5ème", "4ème", "3ème", "2nde", "1ère", "Terminale"]
 
     niveau_select = ui.select(
         options=niveaux,
         label="Niveau",
-        value="6eme",
+        value="6ème",
     ).classes("w-full")
 
     groupe_input = ui.input(

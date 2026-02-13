@@ -24,12 +24,12 @@ from state import get_classe_id, get_llm_model, get_llm_provider, get_trimestre
 
 @ui.page("/syntheses")
 def syntheses_page(eleve: str = ""):
-    with page_layout("Generation & Review"):
+    with page_layout("Génération & Review"):
         classe_id = get_classe_id()
         trimestre = get_trimestre()
 
         if not classe_id:
-            ui.label("Selectionnez une classe dans la barre laterale.").classes(
+            ui.label("Sélectionnez une classe dans la barre latérale.").classes(
                 "text-grey-6"
             )
             return
@@ -54,10 +54,10 @@ def syntheses_page(eleve: str = ""):
 
         if counts["total"] == 0:
             ui.label(
-                "Aucun eleve dans cette classe. Importez des bulletins d'abord."
+                "Aucun élève dans cette classe. Importez des bulletins d'abord."
             ).classes("text-grey-6")
             ui.button(
-                "Aller a Classe",
+                "Aller à Classe",
                 icon="upload",
                 on_click=lambda: ui.navigate.to("/import"),
             ).props("rounded")
@@ -77,9 +77,9 @@ def syntheses_page(eleve: str = ""):
             model = get_llm_model() or ""
             try:
                 cost = estimate_total_cost(provider, model, nb)
-                return f"Cout estime : ~${cost:.4f} pour {nb} eleve(s)"
+                return f"Coût estimé : ~${cost:.4f} pour {nb} élève(s)"
             except Exception:
-                return f"{nb} eleve(s)"
+                return f"{nb} élève(s)"
 
         with ui.row().classes("items-center gap-3 q-mt-md"):
             # --- Generate missing ---
@@ -100,13 +100,13 @@ def syntheses_page(eleve: str = ""):
                     duration = result.get("duration_ms", 0)
                     if errors > 0:
                         ui.notify(
-                            f"{success} generee(s), {errors} erreur(s) "
+                            f"{success} générée(s), {errors} erreur(s) "
                             f"({duration / 1000:.0f}s)",
                             type="warning",
                         )
                     else:
                         ui.notify(
-                            f"{success} synthese(s) generee(s) ({duration / 1000:.0f}s)",
+                            f"{success} synthèse(s) générée(s) ({duration / 1000:.0f}s)",
                             type="positive",
                         )
                     ui.navigate.to("/syntheses")
@@ -116,7 +116,7 @@ def syntheses_page(eleve: str = ""):
                     gen_missing_btn.props(remove="loading")
 
             gen_missing_btn = ui.button(
-                f"Generer manquantes ({counts['missing']})",
+                f"Générer manquantes ({counts['missing']})",
                 icon="auto_awesome",
                 on_click=_generate_missing,
             ).props(
@@ -144,12 +144,12 @@ def syntheses_page(eleve: str = ""):
                     duration = result.get("duration_ms", 0)
                     if errors == 0:
                         ui.notify(
-                            f"{success} regeneree(s) ({duration / 1000:.0f}s)",
+                            f"{success} régénérée(s) ({duration / 1000:.0f}s)",
                             type="positive",
                         )
                     else:
                         ui.notify(
-                            f"{success} regeneree(s), {errors} erreur(s) "
+                            f"{success} régénérée(s), {errors} erreur(s) "
                             f"({duration / 1000:.0f}s)",
                             type="warning",
                         )
@@ -162,10 +162,10 @@ def syntheses_page(eleve: str = ""):
             async def _confirm_regen():
                 with ui.dialog() as dlg, ui.card():
                     ui.label(
-                        f"Regenerer toutes les {counts['total']} syntheses ?"
+                        f"Régénérer toutes les {counts['total']} synthèses ?"
                     ).classes("text-h6")
                     ui.label(
-                        "Les syntheses existantes seront supprimees et recreees."
+                        "Les synthèses existantes seront supprimées et recréées."
                     ).classes("text-body2 text-grey-7")
 
                     async def _do_regen():
@@ -181,7 +181,7 @@ def syntheses_page(eleve: str = ""):
                 dlg.open()
 
             regen_all_btn = ui.button(
-                "Tout regenerer",
+                "Tout régénérer",
                 icon="refresh",
                 on_click=_confirm_regen,
             ).props(
@@ -197,9 +197,9 @@ def syntheses_page(eleve: str = ""):
 
         filter_options = {
             "all": f"Tous ({counts['total']})",
-            "missing": f"Sans synthese ({counts['missing']})",
-            "pending": f"Non validees ({counts['pending']})",
-            "validated": f"Validees ({counts['validated']})",
+            "missing": f"Sans synthèse ({counts['missing']})",
+            "pending": f"Non validées ({counts['pending']})",
+            "validated": f"Validées ({counts['validated']})",
         }
 
         filter_select = ui.toggle(filter_options, value="all").classes("q-mt-md")
@@ -238,7 +238,7 @@ def syntheses_page(eleve: str = ""):
 
             if not filtered:
                 with student_container:
-                    ui.label("Aucun eleve ne correspond au filtre.").classes(
+                    ui.label("Aucun élève ne correspond au filtre.").classes(
                         "text-grey-6"
                     )
                 return
@@ -293,7 +293,7 @@ def syntheses_page(eleve: str = ""):
                 with ui.row().classes("items-center gap-3"):
                     ui.label(display_name).classes("text-h5")
                     if current.get("synthese_status") == "validated":
-                        ui.badge("validee", color="positive").props("rounded")
+                        ui.badge("validée", color="positive").props("rounded")
                     elif current.get("has_synthese"):
                         ui.badge("en attente", color="warning").props("rounded")
                 ui.label(f"ID: {eleve_id}").classes("text-caption text-grey-7")
@@ -301,17 +301,17 @@ def syntheses_page(eleve: str = ""):
                 # Two columns: Appreciations | Synthese
                 with ui.row().classes("w-full gap-4 q-mt-md"):
                     with ui.column().classes("flex-1"):
-                        ui.label("Appreciations").classes("text-h6")
+                        ui.label("Appréciations").classes("text-h6")
                         if eleve_full:
                             eleve_header(eleve_full)
                             appreciations(eleve_full)
                         else:
-                            ui.label("Donnees eleve non disponibles").classes(
+                            ui.label("Données élève non disponibles").classes(
                                 "text-warning"
                             )
 
                     with ui.column().classes("flex-1"):
-                        ui.label("Synthese").classes("text-h6")
+                        ui.label("Synthèse").classes("text-h6")
 
                         # Read LLM state from sidebar
                         provider = get_llm_provider()
@@ -386,12 +386,12 @@ def syntheses_page(eleve: str = ""):
             "rounded color=positive"
         ).classes("w-full")
         ui.label(
-            f"Progression : {counts['validated']}/{counts['total']} validees"
+            f"Progression : {counts['validated']}/{counts['total']} validées"
         ).classes("text-caption text-grey-7")
 
         if counts["validated"] > 0:
             ui.button(
-                "Aller a Export",
+                "Aller à Export",
                 icon="arrow_forward",
                 on_click=lambda: ui.navigate.to("/export"),
             ).props("color=primary rounded").classes("q-mt-sm")
