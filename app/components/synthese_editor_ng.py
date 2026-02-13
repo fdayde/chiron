@@ -53,7 +53,7 @@ def _build_insights_text(synthese: dict) -> str:
     if axes:
         if parts:
             parts.append("")
-        parts.append("STRATÉGIES D'APPRENTISSAGE :")
+        parts.append("CONSEILS & PISTES DE PROGRESSION :")
         for axe in axes:
             parts.append(f"  - {axe}")
 
@@ -87,14 +87,14 @@ def _render_insights_panel(synthese: dict) -> None:
         .style("user-select: text; cursor: text;")
     ):
         with ui.row().classes("w-full items-center justify-between q-mb-xs"):
-            ui.label("Insights").classes("text-weight-bold text-body2")
+            ui.label("Analyse").classes("text-weight-bold text-body2")
             ui.button(
                 icon="content_copy",
                 on_click=lambda: ui.run_javascript(
                     f"navigator.clipboard.writeText({json.dumps(insights_text)})"
                     ".then(() => null)"
                 ),
-            ).props("flat dense size=sm").tooltip("Copier les insights")
+            ).props("flat dense size=sm").tooltip("Copier l'analyse")
 
         # Alertes
         alertes = synthese.get("alertes", [])
@@ -120,17 +120,17 @@ def _render_insights_panel(synthese: dict) -> None:
                     f"  {reussite.get('matiere', '?')} : {reussite.get('description', '')}"
                 ).classes("text-caption text-green").style("user-select: text;")
 
-        # Engagement + Strategies
+        # Conseils & pistes de progression
         posture = synthese.get("posture_generale")
         axes = synthese.get("axes_travail", [])
         if posture or axes:
             with ui.row().classes("items-center gap-1 q-mt-xs q-mb-xs"):
                 ui.icon("psychology", size="xs").classes("text-blue")
-                ui.label("Engagement & stratégies").classes(
+                ui.label("Conseils & pistes de progression").classes(
                     "text-weight-bold text-caption"
                 )
             if posture:
-                ui.label(f"  Profil : {posture}").classes("text-caption").style(
+                ui.label(f"  Profil engagé : {posture}").classes("text-caption").style(
                     "user-select: text;"
                 )
             for axe in axes:
@@ -186,7 +186,7 @@ def synthese_editor(
         on_action: Callback invoked after any successful action (for refresh).
     """
     if not synthese:
-        ui.label("Aucune synthese generee pour cet eleve.").classes(
+        ui.label("Aucune synthèse générée pour cet élève.").classes(
             "text-grey-6 q-mb-sm"
         )
 
@@ -203,7 +203,7 @@ def synthese_editor(
                 meta = result.get("metadata", {})
                 tokens = meta.get("tokens_total", "?")
                 cost = meta.get("cost_usd", 0)
-                ui.notify(f"Generee ({tokens} tokens, ${cost:.4f})", type="positive")
+                ui.notify(f"Générée ({tokens} tokens, ${cost:.4f})", type="positive")
                 clear_eleves_cache()
                 if on_action:
                     on_action()
@@ -212,7 +212,7 @@ def synthese_editor(
             finally:
                 gen_btn.props(remove="loading")
 
-        gen_btn = ui.button("Generer", icon="auto_awesome", on_click=_generate).props(
+        gen_btn = ui.button("Générer", icon="auto_awesome", on_click=_generate).props(
             "color=primary rounded"
         )
         return
@@ -224,14 +224,28 @@ def synthese_editor(
     )
     text_area = (
         ui.textarea(
-            label="Texte de la synthese",
+            label="Texte de la synthèse",
             value=synthese_texte,
         )
         .classes("w-full")
         .props("rows=8")
+        .style("line-height: 1.8")
     )
 
-    # Insights panel (selectable + copiable)
+    # Modification indicator
+    modified_label = ui.label("Modifié").classes(
+        "text-caption text-orange q-mt-xs hidden"
+    )
+
+    def _on_text_change(e):
+        if e.value != synthese_texte:
+            modified_label.set_visibility(True)
+        else:
+            modified_label.set_visibility(False)
+
+    text_area.on_value_change(_on_text_change)
+
+    # Analyse panel (selectable + copiable)
     _render_insights_panel(synthese)
 
     ui.separator().classes("q-my-sm")
@@ -248,7 +262,7 @@ def synthese_editor(
                 if new_text != synthese_texte:
                     await run.io_bound(update_synthese_direct, synthese_id, new_text)
                 await run.io_bound(validate_synthese_direct, synthese_id)
-                ui.notify("Validee", type="positive")
+                ui.notify("Validée", type="positive")
                 clear_eleves_cache()
                 if on_action:
                     on_action()
@@ -276,7 +290,7 @@ def synthese_editor(
                 )
                 meta = result.get("metadata", {})
                 tokens = meta.get("tokens_total", "?")
-                ui.notify(f"Regeneree ({tokens} tokens)", type="positive")
+                ui.notify(f"Régénérée ({tokens} tokens)", type="positive")
                 clear_eleves_cache()
                 if on_action:
                     on_action()
@@ -285,6 +299,6 @@ def synthese_editor(
             finally:
                 regen_btn.props(remove="loading")
 
-        regen_btn = ui.button("Regenerer", icon="refresh", on_click=_regenerate).props(
+        regen_btn = ui.button("Régénérer", icon="refresh", on_click=_regenerate).props(
             "outline color=orange rounded"
         )

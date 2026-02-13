@@ -90,6 +90,17 @@ def post_build(dry_run: bool = False) -> None:
     if not dry_run and internal_env.exists():
         internal_env.unlink()
 
+    # Copy demo PDF into data/demo/ if it exists in the source tree
+    demo_pdf_src = ROOT / "data" / "demo" / "bulletin_fictif.pdf"
+    demo_dir = DIST / "data" / "demo"
+    demo_pdf_dst = demo_dir / "bulletin_fictif.pdf"
+    if demo_pdf_src.exists():
+        print(f"{'[DRY-RUN] ' if dry_run else ''}Creating {demo_dir}")
+        print(f"{'[DRY-RUN] ' if dry_run else ''}Copying demo PDF {demo_pdf_dst}")
+        if not dry_run:
+            demo_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(demo_pdf_src, demo_pdf_dst)
+
 
 def print_instructions() -> None:
     """Print post-build instructions."""

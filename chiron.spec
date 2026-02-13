@@ -210,6 +210,15 @@ a = Analysis(
 a.binaries = strip_cuda(a.binaries)
 
 # ---------------------------------------------------------------------------
+# Splash screen — shown while Python loads
+# ---------------------------------------------------------------------------
+splash = Splash(
+    str(ROOT / "app" / "static" / "chiron_logo.png"),
+    binaries=a.binaries,
+    datas=a.datas,
+)
+
+# ---------------------------------------------------------------------------
 # PYZ / EXE / COLLECT
 # ---------------------------------------------------------------------------
 pyz = PYZ(a.pure, cipher=block_cipher)
@@ -217,6 +226,8 @@ pyz = PYZ(a.pure, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    splash,
+    splash.binaries,
     [],
     exclude_binaries=True,
     name=f"chiron-{_VERSION}",
@@ -231,6 +242,7 @@ coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
+    splash.datas,
     strip=False,
     upx=True,
     upx_exclude=[],

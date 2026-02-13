@@ -214,6 +214,9 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 
+# Demo data (versionned)
+!data/demo/
+
 data/*.xlsx
 
 # Batch results and reports (in data/processed only)

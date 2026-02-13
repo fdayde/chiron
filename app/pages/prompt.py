@@ -1,5 +1,7 @@
 """Page Prompt — Affiche le prompt de génération."""
 
+import json
+
 from cache import fetch_fewshot_count
 from layout import page_layout
 from nicegui import ui
@@ -35,7 +37,7 @@ def prompt_page():
         # --- Message flow diagram ---
         with ui.row().classes("items-center gap-2"):
             ui.icon("forum").classes("text-primary")
-            ui.label("Structure des messages envoyes au LLM").classes("text-h6")
+            ui.label("Structure des messages envoyés au LLM").classes("text-h6")
 
         # Few-shot count
         classe_id = get_classe_id()
@@ -51,13 +53,13 @@ def prompt_page():
             for i in range(fewshot_count):
                 n = i + 1
                 flow_lines.append(
-                    f"{len(flow_lines) + 1}.  [user]       Few-shot exemple {n} — donnees eleve"
+                    f"{len(flow_lines) + 1}.  [user]       Few-shot exemple {n} — données élève"
                 )
                 flow_lines.append(
-                    f"{len(flow_lines) + 1}.  [assistant]  Few-shot exemple {n} — synthese validee"
+                    f"{len(flow_lines) + 1}.  [assistant]  Few-shot exemple {n} — synthèse validée"
                 )
         flow_lines.append(
-            f"{len(flow_lines) + 1}.  [user]       Eleve cible — donnees du bulletin"
+            f"{len(flow_lines) + 1}.  [user]       Élève cible — données du bulletin"
         )
 
         with (
@@ -74,7 +76,7 @@ def prompt_page():
             else:
                 ui.label(
                     "Aucun exemple few-shot — cochez « Utiliser comme exemple » "
-                    "sur des syntheses validees pour calibrer le style."
+                    "sur des synthèses validées pour calibrer le style."
                 ).classes("text-caption text-orange q-mt-xs")
 
         ui.separator().classes("q-my-md")
@@ -83,7 +85,14 @@ def prompt_page():
         with ui.row().classes("items-center gap-2"):
             ui.icon("settings").classes("text-primary")
             ui.label("System prompt").classes("text-h6")
-        ui.label("Instructions envoyees au LLM avant les donnees de l'eleve.").classes(
+            ui.button(
+                icon="content_copy",
+                on_click=lambda: ui.run_javascript(
+                    f"navigator.clipboard.writeText({json.dumps(template['system'])})"
+                    ".then(() => null)"
+                ),
+            ).props("flat dense size=sm").tooltip("Copier le system prompt")
+        ui.label("Instructions envoyées au LLM avant les données de l'élève.").classes(
             "text-caption text-grey-6"
         )
         ui.code(template["system"]).classes("w-full q-mt-sm")
@@ -94,8 +103,15 @@ def prompt_page():
         with ui.row().classes("items-center gap-2"):
             ui.icon("person").classes("text-primary")
             ui.label("User prompt (template)").classes("text-h6")
+            ui.button(
+                icon="content_copy",
+                on_click=lambda: ui.run_javascript(
+                    f"navigator.clipboard.writeText({json.dumps(template['user'])})"
+                    ".then(() => null)"
+                ),
+            ).props("flat dense size=sm").tooltip("Copier le user template")
         ui.label(
-            "Message envoye pour chaque eleve. "
-            "{eleve_data} est remplace par les donnees du bulletin."
+            "Message envoyé pour chaque élève. "
+            "{eleve_data} est remplacé par les données du bulletin."
         ).classes("text-caption text-grey-6")
         ui.code(template["user"]).classes("w-full q-mt-sm")

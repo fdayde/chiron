@@ -9,7 +9,6 @@ from cache import (
     fetch_eleves_with_syntheses,
     get_status_counts,
 )
-from components.metric_card_ng import metric_card
 from layout import page_layout
 from nicegui import ui
 from state import get_classe_id, get_trimestre
@@ -22,7 +21,7 @@ def export_page():
         trimestre = get_trimestre()
 
         if not classe_id:
-            ui.label("Selectionnez une classe dans la barre laterale.").classes(
+            ui.label("Sélectionnez une classe dans la barre latérale.").classes(
                 "text-grey-6"
             )
             return
@@ -41,10 +40,6 @@ def export_page():
         # RECAPITULATIF
         # =============================================================
 
-        with ui.row().classes("items-center gap-2 q-mt-md"):
-            ui.icon("assessment").classes("text-primary")
-            ui.label("Recapitulatif").classes("text-h6")
-
         try:
             eleves_data = fetch_eleves_with_syntheses(classe_id, trimestre)
             counts = get_status_counts(eleves_data)
@@ -52,23 +47,29 @@ def export_page():
             ui.label(f"Erreur: {e}").classes("text-negative")
             return
 
-        with ui.row().classes("gap-4 q-mt-md"):
-            metric_card("Eleves", counts["total"])
-            metric_card("Syntheses generees", counts["with_synthese"])
-            metric_card("Syntheses validees", counts["validated"])
-            metric_card("En attente", counts["pending"])
-
-        # Cost stats
+        # Recapitulatif + couts sur une seule ligne
         stats = fetch_classe_stats(classe_id, trimestre)
-        if stats:
-            with ui.row().classes("items-center gap-2 q-mt-md"):
-                ui.icon("payments").classes("text-primary")
-                ui.label("Couts de generation").classes("text-h6")
-            with ui.row().classes("gap-4"):
-                metric_card("Tokens entree", f"{stats.get('tokens_input', 0):,}")
-                metric_card("Tokens sortie", f"{stats.get('tokens_output', 0):,}")
-                metric_card("Tokens total", f"{stats.get('tokens_total', 0):,}")
-                metric_card("Cout total", f"${stats.get('cost_usd', 0):.4f}")
+        with ui.row().classes("items-center gap-4 q-mt-md flex-wrap"):
+            ui.label(
+                f"{counts['total']} élèves · "
+                f"{counts['with_synthese']} générées · "
+                f"{counts['validated']} validées · "
+                f"{counts['pending']} en attente"
+            ).classes("text-body2")
+
+            if stats:
+                cost_usd = stats.get("cost_usd", 0)
+                tokens_in = stats.get("tokens_input", 0)
+                tokens_out = stats.get("tokens_output", 0)
+                tokens_total = stats.get("tokens_total", 0)
+                cost_label = ui.label(f"Coût total : ${cost_usd:.4f}").classes(
+                    "text-body2 text-weight-bold"
+                )
+                cost_label.tooltip(
+                    f"Tokens entrée : {tokens_in:,} · "
+                    f"Tokens sortie : {tokens_out:,} · "
+                    f"Tokens total : {tokens_total:,}"
+                )
 
         ui.separator()
 
@@ -81,7 +82,7 @@ def export_page():
                 e["eleve_id"] for e in eleves_data if not e.get("has_synthese")
             ]
             with ui.card().classes("w-full bg-orange-10 q-mt-md"):
-                ui.label(f"{counts['missing']} eleve(s) sans synthese").classes(
+                ui.label(f"{counts['missing']} élève(s) sans synthèse").classes(
                     "text-weight-bold text-warning"
                 )
                 ui.label(f"IDs: {', '.join(missing_ids[:10])}").classes(
@@ -92,7 +93,7 @@ def export_page():
                         "text-caption text-grey-7"
                     )
                 ui.button(
-                    "Aller generer",
+                    "Aller générer",
                     icon="arrow_forward",
                     on_click=lambda: ui.navigate.to("/syntheses"),
                 ).props("flat size=sm rounded")
@@ -104,7 +105,7 @@ def export_page():
                 if e.get("has_synthese") and e.get("synthese_status") != "validated"
             ]
             with ui.card().classes("w-full bg-blue-10 q-mt-md"):
-                ui.label(f"{counts['pending']} synthese(s) non validee(s)").classes(
+                ui.label(f"{counts['pending']} synthèse(s) non validée(s)").classes(
                     "text-weight-bold text-info"
                 )
                 ui.label(f"IDs: {', '.join(pending_ids[:10])}").classes(
@@ -117,17 +118,17 @@ def export_page():
 
         if counts["total"] == 0:
             ui.label(
-                "Aucun eleve importe. Commencez par importer des bulletins."
+                "Aucun élève importé. Commencez par importer des bulletins."
             ).classes("text-grey-6 q-mt-md")
             ui.button(
-                "Aller a Import",
+                "Aller à Classe",
                 icon="upload",
                 on_click=lambda: ui.navigate.to("/import"),
             ).props("rounded")
             return
 
         if counts["validated"] == 0:
-            ui.label("Aucune synthese validee a exporter.").classes(
+            ui.label("Aucune synthèse validée à exporter.").classes(
                 "text-warning q-mt-md"
             )
             ui.button(
@@ -137,17 +138,7 @@ def export_page():
             ).props("rounded")
             return
 
-        ui.separator()
-
-        # =============================================================
-        # PREVIEW
-        # =============================================================
-
-        with ui.row().classes("items-center gap-2 q-mt-md"):
-            ui.icon("visibility").classes("text-primary")
-            ui.label("Apercu").classes("text-h6")
-
-        # Load syntheses for preview
+        # Load syntheses for preview & export
         syntheses_data = []
         for eleve in eleves_data:
             if not eleve.get("has_synthese"):
@@ -170,10 +161,85 @@ def export_page():
             except Exception:
                 pass
 
+        # =============================================================
+        # EXPORT (above preview)
+        # =============================================================
+
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("download").classes("text-primary")
+            ui.label("Export").classes("text-h6")
+
+        with ui.row().classes("w-full gap-8"):
+            # CSV export
+            with ui.column().classes("flex-1"):
+                ui.label("CSV").classes("text-h6")
+                ui.label("Export des synthèses validées au format CSV").classes(
+                    "text-caption text-grey-7"
+                )
+
+                if counts["validated"] == 0:
+                    ui.label("Aucune synthèse validée").classes("text-warning")
+                else:
+
+                    async def _download_csv():
+                        url = f"/export/csv?classe_id={classe_id}&trimestre={trimestre}"
+                        await ui.run_javascript(
+                            f'window.open("{url}", "_blank")',
+                        )
+
+                    ui.button(
+                        f"Télécharger CSV ({counts['validated']} synthèses)",
+                        icon="download",
+                        on_click=_download_csv,
+                    ).props("color=primary rounded")
+
+            # Clipboard copy
+            with ui.column().classes("flex-1"):
+                ui.label("Presse-papiers").classes("text-h6")
+                ui.label("Copier les synthèses pour coller dans un document").classes(
+                    "text-caption text-grey-7"
+                )
+
+                async def _copy_to_clipboard():
+                    validated = [
+                        s for s in syntheses_data if s["status"] == "validated"
+                    ]
+                    lines = []
+                    for item in validated:
+                        lines.append(f"# {item['display_name']}")
+                        lines.append(item["synthese"].get("synthese_texte", ""))
+                        lines.append("")
+                    text = "\n".join(lines)
+                    escaped = (
+                        text.replace("\\", "\\\\")
+                        .replace("`", "\\`")
+                        .replace("$", "\\$")
+                    )
+                    await ui.run_javascript(
+                        f"navigator.clipboard.writeText(`{escaped}`)"
+                    )
+                    ui.notify("Copie dans le presse-papiers", type="positive")
+
+                ui.button(
+                    "Copier dans le presse-papiers",
+                    icon="content_copy",
+                    on_click=_copy_to_clipboard,
+                ).props("outline rounded")
+
+        ui.separator().classes("q-mt-md")
+
+        # =============================================================
+        # PREVIEW
+        # =============================================================
+
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("visibility").classes("text-primary")
+            ui.label("Aperçu").classes("text-h6")
+
         # Filter
         filter_options = {
             "all": "Toutes",
-            "validated": "Validees uniquement",
+            "validated": "Validées uniquement",
             "pending": "En attente uniquement",
         }
         preview_filter = ui.select(
@@ -195,7 +261,7 @@ def export_page():
                 filtered = syntheses_data
 
             with preview_container:
-                ui.label(f"{len(filtered)} synthese(s)").classes(
+                ui.label(f"{len(filtered)} synthèse(s)").classes(
                     "text-caption text-grey-7"
                 )
 
@@ -232,70 +298,3 @@ def export_page():
 
         preview_filter.on_value_change(lambda _: _render_preview())
         _render_preview()
-
-        ui.separator()
-
-        # =============================================================
-        # EXPORT
-        # =============================================================
-
-        with ui.row().classes("items-center gap-2 q-mt-md"):
-            ui.icon("download").classes("text-primary")
-            ui.label("Export").classes("text-h6")
-
-        with ui.row().classes("w-full gap-8"):
-            # CSV export
-            with ui.column().classes("flex-1"):
-                ui.label("CSV").classes("text-h6")
-                ui.label("Export des syntheses validees au format CSV").classes(
-                    "text-caption text-grey-7"
-                )
-
-                if counts["validated"] == 0:
-                    ui.label("Aucune synthese validee").classes("text-warning")
-                else:
-
-                    async def _download_csv():
-                        url = f"/export/csv?classe_id={classe_id}&trimestre={trimestre}"
-                        await ui.run_javascript(
-                            f'window.open("{url}", "_blank")',
-                        )
-
-                    ui.button(
-                        f"Telecharger CSV ({counts['validated']} syntheses)",
-                        icon="download",
-                        on_click=_download_csv,
-                    ).props("color=primary rounded")
-
-            # Clipboard copy
-            with ui.column().classes("flex-1"):
-                ui.label("Presse-papiers").classes("text-h6")
-                ui.label("Copier les syntheses pour coller dans un document").classes(
-                    "text-caption text-grey-7"
-                )
-
-                async def _copy_to_clipboard():
-                    validated = [
-                        s for s in syntheses_data if s["status"] == "validated"
-                    ]
-                    lines = []
-                    for item in validated:
-                        lines.append(f"# {item['display_name']}")
-                        lines.append(item["synthese"].get("synthese_texte", ""))
-                        lines.append("")
-                    text = "\n".join(lines)
-                    escaped = (
-                        text.replace("\\", "\\\\")
-                        .replace("`", "\\`")
-                        .replace("$", "\\$")
-                    )
-                    await ui.run_javascript(
-                        f"navigator.clipboard.writeText(`{escaped}`)"
-                    )
-                    ui.notify("Copie dans le presse-papiers", type="positive")
-
-                ui.button(
-                    "Copier dans le presse-papiers",
-                    icon="content_copy",
-                    on_click=_copy_to_clipboard,
-                ).props("outline rounded")

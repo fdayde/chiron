@@ -29,8 +29,9 @@ def extract_pdf_content(pdf_path: str | Path) -> PDFContent:
 
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            # Tables
-            page_tables = page.extract_tables()
+            # Tables — snap_x_tolerance fusionne les bordures proches
+            # pour éviter les micro-colonnes parasites (ex: bordures Word)
+            page_tables = page.extract_tables(table_settings={"snap_x_tolerance": 10})
             if page_tables:
                 tables.extend(page_tables)
             # Text

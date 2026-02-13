@@ -55,6 +55,15 @@ if __name__ == "__main__":
     from src.core.constants import ensure_data_directories
     from src.storage.connection import managed_connection
 
+    # --- Close PyInstaller splash screen (frozen mode only) ---
+    if getattr(sys, "frozen", False):
+        try:
+            import pyi_splash  # type: ignore[import-not-found]
+
+            pyi_splash.close()
+        except ImportError:
+            pass
+
     # --- Ensure data directories exist ---
     ensure_data_directories()
 
