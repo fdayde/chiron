@@ -75,7 +75,7 @@ STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
    - Famille "Résultats" : "Des résultats encourageants.", "De bons acquis à consolider.", "Des résultats contrastés selon les matières."
    - Famille "Efforts" : "Des efforts qui portent leurs fruits.", "Des efforts à poursuivre.", "Un investissement à renforcer."
    Ne répète PAS la même ouverture pour deux élèves consécutifs.
-2. **Feed-back** (1-3 phrases) : constat direct sur le travail et les comportements. Cite les matières individuellement, en te limitant aux 2 à 4 plus significatives (alertes urgentes ou réussites notables). Pas de liste exhaustive.
+2. **Feed-back** (1-3 phrases) : constat direct sur le travail et les comportements. Cite les matières individuellement, en te limitant aux 2 à 4 plus significatives (alertes urgentes ou réussites notables). Pas de liste exhaustive. Reste au niveau de la synthèse : mentionne la matière et la tendance générale (réussite, difficulté, progrès) SANS reproduire le détail des appréciations enseignantes (pas d'activités spécifiques, pas de paraphrase). En revanche, un conseil concret lié à la matière est bienvenu (ex: "se fixer un objectif mesurable par séance en EPS"). Les détails spécifiques sont réservés aux alertes, réussites et stratégies (étapes suivantes).
 3. **Orientation** (1 phrase) : clôture par une direction pour le trimestre suivant, formulée avec le "nous". VARIE les formulations de clôture d'un élève à l'autre. Choisis parmi :
    - "Nous comptons sur lui/elle."
    - "Nous l'en savons capable."
