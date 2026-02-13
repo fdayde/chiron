@@ -94,6 +94,11 @@ def parse_raw_tables(tables: list) -> list[MatiereExtraction]:
 
     matieres = []
     for table in tables:
+        # Tables à 1 ligne = fragments de métadonnées (ex: nom élève),
+        # pas des données de matières
+        if len(table) < 2:
+            continue
+
         for row in table:
             if not row or len(row) < 2:
                 continue
