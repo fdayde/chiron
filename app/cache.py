@@ -143,6 +143,19 @@ def fetch_eleve(eleve_id: str) -> dict | None:
     return e.model_dump() if e else None
 
 
+def fetch_eleve_depseudo(eleve_id: str, classe_id: str) -> dict | None:
+    """Récupère un élève avec appréciations dépseudonymisées."""
+    data = fetch_eleve(eleve_id)
+    if not data:
+        return None
+    pseudonymizer = get_pseudonymizer()
+    for matiere in data.get("matieres", []):
+        appr = matiere.get("appreciation")
+        if appr:
+            matiere["appreciation"] = pseudonymizer.depseudonymize_text(appr, classe_id)
+    return data
+
+
 @cached(_eleve_synthese_cache, lock=_lock)
 def fetch_eleve_synthese(eleve_id: str, trimestre: int) -> dict:
     """Récupère la synthèse d'un élève (cache 30s).

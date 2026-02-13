@@ -5,7 +5,7 @@ from __future__ import annotations
 from cache import (
     clear_eleves_cache,
     fetch_classe,
-    fetch_eleve,
+    fetch_eleve_depseudo,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
     fetch_fewshot_count,
@@ -272,7 +272,7 @@ def syntheses_page(eleve: str = ""):
 
                 # Fetch full student data
                 try:
-                    eleve_full = fetch_eleve(eleve_id)
+                    eleve_full = fetch_eleve_depseudo(eleve_id, classe_id)
                 except Exception:
                     eleve_full = None
 
