@@ -25,7 +25,7 @@ from src.document.anonymizer import (
     extract_eleve_name,
     ner_check_student_names,
 )
-from src.document.validation import validate_extraction
+from src.document.validation import check_classe_mismatch, validate_extraction
 from src.llm.config import settings
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.storage.repositories.classe import ClasseRepository
@@ -273,6 +273,11 @@ def _import_single_pdf(
             validation.errors[0],
             details={"filename": pdf_path.name, "all_errors": validation.errors},
         )
+
+    # 4b. Check classe mismatch (PDF vs user selection)
+    classe_warning = check_classe_mismatch(eleve.classe, classe_id)
+    if classe_warning:
+        validation.warnings.append(classe_warning)
 
     # 5. Set trimestre and classe
     eleve.trimestre = trimestre
