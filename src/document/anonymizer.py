@@ -54,7 +54,9 @@ def _get_ner_pipeline():
 def extract_eleve_name(pdf_path: str | Path) -> dict | None:
     """Extrait le nom de l'élève depuis le PDF.
 
-    Recherche le pattern "Élève : <nom>" et parse en nom/prénom.
+    Deux stratégies chaînées :
+    1. "Élève : NOM Prénom" (bulletins de test)
+    2. "NOM Prénom\\nNé(e) le" (PRONOTE réel)
 
     Args:
         pdf_path: Chemin vers le fichier PDF.
@@ -69,17 +71,43 @@ def extract_eleve_name(pdf_path: str | Path) -> dict | None:
         for page in pdf.pages:
             text_complet += (page.extract_text() or "") + "\n"
 
-        # Pattern: "Élève : NOM" ou "Elève : NOM" (case insensitive)
+        # Stratégie 1 : "Élève : NOM Prénom" (bulletins de test)
         match = re.search(r"[ÉE]l[èe]ve\s*:\s*([^\n]+)", text_complet, re.IGNORECASE)
+
+        # Stratégie 2 : "NOM Prénom" avant "Né(e) le" (PRONOTE réel)
+        # Le prénom (casse mixte) discrimine vs ville/CP (tout majuscules).
+        # Le regex échoue sur les mots tout-MAJUSCULES comme "BOUILLARGUES"
+        # car [a-zà-ü]+ exige des minuscules après la première lettre.
+        if not match:
+            match = re.search(
+                r"([A-ZÀ-Ü][-A-ZÀ-Ü]+\s+[A-Za-zÀ-ü][a-zà-ü]+(?:-[A-Za-zÀ-ü][a-zà-ü]+)*)\s*\n\s*Né[e]?\s+le",
+                text_complet,
+            )
+
         if not match:
             return None
 
         nom_complet = match.group(1).strip()
-
-        # Parser nom/prénom (heuristique: premier mot = prénom)
         parts = nom_complet.split()
-        prenom = parts[0] if parts else None
-        nom = " ".join(parts[1:]) if len(parts) > 1 else parts[0] if parts else None
+
+        # Déterminer nom/prénom selon le format détecté
+        # Stratégie 1 : "Marie Dupont" → prenom=Marie, nom=Dupont
+        # Stratégie 2 : "AMET Lenny" → nom=AMET (majuscules), prenom=Lenny
+        if parts and all(c.isupper() or not c.isalpha() for c in parts[0]):
+            # Premier mot tout en majuscules → format PRONOTE : NOM Prénom
+            nom_parts = []
+            prenom_parts = []
+            for part in parts:
+                if all(c.isupper() or not c.isalpha() for c in part):
+                    nom_parts.append(part)
+                else:
+                    prenom_parts.append(part)
+            nom = " ".join(nom_parts) if nom_parts else parts[0]
+            prenom = " ".join(prenom_parts) if prenom_parts else None
+        else:
+            # Format test : Prénom Nom
+            prenom = parts[0] if parts else None
+            nom = " ".join(parts[1:]) if len(parts) > 1 else parts[0] if parts else None
 
         # Extraire le genre si présent
         genre = None

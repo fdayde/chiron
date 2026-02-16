@@ -3,6 +3,7 @@
 import csv
 import io
 import logging
+import re
 import tempfile
 from datetime import date
 from pathlib import Path
@@ -18,6 +19,7 @@ from src.api.dependencies import (
     get_synthese_repo,
 )
 from src.core.exceptions import ParserError
+from src.core.models import EleveExtraction
 from src.document import ParserType, get_parser
 from src.document.anonymizer import anonymize_pdf, extract_eleve_name
 from src.document.validation import validate_extraction
@@ -126,6 +128,75 @@ def export_csv(
     )
 
 
+def _pseudonymize_extraction(
+    eleve: EleveExtraction,
+    identity: dict,
+    eleve_id: str,
+) -> None:
+    """Pseudonymise les champs texte d'une extraction en remplaçant le nom par eleve_id.
+
+    Remplace toutes les variantes du nom de l'élève (nom complet, prénom seul,
+    nom seul) dans les appréciations et le texte brut.
+
+    Args:
+        eleve: Extraction à pseudonymiser (modifiée in-place).
+        identity: Dict avec 'nom', 'prenom', 'nom_complet'.
+        eleve_id: Identifiant pseudonyme (ex: "ELEVE_001").
+    """
+    nom = identity.get("nom", "")
+    prenom = identity.get("prenom", "")
+    nom_complet = identity.get("nom_complet", "")
+
+    # Build variants to replace (longest first to avoid partial matches)
+    variants = []
+    if nom_complet:
+        variants.append(nom_complet)
+    if prenom and nom:
+        variants.append(f"{prenom} {nom}")
+        variants.append(f"{nom} {prenom}")
+    if nom:
+        variants.append(nom)
+    if prenom:
+        variants.append(prenom)
+
+    # Deduplicate while preserving order (longest-first)
+    seen: set[str] = set()
+    unique_variants: list[str] = []
+    for v in variants:
+        v_lower = v.lower()
+        if v_lower not in seen:
+            seen.add(v_lower)
+            unique_variants.append(v)
+
+    if not unique_variants:
+        return
+
+    # Compile patterns once
+    patterns = [
+        re.compile(rf"\b{re.escape(v)}\b", re.IGNORECASE) for v in unique_variants
+    ]
+
+    def replace_names(text: str) -> str:
+        if not text:
+            return text
+        for pattern in patterns:
+            text = pattern.sub(eleve_id, text)
+        return text
+
+    # Pseudonymize appreciations
+    for matiere in eleve.matieres:
+        if matiere.appreciation:
+            matiere.appreciation = replace_names(matiere.appreciation)
+
+    # Pseudonymize raw_text
+    if eleve.raw_text:
+        eleve.raw_text = replace_names(eleve.raw_text)
+
+    # Pseudonymize appreciation_generale if present
+    if eleve.appreciation_generale:
+        eleve.appreciation_generale = replace_names(eleve.appreciation_generale)
+
+
 def _import_single_pdf(
     pdf_path: Path,
     classe_id: str,
@@ -169,29 +240,22 @@ def _import_single_pdf(
     eleve_id = pseudonymizer.create_eleve_id(nom, prenom, classe_id)
     logger.info(f"Created/found eleve_id: {eleve_id} for {prenom} {nom}")
 
-    # 3. Anonymize PDF
-    pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
-    logger.info(f"PDF anonymized ({len(pdf_bytes)} bytes)")
-
-    # 4. Parse PDF (pdfplumber or Mistral OCR)
+    # 3. Parse PDF
     parser_type = ParserType(settings.pdf_parser_type.lower())
     parser = get_parser(parser_type)
 
     if parser_type == ParserType.MISTRAL_OCR:
-        # Mistral OCR accepts bytes directly
+        # Cloud OCR: anonymize PDF before sending to external API (privacy)
+        pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
+        logger.info(f"PDF anonymized for OCR ({len(pdf_bytes)} bytes)")
         eleve = parser.parse(pdf_bytes, eleve_id, genre=genre)
     else:
-        # pdfplumber needs a file path, save anonymized PDF temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(pdf_bytes)
-            tmp_anon_path = Path(tmp.name)
+        # Local parser: parse original PDF, then pseudonymize text fields
+        eleve = parser.parse(pdf_path, eleve_id, genre=genre)
+        _pseudonymize_extraction(eleve, identity, eleve_id)
+        logger.info(f"Text fields pseudonymized for {eleve_id}")
 
-        try:
-            eleve = parser.parse(tmp_anon_path, eleve_id, genre=genre)
-        finally:
-            tmp_anon_path.unlink(missing_ok=True)
-
-    # 5. Validate extraction
+    # 4. Validate extraction
     validation = validate_extraction(eleve)
     if not validation.is_valid:
         raise ParserError(
@@ -199,11 +263,11 @@ def _import_single_pdf(
             details={"filename": pdf_path.name, "all_errors": validation.errors},
         )
 
-    # 6. Set trimestre and classe
+    # 5. Set trimestre and classe
     eleve.trimestre = trimestre
     eleve.classe = classe_id
 
-    # 7. Store in database (overwrite if exists)
+    # 6. Store in database (overwrite if exists)
     was_overwritten = False
     if eleve_repo.exists(eleve_id, trimestre):
         if not force_overwrite:

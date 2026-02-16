@@ -1,83 +1,36 @@
 """Parser PDF utilisant pdfplumber avec extraction de données structurées.
 
+Legacy parser — conservé pour rétrocompatibilité avec PDF_PARSER_TYPE=pdfplumber.
+Les utilitaires partagés (extract_key_value, extract_number, etc.) ont été
+déplacés vers parser.py. Ce module les réexporte pour ne pas casser les imports.
+
 Extrait les données structurées (notes, appréciations, absences, etc.)
 à partir d'un PDF déjà anonymisé.
 """
 
 import logging
-import re
 from pathlib import Path
 
 from src.core.models import EleveExtraction, MatiereExtraction
-from src.document.parser import extract_pdf_content
+from src.document.parser import (
+    extract_key_value,
+    extract_note_pair,
+    extract_number,
+    extract_pdf_content,
+    parse_engagements,
+)
+
+# Réexports pour rétrocompatibilité
+__all__ = [
+    "extract_key_value",
+    "extract_number",
+    "extract_note_pair",
+    "parse_engagements",
+    "parse_raw_tables",
+    "PdfplumberParser",
+]
 
 logger = logging.getLogger(__name__)
-
-
-def extract_key_value(text: str, key: str) -> str | None:
-    """Extrait une valeur pour une clé donnée.
-
-    Gère deux formats :
-    - 'Key : Value' (même ligne)
-    - 'Key\\n: Value' (ligne séparée, format Docling)
-
-    Args:
-        text: Texte source.
-        key: Clé à rechercher (peut être une regex).
-
-    Returns:
-        Valeur extraite ou None.
-    """
-    if not text:
-        return None
-    # Format standard: Key : Value
-    pattern = rf"{key}\s*:\s*([^\n]+)"
-    match = re.search(pattern, text, re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
-    # Format Docling: Key\n: Value
-    pattern_docling = rf"{key}\s*\n\s*:\s*([^\n]+)"
-    match = re.search(pattern_docling, text, re.IGNORECASE)
-    return match.group(1).strip() if match else None
-
-
-def extract_number(text: str) -> float | None:
-    """Extrait le premier nombre d'un texte.
-
-    Args:
-        text: Texte contenant potentiellement un nombre.
-
-    Returns:
-        Nombre extrait ou None.
-    """
-    if not text:
-        return None
-    match = re.search(r"(\d+[,.]?\d*)", text)
-    if match:
-        return float(match.group(1).replace(",", "."))
-    return None
-
-
-def extract_note_pair(text: str) -> tuple[float | None, float | None]:
-    """Extrait une paire de notes (élève / classe).
-
-    Args:
-        text: Texte contenant les notes (ex: "15.21 / 10.83").
-
-    Returns:
-        Tuple (note_eleve, note_classe).
-    """
-    if not text:
-        return None, None
-    match = re.search(r"(\d+[,.]?\d*)\s*[/|]\s*(\d+[,.]?\d*)", text)
-    if match:
-        return (
-            float(match.group(1).replace(",", ".")),
-            float(match.group(2).replace(",", ".")),
-        )
-    # Fallback: juste un nombre
-    num = extract_number(text)
-    return num, None
 
 
 def parse_raw_tables(tables: list) -> list[MatiereExtraction]:
@@ -136,23 +89,11 @@ def parse_raw_tables(tables: list) -> list[MatiereExtraction]:
     return matieres
 
 
-def parse_engagements(text: str | None) -> list[str]:
-    """Parse les engagements depuis le texte.
-
-    Args:
-        text: Valeur du champ Engagements.
-
-    Returns:
-        Liste d'engagements.
-    """
-    if not text:
-        return []
-    # Séparer par virgule ou point-virgule
-    return [e.strip() for e in re.split(r"[,;]", text) if e.strip()]
-
-
 class PdfplumberParser:
-    """Parser PDF utilisant pdfplumber - extraction mécanique avec interprétation."""
+    """Parser PDF utilisant pdfplumber - extraction mécanique avec interprétation.
+
+    Legacy: pour les bulletins de test. Utiliser YamlTemplateParser pour PRONOTE réel.
+    """
 
     def parse(
         self,

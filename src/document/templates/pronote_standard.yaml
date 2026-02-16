@@ -1,6 +1,6 @@
 template:
   name: "pronote_standard"
-  version: "1.0"
+  version: "2.0"
 
 # Champs extraits du texte brut du PDF (PDFContent.text)
 fields:
@@ -43,19 +43,38 @@ fields:
     extract: "number"
 
   annee_scolaire:
-    method: "regex"
-    pattern: "(20\\d{2}\\s*[-–]\\s*20\\d{2})"
+    method: "key_value"
+    key: "Ann[ée]e scolaire"
 
   trimestre:
     method: "regex"
-    pattern: "(?:Trimestre|TRIMESTRE)\\s*(\\d)"
+    pattern: "(?:Bulletin du |Trimestre\\s*)(\\d)[eè]r?e?\\s*(?:Trimestre)?"
     cast: "int"
 
-# Règles d'extraction des tableaux de matières
+  classe:
+    method: "regex"
+    pattern: "^(\\d+[A-Z]+)\\s*\\("
+
+  effectif:
+    method: "regex"
+    pattern: "\\((\\d+)\\s+[ée]l[èe]ves?\\)"
+    cast: "int"
+
+  prof_principal:
+    method: "key_value"
+    key: "Professeur principal"
+
+  # Absences et retards peuvent aussi venir du footer de la table (PRONOTE).
+  # Le parser fusionnera les deux sources (texte libre + footer).
+
+# Regles d'extraction des tableaux de matieres
 tables:
   min_rows: 2
   columns:
-    matiere_nom: 0
+    matiere_and_prof: 0
     notes: 1
-    appreciation: "last_nonempty"
+    programme: 2
+    appreciation: 3
+  prof_in_matiere_col: true
+  footer_marker: "Absences"
   min_appreciation_length: 5

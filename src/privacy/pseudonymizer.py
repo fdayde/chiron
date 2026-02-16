@@ -239,23 +239,28 @@ class Pseudonymizer:
     def _generate_eleve_id(self, classe_id: str) -> str:
         """Generate a unique eleve_id.
 
+        Uses MAX of existing numeric suffixes to avoid collisions when
+        rows have been deleted or IDs exist from other sources.
+
         Args:
             classe_id: Class identifier.
 
         Returns:
             Unique eleve_id like "ELEVE_001".
         """
+        prefix = privacy_settings.pseudonym_prefix
         with self._get_connection() as conn:
             result = conn.execute(
                 f"""
-                SELECT COUNT(*) FROM {privacy_settings.mapping_table}
-                WHERE classe_id = ?
+                SELECT MAX(CAST(REPLACE(eleve_id, ?, '') AS INTEGER))
+                FROM {privacy_settings.mapping_table}
+                WHERE eleve_id LIKE ? AND classe_id = ?
                 """,
-                [classe_id],
+                [prefix, f"{prefix}%", classe_id],
             ).fetchone()
-            count = result[0] if result else 0
+            max_num = result[0] if result and result[0] is not None else 0
 
-        return f"{privacy_settings.pseudonym_prefix}{count + 1:03d}"
+        return f"{prefix}{max_num + 1:03d}"
 
     def depseudonymize(self, eleve_id: str) -> dict | None:
         """Retrieve original identity for an eleve_id.

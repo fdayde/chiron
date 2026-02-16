@@ -91,3 +91,84 @@ def parse_float(value: str | None) -> float | None:
         return float(value)
     except ValueError:
         return None
+
+
+def extract_key_value(text: str, key: str) -> str | None:
+    """Extrait une valeur pour une clé donnée.
+
+    Gère deux formats :
+    - 'Key : Value' (même ligne)
+    - 'Key\\n: Value' (ligne séparée, format Docling)
+
+    Args:
+        text: Texte source.
+        key: Clé à rechercher (peut être une regex).
+
+    Returns:
+        Valeur extraite ou None.
+    """
+    if not text:
+        return None
+    # Format standard: Key : Value
+    pattern = rf"{key}\s*:\s*([^\n]+)"
+    match = re.search(pattern, text, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    # Format Docling: Key\n: Value
+    pattern_docling = rf"{key}\s*\n\s*:\s*([^\n]+)"
+    match = re.search(pattern_docling, text, re.IGNORECASE)
+    return match.group(1).strip() if match else None
+
+
+def extract_number(text: str | None) -> float | None:
+    """Extrait le premier nombre d'un texte.
+
+    Args:
+        text: Texte contenant potentiellement un nombre.
+
+    Returns:
+        Nombre extrait ou None.
+    """
+    if not text:
+        return None
+    match = re.search(r"(\d+[,.]?\d*)", text)
+    if match:
+        return float(match.group(1).replace(",", "."))
+    return None
+
+
+def extract_note_pair(text: str) -> tuple[float | None, float | None]:
+    """Extrait une paire de notes (élève / classe).
+
+    Args:
+        text: Texte contenant les notes (ex: "15.21 / 10.83").
+
+    Returns:
+        Tuple (note_eleve, note_classe).
+    """
+    if not text:
+        return None, None
+    match = re.search(r"(\d+[,.]?\d*)\s*[/|]\s*(\d+[,.]?\d*)", text)
+    if match:
+        return (
+            float(match.group(1).replace(",", ".")),
+            float(match.group(2).replace(",", ".")),
+        )
+    # Fallback: juste un nombre
+    num = extract_number(text)
+    return num, None
+
+
+def parse_engagements(text: str | None) -> list[str]:
+    """Parse les engagements depuis le texte.
+
+    Args:
+        text: Valeur du champ Engagements.
+
+    Returns:
+        Liste d'engagements.
+    """
+    if not text:
+        return []
+    # Séparer par virgule ou point-virgule
+    return [e.strip() for e in re.split(r"[,;]", text) if e.strip()]

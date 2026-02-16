@@ -1,6 +1,6 @@
-"""Visualisation debug des zones détectées dans un PDF.
+"""Visualisation debug des zones detectees dans un PDF.
 
-Génère un PDF annoté avec des rectangles colorés sur les zones
+Genere un PDF annote avec des rectangles colores sur les zones
 correspondant aux champs extraits par le template YAML.
 """
 
@@ -12,7 +12,7 @@ import fitz  # PyMuPDF
 import yaml
 
 from src.document.parser import extract_pdf_content
-from src.document.pdfplumber_parser import parse_raw_tables
+from src.document.yaml_template_parser import YamlTemplateParser
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,9 @@ ZONE_COLORS: dict[str, tuple[float, float, float, float]] = {
     "annee_scolaire": (0.2, 0.8, 0.8, 0.3),
     "trimestre": (0.6, 0.6, 0.2, 0.3),
     "matiere": (0.0, 0.5, 1.0, 0.2),
+    "prof_principal": (1.0, 0.4, 0.7, 0.3),
+    "classe": (1.0, 0.6, 0.0, 0.3),
+    "professeur": (0.8, 0.6, 1.0, 0.25),
 }
 
 DEFAULT_COLOR = (0.5, 0.5, 0.5, 0.3)
@@ -38,14 +41,14 @@ def generate_debug_pdf(
     pdf_path: Path | str,
     template_name: str = "pronote_standard",
 ) -> bytes:
-    """Génère un PDF annoté montrant les zones détectées.
+    """Genere un PDF annote montrant les zones detectees.
 
     Args:
         pdf_path: Chemin vers le PDF original.
-        template_name: Nom du template YAML à utiliser.
+        template_name: Nom du template YAML a utiliser.
 
     Returns:
-        Bytes du PDF annoté.
+        Bytes du PDF annote.
     """
     pdf_path = Path(pdf_path)
 
@@ -60,27 +63,42 @@ def generate_debug_pdf(
     content = extract_pdf_content(pdf_path)
     raw_text = content.text or ""
 
-    # Construire la liste des textes à chercher dans le PDF
+    # Parser les tables via YamlTemplateParser pour obtenir matieres + footer
+    parser = YamlTemplateParser(template_name)
+    matieres, _footer = parser._parse_pronote_tables(content.tables)
+
+    # Construire la liste des textes a chercher dans le PDF
     search_targets: list[tuple[str, str]] = []  # (field_name, search_text)
 
-    # 1. Zone élève (regex fixe, même que anonymizer.py)
+    # 1. Zone eleve - Strategie 1 : "Eleve : NOM"
     eleve_match = re.search(r"[ÉE]l[èe]ve\s*:\s*[^\n]+", raw_text, re.IGNORECASE)
     if eleve_match:
         search_targets.append(("eleve", eleve_match.group(0).strip()))
+    else:
+        # Strategie 2 : "NOM Prenom" avant "Ne(e) le" (PRONOTE reel)
+        eleve_match2 = re.search(
+            r"([A-ZÀ-Ü][-A-ZÀ-Ü]+\s+[A-Za-zÀ-ü][a-zà-ü]+(?:-[A-Za-zÀ-ü][a-zà-ü]+)*)\s*\n\s*Né[e]?\s+le",
+            raw_text,
+        )
+        if eleve_match2:
+            search_targets.append(("eleve", eleve_match2.group(1).strip()))
 
     # 2. Champs du template YAML
     for field_name, spec in fields.items():
-        # Skip absences_justifiees (même zone que absences)
+        # Skip absences_justifiees (meme zone que absences)
         if field_name == "absences_justifiees":
             continue
         search_text = _get_search_text(raw_text, spec)
         if search_text:
             search_targets.append((field_name, search_text))
 
-    # 3. Matières (noms extraits des tables)
-    matieres = parse_raw_tables(content.tables)
+    # 3. Matieres (noms extraits des tables)
     for mat in matieres:
         search_targets.append(("matiere", mat.nom))
+        # Noms de profs extraits des tables (peut etre "M. X, Mme Y")
+        if mat.professeur:
+            for prof in mat.professeur.split(", "):
+                search_targets.append(("professeur", prof))
 
     # Annoter le PDF avec PyMuPDF
     doc = fitz.open(pdf_path)
@@ -98,10 +116,10 @@ def generate_debug_pdf(
                 shape.finish(color=(r, g, b), fill=(r, g, b), fill_opacity=a)
                 shape.commit()
 
-    # Légende en bas de la première page
+    # Legende en bas de la premiere page
     if doc.page_count > 0:
         first_page = doc[0]
-        # Dédupliquer les noms de zones pour la légende
+        # Dedupliquer les noms de zones pour la legende
         legend_names = dict.fromkeys(name for name, _ in search_targets)
         y = first_page.rect.height - 15
         x = 10
@@ -125,12 +143,12 @@ def generate_debug_pdf(
 
 
 def _get_search_text(raw_text: str, spec: dict) -> str | None:
-    """Détermine le texte à rechercher dans le PDF pour un champ donné."""
+    """Determine le texte a rechercher dans le PDF pour un champ donne."""
     method = spec.get("method")
 
     if method == "key_value":
         key = spec.get("key", "")
-        # Capturer la ligne complète : "Clé : valeur complète"
+        # Capturer la ligne complete : "Cle : valeur complete"
         match = re.search(rf"({key}\s*:\s*[^\n]+)", raw_text, re.IGNORECASE)
         if match:
             return match.group(1).strip()
@@ -138,7 +156,7 @@ def _get_search_text(raw_text: str, spec: dict) -> str | None:
 
     if method == "regex":
         pattern = spec.get("pattern", "")
-        match = re.search(pattern, raw_text, re.IGNORECASE)
+        match = re.search(pattern, raw_text, re.IGNORECASE | re.MULTILINE)
         if match:
             return match.group(0).strip()
         return None

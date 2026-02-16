@@ -38,8 +38,8 @@ class LLMSettings(BaseSettings):
 
     # PDF Parser configuration
     pdf_parser_type: str = Field(
-        default="pdfplumber",
-        description="Type de parser PDF (pdfplumber ou mistral_ocr)",
+        default="yaml_template",
+        description="Type de parser PDF (yaml_template, pdfplumber ou mistral_ocr)",
     )
     mistral_ocr_model: str = Field(
         default="mistral-ocr-latest",
