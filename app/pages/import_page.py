@@ -155,6 +155,14 @@ def import_page():
                                 "text-negative"
                             )
 
+                # Warnings (visible sans ouvrir le détail)
+                for r in results:
+                    if r["status"] == "success":
+                        for w in r["result"].get("warnings", []):
+                            ui.label(f"⚠ {r['file']}: {w}").classes(
+                                "text-warning q-mt-xs"
+                            )
+
                 # Detail per file
                 with ui.expansion("Détail par fichier").classes("w-full q-mt-sm"):
                     for r in results:

@@ -275,6 +275,9 @@ def _import_single_pdf(
         )
 
     # 4b. Check classe mismatch (PDF vs user selection)
+    logger.info(
+        f"Classe check: pdf_classe={eleve.classe!r}, user_classe_id={classe_id!r}"
+    )
     classe_warning = check_classe_mismatch(eleve.classe, classe_id)
     if classe_warning:
         validation.warnings.append(classe_warning)
