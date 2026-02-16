@@ -81,9 +81,6 @@ def eleve_detail_header(eleve: dict) -> None:
                         ui.label(
                             f"Professeur : {matiere.get('professeur', 'N/A')}"
                         ).classes("text-caption")
-                        ui.label(
-                            f"Moyenne classe : {matiere.get('moyenne_classe', 'N/A')}"
-                        ).classes("text-caption")
                     appreciation = matiere.get("appreciation", "")
                     if appreciation:
                         ui.label(appreciation).classes("text-body2 italic")

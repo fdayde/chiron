@@ -147,8 +147,7 @@ chiron/
 │   │   └── exceptions.py     # Exceptions custom
 │   ├── document/             # Parsing PDF
 │   │   ├── pdfplumber_parser.py  # Extraction locale
-│   │   ├── mistral_parser.py     # OCR cloud (Mistral)
-│   │   └── anonymizer.py        # Pseudonymisation NER + PyMuPDF
+│   │   └── anonymizer.py        # Extraction nom élève + NER safety net
 │   ├── generation/           # Génération synthèses
 │   │   ├── generator.py      # SyntheseGenerator
 │   │   ├── prompts.py        # Templates de prompts versionnés
@@ -193,7 +192,7 @@ chiron/
 | Donnée | Traitement |
 |--------|------------|
 | Nom, prénom | Pseudonymisé (ELEVE_XXX) avant envoi à l'IA |
-| Genre (F/G) | Transmis à l'IA (accord grammatical) |
+| Genre (F/G) | Extrait du PDF, stocké localement, **non transmis** (le LLM déduit le genre depuis les accords grammaticaux des appréciations) |
 | Absences, retards | Transmis à l'IA (analyse du profil) |
 | Notes et moyennes | Transmis à l'IA (analyse des résultats) |
 | Appréciations enseignantes | Transmises pseudonymisées à l'IA |
@@ -217,7 +216,7 @@ Le parsing est conçu pour les bulletins **PRONOTE** avec un certain format. Pou
 | Runtime | Python 3.13+ |
 | LLM | OpenAI GPT-5-mini / Claude Sonnet 4.5 / Mistral |
 | NER | CamemBERT (Jean-Baptiste/camembert-ner) |
-| PDF | PyMuPDF + pdfplumber |
+| PDF | pdfplumber |
 | Backend | FastAPI + Uvicorn |
 | Frontend | NiceGUI |
 | Base de données | DuckDB (local) |
