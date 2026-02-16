@@ -42,7 +42,7 @@ _ETAPE_1_SYNTHESE = """## ÉTAPE 1 : RÉDIGER LA SYNTHÈSE
 
 Consignes :
 - Désigne l'élève par son identifiant exact tel qu'il apparaît dans les données (ex: ELEVE_001), ne modifie JAMAIS cet identifiant et n'invente AUCUN prénom
-- Accorde correctement selon le genre de l'élève (il/elle, lui/elle)
+- Déduis le genre de l'élève à partir des accords grammaticaux et pronoms utilisés dans les appréciations (il/elle, -é/-ée, etc.), puis accorde la synthèse en conséquence (il/elle, lui/elle)
 - N'utilise JAMAIS de point-virgule (;), préfère des phrases courtes ou des virgules
 
 INTERDICTION ABSOLUE SUR LES DONNÉES CHIFFRÉES :

@@ -24,10 +24,6 @@ def format_eleve_data(eleve: EleveExtraction) -> str:
     if eleve.eleve_id:
         lines.append(f"Élève : {eleve.eleve_id}")
 
-    # Genre (already in Fille/Garçon format from models.py)
-    if eleve.genre:
-        lines.append(f"Genre : {eleve.genre}")
-
     # Absences
     if eleve.absences_demi_journees is not None:
         justif = "(justifiées)" if eleve.absences_justifiees else "(non justifiées)"

@@ -41,20 +41,6 @@ def import_page():
 
         ui.separator()
 
-        # --- Parser warning ---
-        try:
-            from src.llm.config import settings as _llm_settings
-
-            if _llm_settings.pdf_parser_type.lower() == "mistral_ocr":
-                with ui.card().classes("w-full bg-blue-10 q-mb-md"):
-                    ui.label(
-                        "Parser actif : Mistral OCR. "
-                        "Les matières, notes et absences ne seront pas extraites "
-                        "automatiquement. Seul le texte brut sera disponible."
-                    ).classes("text-body2")
-        except Exception:
-            pass
-
         # =============================================================
         # SECTION 1: FILE UPLOAD & IMPORT
         # =============================================================
@@ -337,7 +323,6 @@ def import_page():
                             {
                                 "eleve_id": e["eleve_id"],
                                 "eleve": display_name,
-                                "genre": e.get("genre") or "?",
                                 "absences": e.get("absences_demi_journees", 0) or 0,
                                 "synthese": ("ok" if e.get("has_synthese") else "-"),
                                 "statut": e.get("synthese_status", "-") or "-",
@@ -348,7 +333,6 @@ def import_page():
                         ui.table(
                             columns=[
                                 {"name": "eleve", "label": "Élève", "field": "eleve"},
-                                {"name": "genre", "label": "Genre", "field": "genre"},
                                 {
                                     "name": "absences",
                                     "label": "Abs.",

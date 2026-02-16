@@ -33,7 +33,6 @@ class EleveResponse(BaseModel):
     nom_reel: str | None = None
     prenom_reel: str | None = None
     classe: str | None
-    genre: str | None
     trimestre: int | None
     absences_demi_journees: int | None
     absences_justifiees: bool | None
@@ -86,7 +85,6 @@ def get_eleve(
         nom_reel=nom_reel,
         prenom_reel=prenom_reel,
         classe=eleve.classe,
-        genre=eleve.genre,
         trimestre=eleve.trimestre,
         absences_demi_journees=eleve.absences_demi_journees,
         absences_justifiees=eleve.absences_justifiees,

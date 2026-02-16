@@ -22,7 +22,6 @@ from src.core.exceptions import ParserError
 from src.core.models import EleveExtraction
 from src.document import ParserType, get_parser
 from src.document.anonymizer import (
-    anonymize_pdf,
     extract_eleve_name,
     ner_check_student_names,
 )
@@ -263,16 +262,9 @@ def _import_single_pdf(
     parser_type = ParserType(settings.pdf_parser_type.lower())
     parser = get_parser(parser_type)
 
-    if parser_type == ParserType.MISTRAL_OCR:
-        # Cloud OCR: anonymize PDF before sending to external API (privacy)
-        pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
-        logger.info(f"PDF anonymized for OCR ({len(pdf_bytes)} bytes)")
-        eleve = parser.parse(pdf_bytes, eleve_id, genre=genre)
-    else:
-        # Local parser: parse original PDF, then pseudonymize text fields
-        eleve = parser.parse(pdf_path, eleve_id, genre=genre)
-        _pseudonymize_extraction(eleve, identity, eleve_id)
-        logger.info(f"Text fields pseudonymized for {eleve_id}")
+    eleve = parser.parse(pdf_path, eleve_id, genre=genre)
+    _pseudonymize_extraction(eleve, identity, eleve_id)
+    logger.info(f"Text fields pseudonymized for {eleve_id}")
 
     # 4. Validate extraction
     validation = validate_extraction(eleve)

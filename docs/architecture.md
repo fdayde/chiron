@@ -20,7 +20,7 @@ PDF
  ▼
 ┌─────────────────────────────────────┐
 │ 3. parser.parse()                   │  pdfplumber / yaml_template (local)
-│    → EleveExtraction                │  ou Mistral OCR (cloud, PDF anonymisé)
+│    → EleveExtraction                │
 └─────────────────────────────────────┘
  │
  ▼
@@ -85,9 +85,9 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 
 | Fichier | Responsabilité |
 |---------|----------------|
-| `src/document/anonymizer.py` | `extract_eleve_name()`, `ner_check_student_names()`, `anonymize_pdf()` |
+| `src/document/anonymizer.py` | `extract_eleve_name()`, `ner_check_student_names()` |
 | `src/document/pdfplumber_parser.py` | Parser local |
-| `src/document/mistral_parser.py` | Parser cloud (Mistral OCR) |
+| `src/document/yaml_template_parser.py` | Parser configurable via templates YAML |
 | `src/privacy/pseudonymizer.py` | Mapping nom ↔ eleve_id |
 | `src/api/routers/exports.py` | Endpoints import/export |
 | `src/generation/generator.py` | `SyntheseGenerator` (orchestration) |
@@ -110,7 +110,6 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 
 - **Extraction du nom** : locale (jamais envoyée au cloud)
 - **Pseudonymisation** : regex sur tous les textes + NER safety net sur les appréciations
-- **Anonymisation PDF** : AVANT tout envoi cloud (Mistral OCR uniquement)
 - **Dépseudonymisation** : uniquement à l'export, scoped par classe
 
 ## Comportement d'import
@@ -129,7 +128,6 @@ Cela permet d'identifier facilement la classe et l'année scolaire sans modifier
 
 ```bash
 # .env
-PDF_PARSER_TYPE=pdfplumber  # ou mistral_ocr
-MISTRAL_OCR_API_KEY=...     # si mistral_ocr
+PDF_PARSER_TYPE=yaml_template  # ou pdfplumber
 OPENAI_API_KEY=...
 ```

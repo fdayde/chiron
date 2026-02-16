@@ -34,10 +34,6 @@ def validate_extraction(eleve: EleveExtraction) -> ValidationResult:
             "Aucune matière détectée — ce PDF n'est probablement pas un bulletin scolaire"
         )
 
-    # Warning : genre non détecté
-    if eleve.genre is None:
-        result.warnings.append("Genre de l'élève non détecté")
-
     # Warning : matières sans note
     if eleve.matieres:
         sans_note = [m.nom for m in eleve.matieres if m.moyenne_eleve is None]

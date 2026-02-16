@@ -11,7 +11,6 @@ def eleve_header(eleve: dict) -> None:
     Args:
         eleve: Student data dict.
     """
-    genre = eleve.get("genre") or "?"
     absences = eleve.get("absences_demi_journees", 0) or 0
     retards = eleve.get("retards", 0) or 0
     matieres = eleve.get("matieres", [])
@@ -23,7 +22,7 @@ def eleve_header(eleve: dict) -> None:
 
     with ui.row().classes("items-center gap-2 flex-wrap"):
         ui.label(
-            f"{genre} · {absences} abs. · {retards} retard{'s' if retards != 1 else ''}"
+            f"{absences} abs. · {retards} retard{'s' if retards != 1 else ''}"
             f" · {nb_matieres} matière{'s' if nb_matieres != 1 else ''}"
         ).classes("text-body2 text-grey-5")
 

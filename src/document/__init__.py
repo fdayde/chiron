@@ -2,22 +2,20 @@
 
 Supporte deux backends :
 - pdfplumber : extraction mécanique (rapide, gratuit)
-- mistral_ocr : vision model cloud (précis, payant)
+- yaml_template : extraction via templates YAML (configurable)
 
 Le flux d'import unifié :
 1. extract_eleve_name() - extrait le nom depuis le PDF (regex)
 2. get_parser().parse() - extrait les données structurées du PDF original
 3. _pseudonymize_extraction() - remplace les noms par eleve_id dans les textes
    (regex + NER safety net sur les appréciations)
-
-Exception : pour Mistral OCR (cloud), anonymize_pdf() est utilisé avant l'envoi.
 """
 
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
-from src.document.anonymizer import anonymize_pdf, extract_eleve_name
+from src.document.anonymizer import extract_eleve_name
 from src.document.parser import PDFContent, clean_text, extract_pdf_content
 from src.document.pdfplumber_parser import PdfplumberParser
 from src.llm.config import settings
@@ -30,7 +28,6 @@ class ParserType(Enum):
     """Types de parser PDF disponibles."""
 
     PDFPLUMBER = "pdfplumber"
-    MISTRAL_OCR = "mistral_ocr"
     YAML_TEMPLATE = "yaml_template"
 
 
@@ -68,11 +65,6 @@ def get_parser(parser_type: ParserType | None = None) -> PDFParser:
                 f"Valeurs possibles: {[p.value for p in ParserType]}"
             ) from e
 
-    if parser_type == ParserType.MISTRAL_OCR:
-        from src.document.mistral_parser import MistralOCRParser
-
-        return MistralOCRParser()
-
     if parser_type == ParserType.YAML_TEMPLATE:
         from src.document.yaml_template_parser import YamlTemplateParser
 
@@ -84,7 +76,6 @@ def get_parser(parser_type: ParserType | None = None) -> PDFParser:
 __all__ = [
     # Flux d'import
     "extract_eleve_name",
-    "anonymize_pdf",
     # Factory et types
     "get_parser",
     "ParserType",
@@ -101,13 +92,8 @@ __all__ = [
 ]
 
 
-# Lazy import pour MistralOCRParser
 def __getattr__(name: str):
     """Lazy imports pour éviter le chargement des modèles au démarrage."""
-    if name == "MistralOCRParser":
-        from src.document.mistral_parser import MistralOCRParser
-
-        return MistralOCRParser
     if name == "YamlTemplateParser":
         from src.document.yaml_template_parser import YamlTemplateParser
 

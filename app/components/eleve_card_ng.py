@@ -18,11 +18,6 @@ def eleve_card(eleve: dict, synthese: dict | None = None) -> None:
             # Left: identity
             with ui.column().classes("gap-0"):
                 ui.label(eleve["eleve_id"]).classes("text-h6")
-                genre = eleve.get("genre")
-                if genre:
-                    ui.label(f"{genre} - {eleve.get('classe', 'N/A')}").classes(
-                        "text-caption text-grey-7"
-                    )
 
             # Right: metrics
             with ui.row().classes("gap-4"):
@@ -57,7 +52,6 @@ def eleve_detail_header(eleve: dict) -> None:
     ui.label(eleve["eleve_id"]).classes("text-h5")
 
     with ui.row().classes("gap-4 q-mt-sm"):
-        metric_card("Genre", eleve.get("genre", "N/A"))
         metric_card("Classe", eleve.get("classe", "N/A"))
         metric_card("Absences", eleve.get("absences_demi_journees", 0) or 0)
         metric_card("Retards", eleve.get("retards", 0) or 0)
