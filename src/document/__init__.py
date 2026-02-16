@@ -5,28 +5,12 @@ Supporte deux backends :
 - mistral_ocr : vision model cloud (précis, payant)
 
 Le flux d'import unifié :
-1. extract_eleve_name() - extrait le nom depuis le PDF
-2. anonymize_pdf() - remplace les noms par l'eleve_id
-3. get_parser().parse() - extrait les données structurées
+1. extract_eleve_name() - extrait le nom depuis le PDF (regex)
+2. get_parser().parse() - extrait les données structurées du PDF original
+3. _pseudonymize_extraction() - remplace les noms par eleve_id dans les textes
+   (regex + NER safety net sur les appréciations)
 
-Usage:
-    from src.document import (
-        extract_eleve_name,
-        anonymize_pdf,
-        get_parser,
-        ParserType,
-    )
-
-    # 1. Extraire le nom
-    identity = extract_eleve_name(pdf_path)
-    # {"nom": "Dupont", "prenom": "Marie", "genre": "Fille"}
-
-    # 2. Anonymiser (après avoir créé l'eleve_id via pseudonymizer)
-    pdf_bytes = anonymize_pdf(pdf_path, eleve_id)
-
-    # 3. Parser
-    parser = get_parser()  # ou get_parser(ParserType.MISTRAL_OCR)
-    eleve = parser.parse(pdf_bytes, eleve_id, genre=identity.get("genre"))
+Exception : pour Mistral OCR (cloud), anonymize_pdf() est utilisé avant l'envoi.
 """
 
 from enum import Enum

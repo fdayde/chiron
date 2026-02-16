@@ -7,7 +7,7 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 1. extract_eleve_name()             │  pdfplumber (local)
+│ 1. extract_eleve_name()             │  pdfplumber (local, regex)
 │    → nom, prénom, genre             │
 └─────────────────────────────────────┘
  │
@@ -19,15 +19,14 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 3. anonymize_pdf()                  │  NER (CamemBERT) + PyMuPDF
-│    → PDF avec noms remplacés        │
+│ 3. parser.parse()                   │  pdfplumber / yaml_template (local)
+│    → EleveExtraction                │  ou Mistral OCR (cloud, PDF anonymisé)
 └─────────────────────────────────────┘
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 4. parser.parse()                   │  pdfplumber (local)
-│    OU Mistral OCR (cloud)           │  ou Mistral OCR (cloud, RGPD OK)
-│    → EleveExtraction                │
+│ 4. _pseudonymize_extraction()       │  Regex + NER safety net (CamemBERT)
+│    → textes avec noms remplacés     │  sur les appréciations
 └─────────────────────────────────────┘
  │
  ▼
@@ -86,7 +85,7 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 
 | Fichier | Responsabilité |
 |---------|----------------|
-| `src/document/anonymizer.py` | `extract_eleve_name()`, `anonymize_pdf()` |
+| `src/document/anonymizer.py` | `extract_eleve_name()`, `ner_check_student_names()`, `anonymize_pdf()` |
 | `src/document/pdfplumber_parser.py` | Parser local |
 | `src/document/mistral_parser.py` | Parser cloud (Mistral OCR) |
 | `src/privacy/pseudonymizer.py` | Mapping nom ↔ eleve_id |
@@ -110,7 +109,8 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 ## RGPD
 
 - **Extraction du nom** : locale (jamais envoyée au cloud)
-- **Anonymisation** : AVANT tout envoi cloud
+- **Pseudonymisation** : regex sur tous les textes + NER safety net sur les appréciations
+- **Anonymisation PDF** : AVANT tout envoi cloud (Mistral OCR uniquement)
 - **Dépseudonymisation** : uniquement à l'export, scoped par classe
 
 ## Comportement d'import

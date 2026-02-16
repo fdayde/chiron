@@ -5,7 +5,6 @@ in DuckDB for later depseudonymization when needed.
 """
 
 import logging
-import re
 import threading
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -289,46 +288,6 @@ class Pseudonymizer:
             "prenom_original": result[1],
             "classe_id": result[2],
         }
-
-    def pseudonymize_text(self, text: str, classe_id: str) -> str:
-        """Replace all known names in a text with their pseudonyms.
-
-        Args:
-            text: Text potentially containing student names.
-            classe_id: Class to look up names from.
-
-        Returns:
-            Text with names replaced by pseudonyms.
-        """
-        with self._get_connection() as conn:
-            mappings = conn.execute(
-                f"""
-                SELECT eleve_id, nom_original, prenom_original
-                FROM {privacy_settings.mapping_table}
-                WHERE classe_id = ?
-                """,
-                [classe_id],
-            ).fetchall()
-
-        for eleve_id, nom, prenom in mappings:
-            if nom:
-                # Replace full name (case insensitive)
-                if prenom:
-                    pattern = re.compile(
-                        rf"\b{re.escape(prenom)}\s+{re.escape(nom)}\b",
-                        re.IGNORECASE,
-                    )
-                    text = pattern.sub(eleve_id, text)
-                    pattern = re.compile(
-                        rf"\b{re.escape(nom)}\s+{re.escape(prenom)}\b",
-                        re.IGNORECASE,
-                    )
-                    text = pattern.sub(eleve_id, text)
-                # Replace just nom
-                pattern = re.compile(rf"\b{re.escape(nom)}\b", re.IGNORECASE)
-                text = pattern.sub(eleve_id, text)
-
-        return text
 
     def depseudonymize_text(self, text: str, classe_id: str | None = None) -> str:
         """Restore original names in a text.

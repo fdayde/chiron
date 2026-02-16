@@ -21,7 +21,11 @@ from src.api.dependencies import (
 from src.core.exceptions import ParserError
 from src.core.models import EleveExtraction
 from src.document import ParserType, get_parser
-from src.document.anonymizer import anonymize_pdf, extract_eleve_name
+from src.document.anonymizer import (
+    anonymize_pdf,
+    extract_eleve_name,
+    ner_check_student_names,
+)
 from src.document.validation import validate_extraction
 from src.llm.config import settings
 from src.privacy.pseudonymizer import Pseudonymizer
@@ -195,6 +199,21 @@ def _pseudonymize_extraction(
     # Pseudonymize appreciation_generale if present
     if eleve.appreciation_generale:
         eleve.appreciation_generale = replace_names(eleve.appreciation_generale)
+
+    # NER safety net : vérifier les appréciations après le pass regex
+    nom_parts_set = {p.lower() for p in [nom, prenom] if p and len(p) > 1}
+    if nom_parts_set:
+        appreciation_texts = [m.appreciation for m in eleve.matieres if m.appreciation]
+        remaining = ner_check_student_names(appreciation_texts, nom_parts_set)
+        if remaining:
+            logger.warning("NER safety net: found %s in appreciations", remaining)
+            for variant in remaining:
+                pattern = re.compile(rf"\b{re.escape(variant)}\b", re.IGNORECASE)
+                for matiere in eleve.matieres:
+                    if matiere.appreciation:
+                        matiere.appreciation = pattern.sub(
+                            eleve_id, matiere.appreciation
+                        )
 
 
 def _import_single_pdf(
