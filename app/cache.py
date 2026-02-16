@@ -264,6 +264,30 @@ def import_pdf_direct(
         tmp_path.unlink(missing_ok=True)
 
 
+def debug_pdf_direct(content: bytes) -> bytes:
+    """Génère un PDF annoté avec les zones détectées (debug).
+
+    Args:
+        content: Bytes du PDF original.
+
+    Returns:
+        Bytes du PDF annoté.
+    """
+    import tempfile
+    from pathlib import Path
+
+    from src.document.debug_visualizer import generate_debug_pdf
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+
+    try:
+        return generate_debug_pdf(tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
 def delete_eleve_direct(eleve_id: str, trimestre: int) -> None:
     """Supprime un eleve et ses syntheses (appel direct, sans HTTP)."""
     eleve_repo = get_eleve_repo()

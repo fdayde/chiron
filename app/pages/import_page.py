@@ -5,6 +5,7 @@ from __future__ import annotations
 from cache import (
     clear_classes_cache,
     clear_eleves_cache,
+    debug_pdf_direct,
     delete_classe_direct,
     delete_eleve_direct,
     fetch_classe,
@@ -213,10 +214,32 @@ def import_page():
                         type="warning",
                     )
 
+        async def do_debug():
+            """Génère un PDF annoté pour le premier fichier uploadé."""
+            if not pending_files:
+                ui.notify("Aucun fichier sélectionné", type="warning")
+                return
+            filename, content = pending_files[0]
+            try:
+                debug_btn.props(add="loading")
+                debug_bytes = await run.io_bound(debug_pdf_direct, content)
+                ui.download(
+                    debug_bytes,
+                    f"debug_{filename}",
+                    media_type="application/pdf",
+                )
+            except Exception as exc:
+                ui.notify(f"Erreur debug: {exc}", type="negative")
+            finally:
+                debug_btn.props(remove="loading")
+
         with ui.row().classes("items-center gap-4 q-mt-md"):
             import_btn = ui.button(
                 "Importer les fichiers", icon="upload", on_click=do_import
             ).props("color=primary disable rounded")
+            debug_btn = ui.button(
+                "Visualiser les zones", icon="visibility", on_click=do_debug
+            ).props("color=secondary flat rounded")
             overwrite_checkbox = ui.checkbox(
                 "Remplacer les données existantes en cas de doublon", value=True
             )

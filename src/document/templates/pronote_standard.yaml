@@ -1,0 +1,61 @@
+template:
+  name: "pronote_standard"
+  version: "1.0"
+
+# Champs extraits du texte brut du PDF (PDFContent.text)
+fields:
+  genre:
+    method: "key_value"
+    key: "Genre"
+    normalize:
+      fille: "Fille"
+      f: "Fille"
+      "garçon": "Garçon"
+      garcon: "Garçon"
+      m: "Garçon"
+
+  absences:
+    method: "key_value"
+    key: "Absences?"
+    extract: "number"
+    cast: "int"
+
+  absences_justifiees:
+    method: "key_value"
+    key: "Absences?"
+    extract: "contains"
+    contains: "justifi"
+
+  retards:
+    method: "key_value"
+    key: "Retards?"
+    extract: "number"
+    cast: "int"
+
+  engagements:
+    method: "key_value"
+    key: "Engagements?"
+    extract: "engagements"
+
+  moyenne_generale:
+    method: "key_value"
+    key: "Moyenne\\s+g[ée]n[ée]rale"
+    extract: "number"
+
+  annee_scolaire:
+    method: "regex"
+    pattern: "(20\\d{2}\\s*[-–]\\s*20\\d{2})"
+
+  trimestre:
+    method: "regex"
+    pattern: "(?:Trimestre|TRIMESTRE)\\s*(\\d)"
+    cast: "int"
+
+# Règles d'extraction des tableaux de matières
+tables:
+  min_rows: 2
+  columns:
+    matiere_nom: 0
+    notes: 1
+    appreciation: "last_nonempty"
+  min_appreciation_length: 5

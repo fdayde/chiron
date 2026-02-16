@@ -47,6 +47,7 @@ class ParserType(Enum):
 
     PDFPLUMBER = "pdfplumber"
     MISTRAL_OCR = "mistral_ocr"
+    YAML_TEMPLATE = "yaml_template"
 
 
 class PDFParser(Protocol):
@@ -88,6 +89,11 @@ def get_parser(parser_type: ParserType | None = None) -> PDFParser:
 
         return MistralOCRParser()
 
+    if parser_type == ParserType.YAML_TEMPLATE:
+        from src.document.yaml_template_parser import YamlTemplateParser
+
+        return YamlTemplateParser()
+
     return PdfplumberParser()
 
 
@@ -101,6 +107,9 @@ __all__ = [
     "PDFParser",
     # Parsers
     "PdfplumberParser",
+    "YamlTemplateParser",
+    # Debug
+    "generate_debug_pdf",
     # Utilitaires
     "PDFContent",
     "extract_pdf_content",
@@ -115,4 +124,12 @@ def __getattr__(name: str):
         from src.document.mistral_parser import MistralOCRParser
 
         return MistralOCRParser
+    if name == "YamlTemplateParser":
+        from src.document.yaml_template_parser import YamlTemplateParser
+
+        return YamlTemplateParser
+    if name == "generate_debug_pdf":
+        from src.document.debug_visualizer import generate_debug_pdf
+
+        return generate_debug_pdf
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

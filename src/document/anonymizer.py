@@ -98,12 +98,18 @@ def extract_eleve_name(pdf_path: str | Path) -> dict | None:
         }
 
 
-def anonymize_pdf(pdf_path: str | Path, eleve_id: str) -> bytes:
+def anonymize_pdf(
+    pdf_path: str | Path,
+    eleve_id: str,
+    delete_non_student_names: bool = False,
+) -> bytes:
     """Anonymise un PDF en remplaçant le nom de l'élève par eleve_id.
 
     Args:
         pdf_path: Chemin vers le PDF original.
         eleve_id: Identifiant anonyme (ex: "ELEVE_001").
+        delete_non_student_names: Si True, supprime aussi les noms de
+            profs/parents/établissement détectés par NER.
 
     Returns:
         Bytes du PDF anonymisé.
@@ -126,9 +132,20 @@ def anonymize_pdf(pdf_path: str | Path, eleve_id: str) -> bytes:
     variants = _detect_name_variants(texte_complet, nom_complet)
     logger.info(f"Variantes détectées: {variants}")
 
-    # 3. Anonymiser le PDF
+    # 3. Anonymiser le PDF (pseudonymisation de l'élève)
     pdf_bytes, count = _replace_names_in_pdf(pdf_path, variants, eleve_id)
     logger.info(f"Anonymisation terminée: {count} remplacements")
+
+    # 4. Supprimer les noms non-élève (profs, parents, etc.)
+    if delete_non_student_names:
+        other_names = _detect_non_student_names(texte_complet, nom_complet)
+        if other_names:
+            pdf_bytes, del_count = _delete_names_in_pdf(pdf_bytes, other_names)
+            logger.info(
+                "Suppression noms tiers: %d noms, %d occurrences",
+                len(other_names),
+                del_count,
+            )
 
     return pdf_bytes
 
@@ -224,6 +241,79 @@ def _replace_names_in_pdf(
             page.apply_redactions()
 
         return doc.tobytes(), total_replacements
+
+
+def _detect_non_student_names(text: str, nom_etudiant: str) -> list[str]:
+    """Détecte les noms de personnes autres que l'élève (profs, parents, etc.).
+
+    Args:
+        text: Texte complet du PDF.
+        nom_etudiant: Nom complet de l'élève (à exclure).
+
+    Returns:
+        Liste des noms à supprimer, triés par longueur décroissante.
+    """
+    nlp = _get_ner_pipeline()
+    chunks = _split_into_chunks(text, max_chars=2000)
+
+    nom_parts = {p.lower() for p in nom_etudiant.split() if len(p) > 1}
+
+    other_names = set()
+    for chunk in chunks:
+        try:
+            entities = nlp(chunk)
+            for e in entities:
+                if (
+                    e.get("entity_group", "").upper() in PERSON_LABELS
+                    or "PER" in e.get("entity_group", "").upper()
+                ):
+                    name = e["word"].strip()
+                    if not name or len(name) < 2:
+                        continue
+                    # Exclure si c'est une variante du nom de l'élève
+                    name_lower_parts = {p.lower() for p in name.split()}
+                    if name_lower_parts & nom_parts:
+                        continue
+                    other_names.add(name)
+        except Exception as exc:
+            logger.warning("Erreur NER (non-student names) sur chunk: %s", exc)
+
+    return sorted(other_names, key=len, reverse=True)
+
+
+def _delete_names_in_pdf(
+    pdf_bytes: bytes,
+    noms_a_supprimer: list[str],
+) -> tuple[bytes, int]:
+    """Supprime les noms dans un PDF (bytes) en les remplaçant par du vide.
+
+    Args:
+        pdf_bytes: Bytes du PDF (déjà pseudonymisé).
+        noms_a_supprimer: Liste des noms à supprimer.
+
+    Returns:
+        Tuple (bytes du PDF modifié, nombre de suppressions).
+    """
+    fitz.TOOLS.set_small_glyph_heights(True)
+
+    with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+        total = 0
+
+        for page in doc:
+            for nom in noms_a_supprimer:
+                instances = page.search_for(nom)
+                for rect in instances:
+                    page.add_redact_annot(
+                        rect,
+                        text="",
+                        fontname="helv",
+                        fontsize=10,
+                        fill=(1, 1, 1),
+                    )
+                    total += 1
+            page.apply_redactions()
+
+        return doc.tobytes(), total
 
 
 def _split_into_chunks(text: str, max_chars: int = 2000) -> list[str]:
