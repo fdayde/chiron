@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass, field
 
 from src.core.constants import get_current_school_year
 from src.core.exceptions import StorageError
 from src.storage.repositories.base import DuckDBRepository
+
+# Format attendu : {niveau}{groupe}_{année} — ex: 3A_2024-2025, 5E_2025-2026
+_CLASSE_NOM_PATTERN = re.compile(r"^\d+[A-Za-z]+_\d{4}-\d{4}$")
 
 
 @dataclass
@@ -56,6 +60,12 @@ class ClasseRepository(DuckDBRepository[Classe]):
         """
         if not classe.classe_id:
             classe.classe_id = str(uuid.uuid4())[:12]
+
+        if not _CLASSE_NOM_PATTERN.match(classe.nom):
+            raise StorageError(
+                f"Format de nom de classe invalide : '{classe.nom}'. "
+                "Format attendu : {{niveau}}{{groupe}}_{{année}} (ex: 3A_2024-2025)",
+            )
 
         existing = self._execute_one(
             "SELECT classe_id FROM classes WHERE nom = ? AND annee_scolaire = ?",

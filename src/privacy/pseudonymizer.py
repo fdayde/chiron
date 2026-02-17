@@ -108,6 +108,15 @@ class Pseudonymizer:
             except duckdb.CatalogException:
                 pass
 
+            # Index on classe_id for filtered queries (depseudonymize, list, clear)
+            try:
+                conn.execute(f"""
+                    CREATE INDEX IF NOT EXISTS idx_mapping_classe_id
+                    ON {table} (classe_id)
+                """)
+            except duckdb.CatalogException:
+                pass
+
     def create_eleve_id(
         self,
         nom: str,
@@ -253,9 +262,9 @@ class Pseudonymizer:
                 f"""
                 SELECT MAX(CAST(REPLACE(eleve_id, ?, '') AS INTEGER))
                 FROM {privacy_settings.mapping_table}
-                WHERE eleve_id LIKE ? AND classe_id = ?
+                WHERE eleve_id LIKE ?
                 """,
-                [prefix, f"{prefix}%", classe_id],
+                [prefix, f"{prefix}%"],
             ).fetchone()
             max_num = result[0] if result and result[0] is not None else 0
 

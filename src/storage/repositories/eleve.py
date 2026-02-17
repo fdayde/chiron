@@ -1,6 +1,6 @@
 """Repository des élèves.
 
-Gère le stockage des données élèves avec clé composite (eleve_id, trimestre).
+Gère le stockage des données élèves avec clé composite (eleve_id, classe_id, trimestre).
 Un même élève peut avoir plusieurs enregistrements, un par trimestre.
 """
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class EleveRepository(DuckDBRepository[EleveExtraction]):
     """Repository pour la gestion des élèves.
 
-    Note : La clé primaire est (eleve_id, trimestre), pas eleve_id seul.
+    Note : La clé primaire est (eleve_id, classe_id, trimestre).
     Utiliser exists(eleve_id, trimestre) pour vérifier l'existence.
     """
 
@@ -261,7 +261,6 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
                 "absences_demi_journees",
                 "absences_justifiees",
                 "retards",
-                "classe_id",
                 "raw_text",
                 "moyenne_generale",
             ):

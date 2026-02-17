@@ -61,8 +61,8 @@ TABLES = {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-            -- Clé primaire composite : un élève peut avoir plusieurs trimestres
-            PRIMARY KEY (eleve_id, trimestre)
+            -- Clé primaire composite : un élève par classe et par trimestre
+            PRIMARY KEY (eleve_id, classe_id, trimestre)
         )
     """,
     "syntheses": """
@@ -130,5 +130,8 @@ MIGRATIONS: list[str] = [
 INDEXES: dict[str, list[str]] = {
     "classes": [
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_classes_nom_annee ON classes(nom, annee_scolaire)",
+    ],
+    "eleves": [
+        "CREATE INDEX IF NOT EXISTS idx_eleves_classe_id ON eleves(classe_id)",
     ],
 }
