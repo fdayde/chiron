@@ -7,7 +7,7 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 1. extract_eleve_name()             │  pdfplumber (local, regex)
+│ 1. extract_eleve_name()             │  anonymizer.py (regex local)
 │    → nom, prénom, genre             │
 └─────────────────────────────────────┘
  │
@@ -19,20 +19,27 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 3. parser.parse()                   │  pdfplumber / yaml_template (local)
-│    → EleveExtraction                │
+│ 3. get_parser().parse()             │  yaml_template (défaut) ou pdfplumber
+│    → EleveExtraction                │  configurable via PDF_PARSER_TYPE
 └─────────────────────────────────────┘
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 4. _pseudonymize_extraction()       │  Regex + NER safety net (CamemBERT)
+│ 4. validate_extraction()            │  Validation post-extraction
+│    + check_classe_mismatch()        │  Erreurs bloquantes + warnings
+│    → ValidationResult               │
+└─────────────────────────────────────┘
+ │
+ ▼
+┌─────────────────────────────────────┐
+│ 5. _pseudonymize_extraction()       │  Regex + NER safety net (CamemBERT)
 │    → textes avec noms remplacés     │  sur les appréciations
 └─────────────────────────────────────┘
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 5. eleve_repo.create()              │  Stocke dans chiron.duckdb
-└─────────────────────────────────────┘
+│ 6. eleve_repo.create()              │  Stocke dans chiron.duckdb
+└─────────────────────────────────────┘   PK composite: (eleve_id, classe_id, trimestre)
 ```
 
 ## Flux de génération
@@ -43,14 +50,14 @@ EleveExtraction
  ▼
 ┌─────────────────────────────────────┐
 │ 1. prompt_builder.format_eleve_data │  Formate les données élève
-│    → texte structuré                │
+│    → texte structuré                │  (absences, notes, appréciations)
 └─────────────────────────────────────┘
  │
  ▼
 ┌─────────────────────────────────────┐
 │ 2. get_fewshot_examples()           │  Charge 0-3 exemples validés
 │    + build_fewshot_examples()       │  (is_fewshot_example = TRUE)
-│    → exemples tronqués             │  Appréciations: 1ère phrase
+│    → exemples re-pseudonymisés      │  Appréciations: 1ère phrase
 │                                     │  Synthèse: max 1000 car.
 └─────────────────────────────────────┘
  │
@@ -83,39 +90,72 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 
 ## Composants
 
+### Parsing PDF
+
 | Fichier | Responsabilité |
 |---------|----------------|
+| `src/document/__init__.py` | Factory `get_parser()`, `ParserType` enum, `PDFParser` Protocol |
 | `src/document/anonymizer.py` | `extract_eleve_name()`, `ner_check_student_names()` |
-| `src/document/pdfplumber_parser.py` | Parser local |
-| `src/document/yaml_template_parser.py` | Parser configurable via templates YAML |
-| `src/privacy/pseudonymizer.py` | Mapping nom ↔ eleve_id |
-| `src/api/routers/exports.py` | Endpoints import/export |
-| `src/generation/generator.py` | `SyntheseGenerator` (orchestration) |
-| `src/generation/prompts.py` | Prompt synthese_v3 (growth mindset, feedforward, SDT, biais) |
+| `src/document/yaml_template_parser.py` | Parser principal via templates YAML (PRONOTE) |
+| `src/document/pdfplumber_parser.py` | Parser legacy (rétrocompatibilité) |
+| `src/document/parser.py` | Utilitaires partagés (`extract_pdf_content`, `extract_key_value`, etc.) |
+| `src/document/validation.py` | `validate_extraction()`, `check_classe_mismatch()` |
+| `src/document/debug_visualizer.py` | Génère un PDF annoté pour debug visuel des zones |
+| `src/document/templates/pronote_standard.yaml` | Template d'extraction PRONOTE v2.0 |
+
+### Génération LLM
+
+| Fichier | Responsabilité |
+|---------|----------------|
+| `src/generation/generator.py` | `SyntheseGenerator` (orchestration sync + async batch) |
+| `src/generation/prompts.py` | Prompt `synthese_v3` (growth mindset, feedforward, SDT, biais) |
 | `src/generation/prompt_builder.py` | Formatage données + construction few-shot tronqués |
+
+### Abstraction LLM
+
+| Fichier | Responsabilité |
+|---------|----------------|
 | `src/llm/manager.py` | `LLMManager` (registry, retry, rate limiting) |
 | `src/llm/base.py` | `LLMClient` ABC (template method : timing, metrics, coût) |
-| `src/llm/clients/` | Implémentations OpenAI, Anthropic, Mistral |
-| `src/llm/pricing.py` | `PricingCalculator` (calcul de coûts unifié) |
 | `src/llm/config.py` | Settings (clés API, modèles, pricing par provider) |
+| `src/llm/rate_limiter.py` | `SimpleRateLimiter` (fenêtre glissante RPM par provider) |
+| `src/llm/pricing.py` | `PricingCalculator` (calcul de coûts unifié) |
+| `src/llm/clients/` | Implémentations OpenAI, Anthropic, Mistral |
+
+### Privacy & Storage
+
+| Fichier | Responsabilité |
+|---------|----------------|
+| `src/privacy/pseudonymizer.py` | Mapping nom ↔ eleve_id (DuckDB séparé) |
+| `src/storage/repositories/` | CRUD classes, élèves, synthèses |
+| `src/storage/schemas.py` | Définitions SQL + migrations idempotentes |
+| `src/api/routers/exports.py` | Endpoints import/export |
 
 ## Bases de données
 
 | Base | Contenu | Sensible |
 |------|---------|----------|
-| `privacy.duckdb` | Mapping eleve_id ↔ nom/prénom | **Oui** (local uniquement) |
-| `chiron.duckdb` | Élèves anonymisés, synthèses | Non |
+| `privacy.duckdb` | Mapping eleve_id ↔ nom/prénom (scoped par classe) | **Oui** (local uniquement) |
+| `chiron.duckdb` | Élèves pseudonymisés, synthèses, classes | Non (partageable) |
+
+### Clé primaire élèves
+
+PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir des données différentes par trimestre.
 
 ## RGPD
 
-- **Extraction du nom** : locale (jamais envoyée au cloud)
-- **Pseudonymisation** : regex sur tous les textes + NER safety net sur les appréciations
+- **Extraction du nom** : locale (regex), jamais envoyée au cloud
+- **Pseudonymisation** : regex sur tous les textes + NER safety net (CamemBERT) sur les appréciations
+- **Genre** : extrait et stocké localement, **non transmis** au LLM (déduit des accords grammaticaux)
+- **Données transmises au LLM** : notes, absences, retards, appréciations **pseudonymisées**, engagements
+- **Données non transmises** : noms, prénoms, genre, établissement, classe, année scolaire, noms des professeurs
 - **Dépseudonymisation** : uniquement à l'export, scoped par classe
 
 ## Comportement d'import
 
 - **Écrasement** : si un élève existe déjà pour (classe_id, trimestre), les données sont écrasées
 - **Synthèses** : les synthèses associées sont aussi supprimées lors de l'écrasement
+- **Validation** : `check_classe_mismatch()` avertit si le niveau PDF ne correspond pas à la classe sélectionnée
 - **Avertissement UI** : la page d'import affiche le nombre d'élèves existants avant import
 
 ## Convention classe_id
@@ -128,6 +168,9 @@ Cela permet d'identifier facilement la classe et l'année scolaire sans modifier
 
 ```bash
 # .env
-PDF_PARSER_TYPE=yaml_template  # ou pdfplumber
+PDF_PARSER_TYPE=yaml_template  # yaml_template (défaut) ou pdfplumber (legacy)
+DEFAULT_PROVIDER=anthropic     # openai, anthropic ou mistral
 OPENAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+MISTRAL_API_KEY=...
 ```

@@ -41,15 +41,15 @@ Le prompt de génération est conçu selon des principes issus de la recherche e
 ```
 PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export CSV
      │              │                  │            │               │             │           │
-     │         CamemBERT          pdfplumber    Few-shot       OpenAI/Claude   Humain    Dépseudo
-     │         (local)            (local)       (0-3 ex.)      (cloud)        (local)    (local)
+     │         CamemBERT         YAML template  Few-shot       OpenAI/Claude   Humain    Dépseudo
+     │         (local)           (local)        (0-3 ex.)      (cloud)        (local)    (local)
      ▼              ▼                  ▼            ▼               ▼             ▼           ▼
   Bulletin    PDF pseudonymisé   Données      Exemples        Synthèse      Validée    Noms réels
 ```
 
 **Principes** :
 - Le professeur reste dans la boucle (validation obligatoire)
-- **Données nominatives jamais envoyées au cloud** (pseudonymisation avant envoi à l'IA)
+- **Noms et prénoms pseudonymisés avant envoi au cloud** (le LLM ne reçoit que des identifiants `ELEVE_XXX`)
 - Style et ton calibrés via few-shot learning (exemples de l'enseignant)
 - Insights pédagogiques actionnables (alertes, réussites, stratégies, biais de genre)
 - Application locale + APIs cloud (LLM)
@@ -146,8 +146,12 @@ chiron/
 │   │   ├── models.py         # Modèles Pydantic
 │   │   └── exceptions.py     # Exceptions custom
 │   ├── document/             # Parsing PDF
-│   │   ├── pdfplumber_parser.py  # Extraction locale
-│   │   └── anonymizer.py        # Extraction nom élève + NER safety net
+│   │   ├── yaml_template_parser.py # Parser principal (template YAML configurable)
+│   │   ├── pdfplumber_parser.py    # Parser legacy (rétrocompatibilité)
+│   │   ├── anonymizer.py          # Extraction nom élève + NER safety net
+│   │   ├── validation.py          # Validation post-extraction + mismatch classe
+│   │   ├── debug_visualizer.py    # PDF annoté pour debug visuel
+│   │   └── templates/             # Templates YAML d'extraction (pronote_standard)
 │   ├── generation/           # Génération synthèses
 │   │   ├── generator.py      # SyntheseGenerator
 │   │   ├── prompts.py        # Templates de prompts versionnés
@@ -155,6 +159,9 @@ chiron/
 │   ├── llm/                  # Abstraction LLM multi-provider
 │   │   ├── manager.py        # LLMManager (registry, retry, rate limiting)
 │   │   ├── config.py         # Settings (clés API, modèles, pricing)
+│   │   ├── base.py           # LLMClient ABC (template method)
+│   │   ├── rate_limiter.py   # SimpleRateLimiter (fenêtre glissante RPM)
+│   │   ├── pricing.py        # PricingCalculator (calcul de coûts)
 │   │   └── clients/          # OpenAI, Anthropic, Mistral
 │   ├── privacy/              # Pseudonymisation RGPD
 │   │   └── pseudonymizer.py  # Mapping nom <-> ELEVE_XXX
@@ -192,7 +199,7 @@ chiron/
 | Donnée | Traitement |
 |--------|------------|
 | Nom, prénom | Pseudonymisé (ELEVE_XXX) avant envoi à l'IA |
-| Genre (F/G) | Extrait du PDF, stocké localement, **non transmis** (le LLM déduit le genre depuis les accords grammaticaux des appréciations) |
+| Genre (F/G) | Extrait du PDF, stocké localement, **non transmis** — le LLM déduit le genre depuis les accords grammaticaux des appréciations |
 | Absences, retards | Transmis à l'IA (analyse du profil) |
 | Notes et moyennes | Transmis à l'IA (analyse des résultats) |
 | Appréciations enseignantes | Transmises pseudonymisées à l'IA |
@@ -205,7 +212,7 @@ chiron/
 
 ## Adapter à un autre format de bulletin
 
-Le parsing est conçu pour les bulletins **PRONOTE** avec un certain format. Pour l'adapter  consultez le guide dédié :
+Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML configurable (`src/document/templates/pronote_standard.yaml`). Pour l'adapter à un autre format, consultez le guide dédié :
 
 **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)**
 
@@ -216,7 +223,7 @@ Le parsing est conçu pour les bulletins **PRONOTE** avec un certain format. Pou
 | Runtime | Python 3.13+ |
 | LLM | OpenAI GPT-5-mini / Claude Sonnet 4.5 / Mistral |
 | NER | CamemBERT (Jean-Baptiste/camembert-ner) |
-| PDF | pdfplumber |
+| PDF | pdfplumber + YAML templates (configurable) |
 | Backend | FastAPI + Uvicorn |
 | Frontend | NiceGUI |
 | Base de données | DuckDB (local) |
@@ -225,6 +232,7 @@ Le parsing est conçu pour les bulletins **PRONOTE** avec un certain format. Pou
 ## Documentation
 
 - **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de données, RGPD
+- **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Guide d'adaptation à un autre format de bulletin
 
 ## Licence
 
