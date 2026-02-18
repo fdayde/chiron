@@ -217,7 +217,7 @@ def home_page():
                         },
                         {
                             "donnee": "Genre (F/G)",
-                            "statut": "Transmis à l'IA (accord grammatical)",
+                            "statut": "Stocké localement, non transmis — le LLM déduit le genre des accords grammaticaux",
                         },
                         {
                             "donnee": "Absences, retards",
