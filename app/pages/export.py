@@ -81,16 +81,22 @@ def export_page():
             missing_ids = [
                 e["eleve_id"] for e in eleves_data if not e.get("has_synthese")
             ]
-            with ui.card().classes("w-full bg-orange-10 q-mt-md"):
+            with (
+                ui.card()
+                .classes("w-full q-mt-md")
+                .style(
+                    "background: rgba(212, 132, 62, 0.12); border-left: 3px solid #D4843E"
+                )
+            ):
                 ui.label(f"{counts['missing']} élève(s) sans synthèse").classes(
-                    "text-weight-bold text-warning"
+                    "text-weight-bold text-amber-3"
                 )
                 ui.label(f"IDs: {', '.join(missing_ids[:10])}").classes(
-                    "text-caption text-grey-7"
+                    "text-caption text-grey-5"
                 )
                 if len(missing_ids) > 10:
                     ui.label(f"... et {len(missing_ids) - 10} autre(s)").classes(
-                        "text-caption text-grey-7"
+                        "text-caption text-grey-5"
                     )
                 ui.button(
                     "Aller générer",
@@ -104,16 +110,22 @@ def export_page():
                 for e in eleves_data
                 if e.get("has_synthese") and e.get("synthese_status") != "validated"
             ]
-            with ui.card().classes("w-full bg-blue-10 q-mt-md"):
+            with (
+                ui.card()
+                .classes("w-full q-mt-md")
+                .style(
+                    "background: rgba(74, 88, 153, 0.15); border-left: 3px solid #4A5899"
+                )
+            ):
                 ui.label(f"{counts['pending']} synthèse(s) non validée(s)").classes(
-                    "text-weight-bold text-info"
+                    "text-weight-bold text-light-blue-3"
                 )
                 ui.label(f"IDs: {', '.join(pending_ids[:10])}").classes(
-                    "text-caption text-grey-7"
+                    "text-caption text-grey-5"
                 )
                 if len(pending_ids) > 10:
                     ui.label(f"... et {len(pending_ids) - 10} autre(s)").classes(
-                        "text-caption text-grey-7"
+                        "text-caption text-grey-5"
                     )
 
         if counts["total"] == 0:
