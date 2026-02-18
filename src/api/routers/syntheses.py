@@ -129,7 +129,7 @@ def generate_synthese(
             generator=generator,
             provider=data.provider,
             model=data.model,
-            use_fewshot=False,
+            use_fewshot=True,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -166,7 +166,7 @@ async def generate_batch(
             provider=data.provider,
             model=data.model,
             eleve_ids=data.eleve_ids,
-            use_fewshot=False,
+            use_fewshot=True,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
