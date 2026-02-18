@@ -4,7 +4,6 @@ import csv
 import io
 import logging
 import re
-import tempfile
 from datetime import date
 from pathlib import Path
 
@@ -28,6 +27,7 @@ from src.document.anonymizer import (
 from src.document.validation import check_classe_mismatch, validate_extraction
 from src.llm.config import settings
 from src.privacy.pseudonymizer import Pseudonymizer
+from src.services.shared import ensure_classe_exists, temp_pdf_file
 from src.storage.repositories.classe import ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
@@ -326,43 +326,42 @@ async def check_pdf_duplicates(
     unreadable = []
 
     for file in files:
-        tmp_path = None
         try:
             content = await _validate_pdf_upload(file)
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(content)
-                tmp_path = Path(tmp.name)
+            with temp_pdf_file(content) as tmp_path:
+                identity = extract_eleve_name(tmp_path)
+                if not identity or not identity.get("nom"):
+                    unreadable.append(
+                        {
+                            "filename": file.filename,
+                            "error": "Nom de l'élève non détecté",
+                        }
+                    )
+                    continue
 
-            identity = extract_eleve_name(tmp_path)
-            if not identity or not identity.get("nom"):
-                unreadable.append(
-                    {"filename": file.filename, "error": "Nom de l'élève non détecté"}
+                nom = identity["nom"]
+                prenom = identity.get("prenom")
+
+                existing_id = pseudonymizer._get_existing_mapping(
+                    nom, prenom, classe_id
                 )
-                continue
-
-            nom = identity["nom"]
-            prenom = identity.get("prenom")
-
-            existing_id = pseudonymizer._get_existing_mapping(nom, prenom, classe_id)
-            if existing_id and eleve_repo.exists(existing_id, trimestre):
-                conflicts.append(
-                    {
-                        "filename": file.filename,
-                        "prenom": prenom,
-                        "nom": nom,
-                        "eleve_id": existing_id,
-                    }
-                )
-            else:
-                new.append({"filename": file.filename, "prenom": prenom, "nom": nom})
+                if existing_id and eleve_repo.exists(existing_id, trimestre):
+                    conflicts.append(
+                        {
+                            "filename": file.filename,
+                            "prenom": prenom,
+                            "nom": nom,
+                            "eleve_id": existing_id,
+                        }
+                    )
+                else:
+                    new.append(
+                        {"filename": file.filename, "prenom": prenom, "nom": nom}
+                    )
 
         except Exception as e:
             unreadable.append({"filename": file.filename, "error": str(e)})
-
-        finally:
-            if tmp_path is not None:
-                tmp_path.unlink(missing_ok=True)
 
     return {"conflicts": conflicts, "new": new, "unreadable": unreadable}
 
@@ -379,49 +378,38 @@ async def import_pdf(
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
     """Importer un bulletin PDF et extraire les données de l'élève."""
-    # Validate class exists or create it
-    classe = classe_repo.get(classe_id)
-    if not classe:
-        from src.storage.repositories.classe import Classe
+    ensure_classe_exists(classe_repo, classe_id)
 
-        classe = Classe(classe_id=classe_id, nom=classe_id)
-        classe_repo.create(classe)
-
-    # Validate and read file
     content = await _validate_pdf_upload(file)
 
-    # Save to temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(content)
-        tmp_path = Path(tmp.name)
-
     try:
-        result = _import_single_pdf(
-            pdf_path=tmp_path,
-            classe_id=classe_id,
-            trimestre=trimestre,
-            pseudonymizer=pseudonymizer,
-            eleve_repo=eleve_repo,
-            synthese_repo=synthese_repo,
-            force_overwrite=force_overwrite,
-        )
+        with temp_pdf_file(content) as tmp_path:
+            result = _import_single_pdf(
+                pdf_path=tmp_path,
+                classe_id=classe_id,
+                trimestre=trimestre,
+                pseudonymizer=pseudonymizer,
+                eleve_repo=eleve_repo,
+                synthese_repo=synthese_repo,
+                force_overwrite=force_overwrite,
+            )
 
-        was_overwritten = result["status"] == "overwritten"
-        was_skipped = result["status"] == "skipped"
-        return {
-            "status": "success",
-            "filename": file.filename,
-            "classe_id": classe_id,
-            "trimestre": trimestre,
-            "parsed_count": 1,
-            "imported_count": 0 if was_skipped else 1,
-            "overwritten_count": 1 if was_overwritten else 0,
-            "skipped_count": 1 if was_skipped else 0,
-            "eleve_ids": [] if was_skipped else [result["eleve_id"]],
-            "overwritten_ids": [result["eleve_id"]] if was_overwritten else [],
-            "skipped_ids": [result["eleve_id"]] if was_skipped else [],
-            "warnings": result.get("warnings", []),
-        }
+            was_overwritten = result["status"] == "overwritten"
+            was_skipped = result["status"] == "skipped"
+            return {
+                "status": "success",
+                "filename": file.filename,
+                "classe_id": classe_id,
+                "trimestre": trimestre,
+                "parsed_count": 1,
+                "imported_count": 0 if was_skipped else 1,
+                "overwritten_count": 1 if was_overwritten else 0,
+                "skipped_count": 1 if was_skipped else 0,
+                "eleve_ids": [] if was_skipped else [result["eleve_id"]],
+                "overwritten_ids": [result["eleve_id"]] if was_overwritten else [],
+                "skipped_ids": [result["eleve_id"]] if was_skipped else [],
+                "warnings": result.get("warnings", []),
+            }
 
     except ParserError as e:
         raise HTTPException(status_code=422, detail=e.message) from e
@@ -432,9 +420,6 @@ async def import_pdf(
             status_code=500,
             detail="Erreur lors de l'import du PDF. Consultez les logs du serveur.",
         ) from e
-
-    finally:
-        tmp_path.unlink(missing_ok=True)
 
 
 @router.post("/import/pdf/batch")
@@ -456,13 +441,7 @@ async def import_pdf_batch(
             detail=f"Trop de fichiers ({len(files)}). Maximum : {MAX_BATCH_FILES}.",
         )
 
-    # Validate class exists or create it
-    classe = classe_repo.get(classe_id)
-    if not classe:
-        from src.storage.repositories.classe import Classe
-
-        classe = Classe(classe_id=classe_id, nom=classe_id)
-        classe_repo.create(classe)
+    ensure_classe_exists(classe_repo, classe_id)
 
     results = []
     total_imported = 0
@@ -470,24 +449,19 @@ async def import_pdf_batch(
     total_skipped = 0
 
     for _i, file in enumerate(files):
-        tmp_path = None
         try:
-            # Validate and read file
             content = await _validate_pdf_upload(file)
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(content)
-                tmp_path = Path(tmp.name)
-
-            result = _import_single_pdf(
-                pdf_path=tmp_path,
-                classe_id=classe_id,
-                trimestre=trimestre,
-                pseudonymizer=pseudonymizer,
-                eleve_repo=eleve_repo,
-                synthese_repo=synthese_repo,
-                force_overwrite=force_overwrite,
-            )
+            with temp_pdf_file(content) as tmp_path:
+                result = _import_single_pdf(
+                    pdf_path=tmp_path,
+                    classe_id=classe_id,
+                    trimestre=trimestre,
+                    pseudonymizer=pseudonymizer,
+                    eleve_repo=eleve_repo,
+                    synthese_repo=synthese_repo,
+                    force_overwrite=force_overwrite,
+                )
 
             was_overwritten = result["status"] == "overwritten"
             was_skipped = result["status"] == "skipped"
@@ -516,10 +490,6 @@ async def import_pdf_batch(
                     "error": str(e),
                 }
             )
-
-        finally:
-            if tmp_path is not None:
-                tmp_path.unlink(missing_ok=True)
 
     return {
         "classe_id": classe_id,

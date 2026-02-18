@@ -1,7 +1,6 @@
 """Router des synthèses."""
 
 import logging
-import time
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
@@ -14,16 +13,32 @@ from src.api.dependencies import (
     get_synthese_repo,
 )
 from src.core.models import Alerte, Reussite
-from src.generation.prompt_builder import format_eleve_data
 from src.generation.prompts import CURRENT_PROMPT, get_prompt, get_prompt_hash
 from src.llm.config import settings as llm_settings
 from src.privacy.pseudonymizer import Pseudonymizer
+from src.services.shared import VALID_PROVIDERS, VALID_TRIMESTRES
+from src.services.synthese_service import generate_batch as _generate_batch
+from src.services.synthese_service import generate_single as _generate_single
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _validate_trimestre(v: int) -> int:
+    """Valide que le trimestre est 1, 2 ou 3."""
+    if v not in VALID_TRIMESTRES:
+        raise ValueError("trimestre must be 1, 2, or 3")
+    return v
+
+
+def _validate_provider(v: str) -> str:
+    """Valide que le provider est supporté."""
+    if v.lower() not in VALID_PROVIDERS:
+        raise ValueError(f"provider must be one of: {', '.join(VALID_PROVIDERS)}")
+    return v.lower()
 
 
 class GenerateRequest(BaseModel):
@@ -38,10 +53,7 @@ class GenerateRequest(BaseModel):
     @field_validator("trimestre")
     @classmethod
     def validate_trimestre(cls, v: int) -> int:
-        """Valide que le trimestre est 1, 2 ou 3."""
-        if v not in (1, 2, 3):
-            raise ValueError("trimestre must be 1, 2, or 3")
-        return v
+        return _validate_trimestre(v)
 
     @field_validator("temperature")
     @classmethod
@@ -54,11 +66,7 @@ class GenerateRequest(BaseModel):
     @field_validator("provider")
     @classmethod
     def validate_provider(cls, v: str) -> str:
-        """Valide que le provider est supporté."""
-        valid_providers = ("openai", "anthropic", "mistral")
-        if v.lower() not in valid_providers:
-            raise ValueError(f"provider must be one of: {', '.join(valid_providers)}")
-        return v.lower()
+        return _validate_provider(v)
 
 
 class SyntheseUpdate(BaseModel):
@@ -73,131 +81,6 @@ class ValidateRequest(BaseModel):
     """Modèle de requête pour valider une synthèse."""
 
     validated_by: str | None = None
-
-
-@router.post("/generate")
-def generate_synthese(
-    data: GenerateRequest,
-    eleve_repo: EleveRepository = Depends(get_eleve_repo),
-    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
-    pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
-):
-    """Générer une synthèse pour un élève via LLM.
-
-    Args:
-        data: Requête avec eleve_id, trimestre et config LLM optionnelle.
-
-    Returns:
-        ID de la synthèse générée et métadonnées.
-
-    Raises:
-        HTTPException: 404 si élève non trouvé, 500 en cas d'erreur de génération.
-    """
-    # 1. Fetch student data for the specific trimester
-    eleve = get_or_404(eleve_repo, data.eleve_id, data.trimestre, entity_name="Student")
-
-    # 2. Create generator with requested provider/model
-    generator = get_synthese_generator(
-        provider=data.provider,
-        model=data.model,
-    )
-
-    # 3. Generate synthesis with metadata
-    logger.info(
-        f"Generating synthesis for {data.eleve_id} T{data.trimestre} "
-        f"via {data.provider}/{data.model or 'default'}"
-    )
-
-    start_time = time.perf_counter()
-    try:
-        result = generator.generate_with_metadata(
-            eleve=eleve,
-            max_tokens=llm_settings.synthese_max_tokens,
-        )
-        synthese = result.synthese
-        llm_metadata = result.metadata
-    except Exception as e:
-        logger.error(f"Generation failed for {data.eleve_id}: {e}", exc_info=True)
-        from src.core.exceptions import ConfigurationError
-
-        if isinstance(e, ConfigurationError):
-            raise HTTPException(status_code=500, detail=str(e)) from e
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur lors de la génération de la synthèse. Consultez les logs du serveur.",
-        ) from e
-
-    duration_ms = int((time.perf_counter() - start_time) * 1000)
-
-    # 3b. Depseudonymize synthesis text (replace ELEVE_XXX with real name)
-    classe_id = eleve.classe
-    if classe_id:
-        synthese.synthese_texte = pseudonymizer.depseudonymize_text(
-            synthese.synthese_texte, classe_id
-        )
-
-    # 4. Delete existing synthesis for this eleve/trimestre (allows regeneration)
-    deleted_count = synthese_repo.delete_for_eleve(data.eleve_id, data.trimestre)
-    if deleted_count > 0:
-        logger.info(
-            f"Deleted {deleted_count} existing synthesis for {data.eleve_id} T{data.trimestre}"
-        )
-
-    # 5. Prepare metadata for storage
-    # Get prompt hash for traceability
-    eleve_data_str = format_eleve_data(eleve)
-    prompt_hash = get_prompt_hash(CURRENT_PROMPT, eleve_data_str)
-
-    metadata = {
-        "llm_provider": llm_metadata.get("llm_provider", data.provider),
-        "llm_model": llm_metadata.get("llm_model", data.model or generator.model),
-        "llm_response_raw": llm_metadata.get("llm_response_raw"),
-        "prompt_template": CURRENT_PROMPT,
-        "prompt_hash": prompt_hash,
-        "tokens_input": llm_metadata.get("tokens_input"),
-        "tokens_output": llm_metadata.get("tokens_output"),
-        "tokens_total": llm_metadata.get("tokens_total"),
-        "llm_cost": llm_metadata.get("cost_usd"),
-        "llm_duration_ms": duration_ms,
-        "llm_temperature": data.temperature,
-        "retry_count": llm_metadata.get("retry_count", 1),
-    }
-
-    # 6. Store synthesis
-    synthese_id = synthese_repo.create(
-        eleve_id=data.eleve_id,
-        synthese=synthese,
-        trimestre=data.trimestre,
-        metadata=metadata,
-    )
-
-    logger.info(
-        f"Synthesis {synthese_id} created for {data.eleve_id} "
-        f"({duration_ms}ms, {len(synthese.synthese_texte)} chars)"
-    )
-
-    return {
-        "synthese_id": synthese_id,
-        "eleve_id": data.eleve_id,
-        "trimestre": data.trimestre,
-        "status": "generated",
-        "synthese": {
-            "texte": synthese.synthese_texte,
-            "alertes": [a.model_dump() for a in synthese.alertes],
-            "reussites": [r.model_dump() for r in synthese.reussites],
-            "posture_generale": synthese.posture_generale,
-            "axes_travail": synthese.axes_travail,
-        },
-        "metadata": {
-            "provider": metadata["llm_provider"],
-            "model": metadata["llm_model"],
-            "duration_ms": duration_ms,
-            "tokens_input": metadata.get("tokens_input"),
-            "tokens_output": metadata.get("tokens_output"),
-            "tokens_total": metadata.get("tokens_total"),
-            "prompt_template": CURRENT_PROMPT,
-        },
-    }
 
 
 class GenerateBatchRequest(BaseModel):
@@ -215,17 +98,51 @@ class GenerateBatchRequest(BaseModel):
     @field_validator("trimestre")
     @classmethod
     def validate_trimestre(cls, v: int) -> int:
-        if v not in (1, 2, 3):
-            raise ValueError("trimestre must be 1, 2, or 3")
-        return v
+        return _validate_trimestre(v)
 
     @field_validator("provider")
     @classmethod
     def validate_provider(cls, v: str) -> str:
-        valid_providers = ("openai", "anthropic", "mistral")
-        if v.lower() not in valid_providers:
-            raise ValueError(f"provider must be one of: {', '.join(valid_providers)}")
-        return v.lower()
+        return _validate_provider(v)
+
+
+@router.post("/generate")
+def generate_synthese(
+    data: GenerateRequest,
+    eleve_repo: EleveRepository = Depends(get_eleve_repo),
+    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
+    pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
+):
+    """Générer une synthèse pour un élève via LLM."""
+    # Verify student exists
+    get_or_404(eleve_repo, data.eleve_id, data.trimestre, entity_name="Student")
+
+    generator = get_synthese_generator(provider=data.provider, model=data.model)
+
+    try:
+        return _generate_single(
+            eleve_id=data.eleve_id,
+            trimestre=data.trimestre,
+            eleve_repo=eleve_repo,
+            synthese_repo=synthese_repo,
+            pseudonymizer=pseudonymizer,
+            generator=generator,
+            provider=data.provider,
+            model=data.model,
+            use_fewshot=False,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.error(f"Generation failed for {data.eleve_id}: {e}", exc_info=True)
+        from src.core.exceptions import ConfigurationError
+
+        if isinstance(e, ConfigurationError):
+            raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la génération de la synthèse. Consultez les logs du serveur.",
+        ) from e
 
 
 @router.post("/generate-batch")
@@ -235,136 +152,24 @@ async def generate_batch(
     synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
     pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
 ):
-    """Générer des synthèses pour plusieurs élèves en parallèle.
-
-    Si eleve_ids est None, génère pour tous les élèves sans synthèse.
-    Utilise asyncio.gather + Semaphore(3) pour paralléliser les appels LLM.
-    """
-    # 1. Get all students for this class/trimester
-    all_eleves = eleve_repo.get_by_classe(data.classe_id, data.trimestre)
-    if not all_eleves:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Aucun élève trouvé pour {data.classe_id} T{data.trimestre}",
-        )
-
-    # 2. Determine which students to generate for
-    if data.eleve_ids is not None:
-        # Explicit list: filter + delete existing syntheses (regeneration)
-        eleves_map = {e.eleve_id: e for e in all_eleves}
-        eleves_to_generate = []
-        not_found = []
-        for eid in data.eleve_ids:
-            if eid in eleves_map:
-                eleves_to_generate.append(eleves_map[eid])
-                synthese_repo.delete_for_eleve(eid, data.trimestre)
-            else:
-                not_found.append(eid)
-
-        if not_found:
-            logger.warning(f"Élèves non trouvés: {not_found}")
-    else:
-        # No list: generate for students missing a synthesis
-        syntheses_map = synthese_repo.get_by_classe(data.classe_id, data.trimestre)
-        eleves_to_generate = [e for e in all_eleves if e.eleve_id not in syntheses_map]
-
-    if not eleves_to_generate:
-        return {
-            "classe_id": data.classe_id,
-            "trimestre": data.trimestre,
-            "total_requested": 0,
-            "total_success": 0,
-            "total_errors": 0,
-            "results": [],
-        }
-
-    # 3. Generate in parallel
+    """Générer des synthèses pour plusieurs élèves en parallèle."""
     generator = get_synthese_generator(provider=data.provider, model=data.model)
 
-    start_time = time.perf_counter()
-    gen_results = await generator.generate_batch_async(
-        eleves=eleves_to_generate,
-        max_tokens=llm_settings.synthese_max_tokens,
-    )
-    total_duration_ms = int((time.perf_counter() - start_time) * 1000)
-
-    # 4. Post-process each result: depseudonymize + store
-    results = []
-    total_success = 0
-    total_errors = 0
-
-    for eleve, gen_result in zip(eleves_to_generate, gen_results, strict=False):
-        if gen_result is None:
-            total_errors += 1
-            results.append(
-                {
-                    "eleve_id": eleve.eleve_id,
-                    "status": "error",
-                    "error": "Échec de la génération LLM",
-                }
-            )
-            continue
-
-        synthese = gen_result.synthese
-        llm_metadata = gen_result.metadata
-
-        # Depseudonymize
-        classe_id = eleve.classe
-        if classe_id:
-            synthese.synthese_texte = pseudonymizer.depseudonymize_text(
-                synthese.synthese_texte, classe_id
-            )
-
-        # Prepare metadata
-        eleve_data_str = format_eleve_data(eleve)
-        prompt_hash = get_prompt_hash(CURRENT_PROMPT, eleve_data_str)
-
-        metadata = {
-            "llm_provider": llm_metadata.get("llm_provider", data.provider),
-            "llm_model": llm_metadata.get("llm_model", data.model or generator.model),
-            "llm_response_raw": llm_metadata.get("llm_response_raw"),
-            "prompt_template": CURRENT_PROMPT,
-            "prompt_hash": prompt_hash,
-            "tokens_input": llm_metadata.get("tokens_input"),
-            "tokens_output": llm_metadata.get("tokens_output"),
-            "tokens_total": llm_metadata.get("tokens_total"),
-            "llm_cost": llm_metadata.get("cost_usd"),
-            "llm_duration_ms": total_duration_ms // len(eleves_to_generate),
-            "llm_temperature": llm_settings.default_temperature,
-            "retry_count": llm_metadata.get("retry_count", 1),
-        }
-
-        # Store
-        synthese_id = synthese_repo.create(
-            eleve_id=eleve.eleve_id,
-            synthese=synthese,
+    try:
+        return await _generate_batch(
+            classe_id=data.classe_id,
             trimestre=data.trimestre,
-            metadata=metadata,
+            eleve_repo=eleve_repo,
+            synthese_repo=synthese_repo,
+            pseudonymizer=pseudonymizer,
+            generator=generator,
+            provider=data.provider,
+            model=data.model,
+            eleve_ids=data.eleve_ids,
+            use_fewshot=False,
         )
-
-        total_success += 1
-        results.append(
-            {
-                "eleve_id": eleve.eleve_id,
-                "status": "generated",
-                "synthese_id": synthese_id,
-            }
-        )
-
-    logger.info(
-        f"Batch generation: {total_success}/{len(eleves_to_generate)} succès "
-        f"en {total_duration_ms}ms"
-    )
-
-    return {
-        "classe_id": data.classe_id,
-        "trimestre": data.trimestre,
-        "total_requested": len(eleves_to_generate),
-        "total_success": total_success,
-        "total_errors": total_errors,
-        "duration_ms": total_duration_ms,
-        "results": results,
-    }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.get("/prompts/current")

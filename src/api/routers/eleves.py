@@ -10,6 +10,7 @@ from src.api.dependencies import (
     get_synthese_repo,
 )
 from src.privacy.pseudonymizer import Pseudonymizer
+from src.services.query_service import get_eleve_synthese as _get_eleve_synthese
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
 
@@ -110,28 +111,11 @@ def get_eleve_synthese(
     if trimestre is None:
         trimestre = eleve.trimestre
 
-    result = synthese_repo.get_for_eleve_with_metadata(eleve_id, trimestre)
-    if not result:
-        return {
-            "eleve_id": eleve_id,
-            "synthese": None,
-            "synthese_id": None,
-            "status": None,
-        }
-
-    synthese = result["synthese"]
-    return {
-        "eleve_id": eleve_id,
-        "synthese_id": result["synthese_id"],
-        "status": result["status"],
-        "synthese": {
-            "synthese_texte": synthese.synthese_texte,
-            "alertes": [a.model_dump() for a in synthese.alertes],
-            "reussites": [r.model_dump() for r in synthese.reussites],
-            "posture_generale": synthese.posture_generale,
-            "axes_travail": synthese.axes_travail,
-        },
-    }
+    return _get_eleve_synthese(
+        eleve_id=eleve_id,
+        trimestre=trimestre,
+        synthese_repo=synthese_repo,
+    )
 
 
 @router.delete("/{eleve_id}")
