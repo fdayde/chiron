@@ -52,12 +52,6 @@ TABLES = {
             evenements JSON,
             matieres JSON,
 
-            -- Métadonnées OCR
-            ocr_provider VARCHAR,
-            ocr_model VARCHAR,
-            ocr_cost FLOAT,
-            ocr_duration_ms INTEGER,
-
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
