@@ -201,7 +201,7 @@ chiron/
 | Nom, prénom | Pseudonymisé (ELEVE_XXX) avant envoi à l'IA |
 | Genre (F/G) | Extrait du PDF, stocké localement, **non transmis** — le LLM déduit le genre depuis les accords grammaticaux des appréciations |
 | Absences, retards | Stocké localement, **non transmis** |
-| Notes et moyennes | Transmis à l'IA (analyse des résultats) |
+| Moyennes par matière | Catégorisées selon l'échelle de maîtrise du socle commun (LSU) avant envoi à l'IA |
 | Appréciations enseignantes | Transmises pseudonymisées à l'IA |
 | Engagements (délégué...) | Stocké localement, **non transmis** |
 | Nom des professeurs | Stocké localement, **non transmis** |

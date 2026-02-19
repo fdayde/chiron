@@ -8,6 +8,22 @@ from src.generation.prompts import CURRENT_PROMPT, get_prompt
 # Max characters for synthesis text in few-shot examples
 FEWSHOT_SYNTHESE_MAX_CHARS = 1000
 
+# Échelle de maîtrise du socle commun (LSU)
+LSU_LEVELS = [
+    (8.0, "Maîtrise insuffisante"),
+    (12.0, "Maîtrise fragile"),
+    (16.0, "Maîtrise satisfaisante"),
+    (float("inf"), "Très bonne maîtrise"),
+]
+
+
+def _note_to_lsu(note: float) -> str:
+    """Convertit une note /20 en niveau de maîtrise LSU."""
+    for seuil, label in LSU_LEVELS:
+        if note < seuil:
+            return label
+    return LSU_LEVELS[-1][1]
+
 
 def format_eleve_data(eleve: EleveExtraction) -> str:
     """Formate les données d'un élève pour le prompt.
@@ -31,12 +47,6 @@ def format_eleve_data(eleve: EleveExtraction) -> str:
     for m in eleve.matieres:
         lines.append(format_matiere(m))
 
-    # Moyenne générale calculée
-    notes = [m.moyenne_eleve for m in eleve.matieres if m.moyenne_eleve is not None]
-    if notes:
-        moy = sum(notes) / len(notes)
-        lines.append(f"\nMoyenne générale : {moy:.2f}/20")
-
     return "\n".join(lines)
 
 
@@ -52,11 +62,7 @@ def format_matiere(matiere: MatiereExtraction) -> str:
     parts = [f"• {matiere.nom}"]
 
     if matiere.moyenne_eleve is not None:
-        parts.append(f": {matiere.moyenne_eleve:.2f}/20")
-        if matiere.moyenne_classe is not None:
-            diff = matiere.moyenne_eleve - matiere.moyenne_classe
-            sign = "+" if diff >= 0 else ""
-            parts.append(f" (classe: {matiere.moyenne_classe:.2f}, {sign}{diff:.2f})")
+        parts.append(f" : {_note_to_lsu(matiere.moyenne_eleve)}")
 
     if matiere.appreciation:
         parts.append(f'\n  "{matiere.appreciation}"')

@@ -224,8 +224,8 @@ def home_page():
                             "statut": "Stocké localement, non transmis",
                         },
                         {
-                            "donnee": "Notes et moyennes",
-                            "statut": "Transmis à l'IA (analyse des résultats)",
+                            "donnee": "Moyennes par matière",
+                            "statut": "Catégorisées* avant envoi à l'IA",
                         },
                         {
                             "donnee": "Appréciations enseignantes",
@@ -257,6 +257,10 @@ def home_page():
                         },
                     ],
                 ).props("flat bordered dense").classes("w-full")
+                ui.label(
+                    "* Notes catégorisées selon l'échelle de maîtrise du socle commun (LSU) :"
+                    " Insuffisante < 8 · Fragile 8-12 · Satisfaisante 12-16 · Très bonne ≥ 16"
+                ).classes("text-caption text-grey-7 q-mt-xs")
 
         ui.separator().classes("q-mt-md")
 
