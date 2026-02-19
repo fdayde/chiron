@@ -221,7 +221,7 @@ def home_page():
                         },
                         {
                             "donnee": "Absences, retards",
-                            "statut": "Transmis à l'IA (analyse du profil)",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
                             "donnee": "Notes et moyennes",
@@ -233,7 +233,7 @@ def home_page():
                         },
                         {
                             "donnee": "Engagements (délégué...)",
-                            "statut": "Transmis à l'IA",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
                             "donnee": "Nom des professeurs",

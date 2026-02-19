@@ -147,8 +147,8 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 - **Extraction du nom** : locale (regex), jamais envoyée au cloud
 - **Pseudonymisation** : regex sur tous les textes + NER safety net (CamemBERT) sur les appréciations
 - **Genre** : extrait et stocké localement, **non transmis** au LLM (déduit des accords grammaticaux)
-- **Données transmises au LLM** : notes, absences, retards, appréciations **pseudonymisées**, engagements
-- **Données non transmises** : noms, prénoms, genre, établissement, classe, année scolaire, noms des professeurs
+- **Données transmises au LLM** : notes, appréciations **pseudonymisées**
+- **Données non transmises** : noms, prénoms, genre, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs
 - **Dépseudonymisation** : uniquement à l'export, scoped par classe
 
 ## Comportement d'import

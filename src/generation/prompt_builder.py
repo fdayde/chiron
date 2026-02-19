@@ -24,20 +24,6 @@ def format_eleve_data(eleve: EleveExtraction) -> str:
     if eleve.eleve_id:
         lines.append(f"Élève : {eleve.eleve_id}")
 
-    # Absences
-    if eleve.absences_demi_journees is not None:
-        justif = "(justifiées)" if eleve.absences_justifiees else "(non justifiées)"
-        lines.append(
-            f"Absences : {eleve.absences_demi_journees} demi-journées {justif}"
-        )
-
-    if eleve.retards:
-        lines.append(f"Retards : {eleve.retards}")
-
-    # Engagements
-    if eleve.engagements:
-        lines.append(f"Engagements : {', '.join(eleve.engagements)}")
-
     # Matières
     lines.append("\nRÉSULTATS PAR MATIÈRE :")
     lines.append("-" * 40)
@@ -123,12 +109,6 @@ def build_fewshot_examples(raw_examples: list[dict]) -> list[EleveGroundTruth]:
             mat.appreciation = _truncate_appreciation(mat.appreciation)
             matieres.append(mat)
 
-        # Parse engagements
-        engagements = row.get("engagements")
-        if isinstance(engagements, str):
-            engagements = json.loads(engagements)
-        engagements = engagements or []
-
         # Truncate synthesis text
         synthese_texte = row.get("synthese_texte", "")
         if len(synthese_texte) > FEWSHOT_SYNTHESE_MAX_CHARS:
@@ -137,10 +117,6 @@ def build_fewshot_examples(raw_examples: list[dict]) -> list[EleveGroundTruth]:
         example = EleveGroundTruth(
             eleve_id=row["eleve_id"],
             genre=row.get("genre"),
-            absences_demi_journees=row.get("absences_demi_journees"),
-            absences_justifiees=row.get("absences_justifiees"),
-            retards=row.get("retards"),
-            engagements=engagements,
             matieres=matieres,
             synthese_ground_truth=synthese_texte,
         )
