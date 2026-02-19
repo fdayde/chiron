@@ -203,11 +203,69 @@ def debug_pdf_direct(content: bytes) -> bytes:
 
 
 def delete_eleve_direct(eleve_id: str, trimestre: int) -> None:
-    """Supprime un eleve et ses syntheses."""
+    """Supprime un eleve, ses syntheses, et son mapping privacy si plus aucune donnée."""
     eleve_repo = get_eleve_repo()
     synthese_repo = get_synthese_repo()
     synthese_repo.delete_for_eleve(eleve_id, trimestre)
     eleve_repo.delete(eleve_id, trimestre)
+
+    # RGPD: nettoyer le mapping privacy si l'élève n'a plus aucun trimestre
+    if not eleve_repo.exists(eleve_id):
+        pseudonymizer = get_pseudonymizer()
+        deleted = pseudonymizer.clear_mapping_for_eleve(eleve_id)
+        if deleted:
+            logger.info("Privacy mapping cleared for %s (no remaining data)", eleve_id)
+
+
+def purge_trimestre(classe_id: str, trimestre: int) -> dict:
+    """Purge toutes les données d'un trimestre pour une classe (RGPD).
+
+    Supprime les élèves, synthèses, et mappings privacy (si l'élève
+    n'a plus de données dans aucun autre trimestre).
+
+    Args:
+        classe_id: Identifiant de la classe.
+        trimestre: Numéro du trimestre à purger.
+
+    Returns:
+        Dict avec le nombre d'éléments supprimés.
+    """
+    eleve_repo = get_eleve_repo()
+    synthese_repo = get_synthese_repo()
+    pseudonymizer = get_pseudonymizer()
+
+    eleves = eleve_repo.get_by_classe(classe_id, trimestre)
+    deleted_eleves = 0
+    deleted_syntheses = 0
+    deleted_mappings = 0
+
+    for eleve in eleves:
+        deleted_syntheses += synthese_repo.delete_for_eleve(eleve.eleve_id, trimestre)
+        eleve_repo.delete(eleve.eleve_id, trimestre)
+        deleted_eleves += 1
+
+        # Nettoyer le mapping privacy si l'élève n'a plus aucune donnée
+        if not eleve_repo.exists(eleve.eleve_id):
+            deleted_mappings += pseudonymizer.clear_mapping_for_eleve(eleve.eleve_id)
+
+    clear_eleves_cache()
+
+    logger.info(
+        "Purge T%d classe %s: %d élèves, %d synthèses, %d mappings supprimés",
+        trimestre,
+        classe_id,
+        deleted_eleves,
+        deleted_syntheses,
+        deleted_mappings,
+    )
+
+    return {
+        "classe_id": classe_id,
+        "trimestre": trimestre,
+        "deleted_eleves": deleted_eleves,
+        "deleted_syntheses": deleted_syntheses,
+        "deleted_mappings": deleted_mappings,
+    }
 
 
 def delete_classe_direct(classe_id: str) -> dict:

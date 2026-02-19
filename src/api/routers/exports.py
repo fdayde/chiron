@@ -191,10 +191,6 @@ def _pseudonymize_extraction(
         if matiere.appreciation:
             matiere.appreciation = replace_names(matiere.appreciation)
 
-    # Pseudonymize raw_text
-    if eleve.raw_text:
-        eleve.raw_text = replace_names(eleve.raw_text)
-
     # Pseudonymize appreciation_generale if present
     if eleve.appreciation_generale:
         eleve.appreciation_generale = replace_names(eleve.appreciation_generale)

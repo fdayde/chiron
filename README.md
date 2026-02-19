@@ -176,6 +176,7 @@ chiron/
 │   ├── state.py              # Gestion d'état
 │   ├── pages/                # home, import, synthèses, export, prompt
 │   └── components/           # eleve_card, synthese_editor, llm_selector...
+├── tests/                    # Tests unitaires (pseudonymisation, purge)
 ├── run.py                    # Point d'entrée unique (API + UI)
 ├── chiron.spec               # Spec PyInstaller
 ├── scripts/build.py          # Script de build .exe
@@ -190,9 +191,11 @@ chiron/
 |--------|--------|
 | **Pseudonymisation** | CamemBERT NER **avant** envoi cloud (ELEVE_XXX) |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
-| **Mapping identités** | Base séparée (`privacy.duckdb`) |
+| **Mapping identités** | Base séparée (`privacy.duckdb`), cascade suppression |
 | **LLM cloud** | Reçoit uniquement données **pseudonymisées** |
 | **Validation humaine** | Obligatoire avant export |
+| **Purge trimestrielle** | Suppression données + mappings après export (page Export) |
+| **Base légale** | Mission de service public éducatif (RGPD Art. 6(1)(e)) |
 
 ### Détail des données personnelles
 
@@ -233,6 +236,7 @@ Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML config
 
 - **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de données, RGPD
 - **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Guide d'adaptation à un autre format de bulletin
+- **[docs/plan-rgpd-remediation.md](docs/plan-rgpd-remediation.md)** — Plan de remédiation RGPD (audit et corrections)
 
 ## Licence
 

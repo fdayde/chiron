@@ -39,7 +39,6 @@ TABLES = {
             trimestre INTEGER NOT NULL,
 
             -- Données extraites (ANONYMISÉES)
-            raw_text TEXT,
             moyenne_generale FLOAT,
 
             -- Champs structurés
@@ -113,6 +112,8 @@ TABLE_ORDER = ["classes", "eleves", "syntheses"]
 # DuckDB supports ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
 MIGRATIONS: list[str] = [
     "ALTER TABLE syntheses ADD COLUMN IF NOT EXISTS is_fewshot_example BOOLEAN DEFAULT FALSE",
+    # RGPD: raw_text n'est jamais lu après import, suppression pour minimisation
+    "ALTER TABLE eleves DROP COLUMN IF EXISTS raw_text",
     # Migrate posture_generale values from v1 to v3
     "UPDATE syntheses SET posture_generale = 'engage' WHERE posture_generale = 'actif'",
     "UPDATE syntheses SET posture_generale = 'en_progression' WHERE posture_generale = 'variable'",

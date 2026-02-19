@@ -8,6 +8,7 @@ from cache import (
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
     get_status_counts,
+    purge_trimestre,
 )
 from layout import page_layout
 from nicegui import ui
@@ -237,6 +238,85 @@ def export_page():
                     icon="content_copy",
                     on_click=_copy_to_clipboard,
                 ).props("outline rounded")
+
+        # =============================================================
+        # PURGE TRIMESTRIELLE (RGPD)
+        # =============================================================
+
+        if counts["missing"] == 0 and counts["pending"] == 0:
+            ui.separator().classes("q-mt-md")
+            with (
+                ui.card()
+                .classes("w-full q-mt-md")
+                .style(
+                    "background: rgba(244, 67, 54, 0.05); "
+                    "border-left: 3px solid #f44336"
+                )
+            ):
+                with ui.row().classes("items-center gap-2"):
+                    ui.icon("delete_forever", color="negative")
+                    ui.label("Purge trimestrielle").classes("text-lg font-bold")
+                ui.label(
+                    f"Toutes les synthèses T{trimestre} sont validées. "
+                    f"Vous pouvez purger les données de ce trimestre "
+                    f"({counts['total']} élèves)."
+                ).classes("text-body2")
+                ui.label(
+                    "Cette action supprime les données élèves, synthèses "
+                    "et mappings d'identité de ce trimestre. "
+                    "Elle est irréversible."
+                ).classes("text-caption text-grey-7")
+
+                def _open_purge_dialog():
+                    with ui.dialog() as dlg, ui.card():
+                        ui.label(
+                            f"Confirmer la purge du trimestre {trimestre} ?"
+                        ).classes("text-h6")
+                        ui.label(
+                            f"{counts['total']} élèves et "
+                            f"{counts['validated']} synthèses seront "
+                            f"définitivement supprimés."
+                        ).classes("text-body2 text-grey-7")
+                        ui.label(
+                            "Assurez-vous d'avoir exporté les synthèses "
+                            "avant de continuer."
+                        ).classes("text-caption text-warning")
+
+                        def _confirm_purge():
+                            dlg.close()
+                            try:
+                                result = purge_trimestre(classe_id, trimestre)
+                                ui.notify(
+                                    f"T{trimestre} purgé : "
+                                    f"{result['deleted_eleves']} élèves, "
+                                    f"{result['deleted_syntheses']} synthèses, "
+                                    f"{result['deleted_mappings']} mappings "
+                                    f"supprimés.",
+                                    type="positive",
+                                )
+                                ui.navigate.to("/home")
+                            except Exception as exc:
+                                ui.notify(
+                                    f"Erreur lors de la purge : {exc}",
+                                    type="negative",
+                                )
+
+                        with ui.row().classes("justify-end q-mt-md gap-2"):
+                            ui.button("Annuler", on_click=dlg.close).props(
+                                "flat rounded"
+                            )
+                            ui.button(
+                                "Purger",
+                                icon="delete_forever",
+                                on_click=_confirm_purge,
+                            ).props("color=negative rounded")
+                    dlg.open()
+
+                ui.button(
+                    f"Purger les données T{trimestre}",
+                    icon="delete_forever",
+                    on_click=_open_purge_dialog,
+                ).props("color=negative rounded")
 
         ui.separator().classes("q-mt-md")
 

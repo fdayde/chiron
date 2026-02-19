@@ -374,6 +374,26 @@ class Pseudonymizer:
             for row in result
         ]
 
+    def clear_mapping_for_eleve(self, eleve_id: str) -> int:
+        """Clear pseudonymization mapping for a single student.
+
+        Args:
+            eleve_id: Pseudonymized student identifier (e.g. "ELEVE_001").
+
+        Returns:
+            Number of mappings deleted (0 or 1).
+        """
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                f"DELETE FROM {privacy_settings.mapping_table} "
+                f"WHERE eleve_id = ? RETURNING 1",
+                [eleve_id],
+            ).fetchall()
+            deleted = len(rows)
+            if deleted:
+                logger.info("Cleared privacy mapping for %s", eleve_id)
+            return deleted
+
     def clear_mappings(self, classe_id: str | None = None) -> int:
         """Clear pseudonymization mappings.
 
@@ -385,13 +405,13 @@ class Pseudonymizer:
         """
         with self._get_connection() as conn:
             if classe_id:
-                result = conn.execute(
-                    f"""
-                    DELETE FROM {privacy_settings.mapping_table}
-                    WHERE classe_id = ?
-                    """,
+                rows = conn.execute(
+                    f"DELETE FROM {privacy_settings.mapping_table} "
+                    f"WHERE classe_id = ? RETURNING 1",
                     [classe_id],
-                )
+                ).fetchall()
             else:
-                result = conn.execute(f"DELETE FROM {privacy_settings.mapping_table}")
-            return result.rowcount
+                rows = conn.execute(
+                    f"DELETE FROM {privacy_settings.mapping_table} RETURNING 1"
+                ).fetchall()
+            return len(rows)
