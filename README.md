@@ -7,11 +7,29 @@
 [![CI](https://github.com/fdayde/chiron/actions/workflows/ci.yml/badge.svg)](https://github.com/fdayde/chiron/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/fdayde/chiron/graph/badge.svg)](https://codecov.io/gh/fdayde/chiron)
 [![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#-statut-du-projet)
+[![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#statut-du-projet)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![DuckDB](https://img.shields.io/badge/DuckDB-local-FEF502)](https://duckdb.org/)
 
-Assistant IA pour la préparation des conseils de classe - Génère des synthèses trimestrielles personnalisées à partir des bulletins scolaires (PDF PRONOTE).
+Assistant IA pour la préparation des conseils de classe. Génère des synthèses trimestrielles personnalisées à partir des bulletins scolaires (PDF PRONOTE) pseudonymisés.
+
+## Sommaire
+
+- [Fonctionnalités clés](#fonctionnalités-clés)
+- [Statut du projet](#statut-du-projet)
+- [Vue d'ensemble](#vue-densemble)
+- [RGPD — À lire avant utilisation](#rgpd--à-lire-avant-utilisation)
+- [Prérequis](#prérequis-mode-développeur)
+- [Installation](#installation-mode-développeur)
+- [Démarrage rapide](#démarrage-rapide)
+- [Tests](#tests)
+- [Distribution (.exe)](#distribution-exe)
+- [Configuration (.env)](#configuration-env)
+- [Structure du projet](#structure-du-projet)
+- [Sécurité & RGPD](#sécurité--rgpd)
+- [Stack technique](#stack-technique)
+- [Documentation](#documentation)
+- [Licence](#licence)
 
 ## Fonctionnalités clés
 
@@ -49,12 +67,21 @@ PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération
   Bulletin    PDF pseudonymisé   Données      Exemples        Synthèse      Validée    Noms réels
 ```
 
-**Principes** :
-- Le professeur reste dans la boucle (validation obligatoire)
-- **Noms et prénoms pseudonymisés avant envoi au cloud** (le LLM ne reçoit que des identifiants `ELEVE_XXX`)
-- Style et ton calibrés via few-shot learning (exemples de l'enseignant)
-- Insights pédagogiques actionnables (alertes, réussites, stratégies, biais de genre)
-- Application locale + APIs cloud (LLM)
+## RGPD — À lire avant utilisation
+
+Chiron **pseudonymise toutes les données** (noms → `ELEVE_XXX`, notes → niveaux LSU) avant envoi à l'API Mistral AI. Le LLM ne reçoit jamais de données nominatives.
+
+**Mistral AI** est une société française 🇫🇷, hébergée en UE, soumise au RGPD ([DPA](https://legal.mistral.ai/terms/data-processing-addendum)).
+
+### Avant d'utiliser Chiron, vous devez :
+
+1. **Informer votre chef d'établissement** et obtenir son accord (c'est lui le responsable de traitement RGPD)
+2. **Désactiver l'entraînement** dans votre [console Mistral](https://console.mistral.ai/) : Admin Console > Privacy > off
+3. **Purger les données** après chaque conseil de classe (page Export de Chiron)
+
+> Le chef d'établissement peut consulter le DPO académique. Le [DPA Mistral](https://legal.mistral.ai/terms/data-processing-addendum) et cette documentation fournissent les éléments nécessaires.
+
+Pour le détail technique des données traitées, voir [Sécurité & RGPD](#sécurité--rgpd).
 
 ## Prérequis (mode développeur)
 
@@ -98,7 +125,7 @@ CHIRON_PORT=9000 python run.py   # Port personnalisé
 
 1. **Classe** : Importer les PDF bulletins de la classe (pseudonymisation automatique)
 2. **Vérification** : Utilisez le bouton « Visualiser les zones » pour vérifier que l'extraction du bulletin est correcte
-3. **Génération** : Générer 1-2 synthèses, relire et valider
+3. **Génération** : Générer 1-2 synthèses, relire et modifier au besoin, et valider
 4. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
 5. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
 6. **Review** : Relire, éditer si besoin, valider
@@ -222,12 +249,6 @@ chiron/
 | Année scolaire | Stocké localement, **non transmis** |
 | Trimestre | Stocké localement, **non transmis** |
 
-## Adapter à un autre format de bulletin
-
-Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML configurable (`src/document/templates/pronote_standard.yaml`). Pour l'adapter à un autre format, consultez le guide dédié :
-
-**[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)**
-
 ## Stack technique
 
 | Composant | Technologie |
@@ -244,7 +265,7 @@ Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML config
 ## Documentation
 
 - **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de données, RGPD
-- **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Guide d'adaptation à un autre format de bulletin
+- **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Adapter Chiron à un autre format de bulletin (autre que PRONOTE)
 - **[docs/plan-rgpd-remediation.md](docs/plan-rgpd-remediation.md)** — Plan de remédiation RGPD (audit et corrections)
 
 ## Licence
