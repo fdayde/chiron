@@ -35,7 +35,7 @@ Le prompt de génération est conçu selon des principes issus de la recherche e
 - UI NiceGUI (navigateur) : import, génération, calibration few-shot, validation, export
 - API FastAPI intégrée (process unique)
 - RGPD : pseudonymisation NER locale avant envoi cloud
-- Multi-provider : OpenAI, Anthropic, Mistral
+- Multi-provider : Mistral (défaut), OpenAI, Anthropic
 - Distribution : `chiron.exe` (PyInstaller, `--onedir`)
 
 ## Vue d'ensemble
@@ -43,8 +43,8 @@ Le prompt de génération est conçu selon des principes issus de la recherche e
 ```
 PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export CSV
      │              │                  │            │               │             │           │
-     │         CamemBERT         YAML template  Few-shot       OpenAI/Claude   Humain    Dépseudo
-     │         (local)           (local)        (0-3 ex.)      (cloud)        (local)    (local)
+     │         CamemBERT         YAML template  Few-shot       Mistral (cloud) Humain    Dépseudo
+     │         (local)           (local)        (0-3 ex.)      hébergé UE     (local)    (local)
      ▼              ▼                  ▼            ▼               ▼             ▼           ▼
   Bulletin    PDF pseudonymisé   Données      Exemples        Synthèse      Validée    Noms réels
 ```
@@ -60,7 +60,7 @@ PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération
 
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
-- Clé API : OpenAI et/ou Anthropic et/ou Mistral
+- Clé API Mistral (OpenAI/Anthropic optionnels)
 
 ## Installation (mode développeur)
 
@@ -97,11 +97,12 @@ CHIRON_PORT=9000 python run.py   # Port personnalisé
 ### Workflow type
 
 1. **Classe** : Importer les PDF bulletins de la classe (pseudonymisation automatique)
-2. **Génération** : Générer 1-2 synthèses, relire et valider
-3. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
-4. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
-5. **Review** : Relire, éditer si besoin, valider
-6. **Export** : Télécharger les synthèses (noms réels restaurés automatiquement)
+2. **Vérification** : Utilisez le bouton « Visualiser les zones » pour vérifier que l'extraction du bulletin est correcte
+3. **Génération** : Générer 1-2 synthèses, relire et valider
+4. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
+5. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
+6. **Review** : Relire, éditer si besoin, valider
+7. **Export** : Télécharger les synthèses (noms réels restaurés automatiquement)
 
 ## Tests
 
@@ -129,13 +130,14 @@ Le dossier `dist/chiron/` contient tout le nécessaire. Pour l'utilisateur final
 ## Configuration (.env)
 
 ```env
-# Provider par défaut : openai, anthropic ou mistral
-DEFAULT_PROVIDER=anthropic
-
-# Clés API (seule celle du provider choisi est nécessaire)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
+# Provider par défaut : Mistral (hébergé en UE, conforme RGPD)
+DEFAULT_PROVIDER=mistral
 MISTRAL_API_KEY=...
+
+# OpenAI et Anthropic disponibles en configuration avancée :
+# OPENAI_API_KEY=sk-...
+# ANTHROPIC_API_KEY=sk-ant-...
+# DEFAULT_PROVIDER=openai  (ou anthropic)
 ```
 
 Options avancées (développeurs) : voir [.env.example](.env.example).
@@ -231,7 +233,7 @@ Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML config
 | Composant | Technologie |
 |-----------|-------------|
 | Runtime | Python 3.13+ |
-| LLM | OpenAI GPT-5-mini / Claude Sonnet 4.5 / Mistral |
+| LLM | Mistral (défaut) — OpenAI, Anthropic disponibles en configuration avancée |
 | NER | CamemBERT (Jean-Baptiste/camembert-ner) |
 | PDF | pdfplumber + YAML templates (configurable) |
 | Backend | FastAPI + Uvicorn |

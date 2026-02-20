@@ -216,20 +216,20 @@ def home_page():
                             "statut": "Pseudonymisé (ELEVE_XXX) avant envoi à l'IA",
                         },
                         {
-                            "donnee": "Genre (F/G)",
-                            "statut": "Stocké localement, non transmis — le LLM déduit le genre des accords grammaticaux",
-                        },
-                        {
-                            "donnee": "Absences, retards",
-                            "statut": "Stocké localement, non transmis",
-                        },
-                        {
                             "donnee": "Moyennes par matière",
                             "statut": "Catégorisées* avant envoi à l'IA",
                         },
                         {
                             "donnee": "Appréciations enseignantes",
                             "statut": "Transmises pseudonymisées à l'IA",
+                        },
+                        {
+                            "donnee": "Genre (F/G)",
+                            "statut": "Stocké localement, non transmis — le LLM déduit le genre des accords grammaticaux",
+                        },
+                        {
+                            "donnee": "Absences, retards",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
                             "donnee": "Engagements (délégué...)",

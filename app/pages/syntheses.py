@@ -13,6 +13,7 @@ from cache import (
     get_status_counts,
     is_fewshot_example_direct,
     toggle_fewshot_example_direct,
+    update_eleve_matieres_direct,
 )
 from components.appreciations_view_ng import appreciations, eleve_header
 from components.synthese_editor_ng import synthese_editor
@@ -41,6 +42,28 @@ def syntheses_page(eleve: str = ""):
         ui.label(f"Classe : {classe_nom} | Trimestre : T{trimestre}").classes(
             "text-body1"
         )
+
+        with (
+            ui.card()
+            .classes("w-full q-mt-sm")
+            .style(
+                "border-left: 4px solid var(--chiron-gold); "
+                "background: var(--chiron-navy); "
+                "padding: 12px 16px;"
+            )
+        ):
+            ui.html(
+                "<b>Appréciations</b> et <b>synthèses</b> sont modifiables "
+                "directement sur cette page."
+                "<ul style='margin: 4px 0 4px 16px; padding: 0;'>"
+                "<li>- Les appréciations ne doivent contenir aucune donnée "
+                "personnelle avant génération des synthèses par l'IA.</li>"
+                "<li>- Les synthèses générées sont des suggestions "
+                "à adapter par l'enseignant.</li>"
+                "</ul>"
+                "Les prénoms et noms de l'élève concerné sont "
+                "automatiquement pseudonymisés avant envoi à l'IA (il n'est pas nécessaire de les modifier ou supprimer manuellement)."
+            ).style("color: var(--chiron-gold); font-size: 0.875rem;")
 
         # Fetch data (mutable container so refresh can update it)
         page_data = {"eleves": [], "counts": {}}
@@ -304,7 +327,27 @@ def syntheses_page(eleve: str = ""):
                         ui.label("Appréciations").classes("text-h6")
                         if eleve_full:
                             eleve_header(eleve_full)
-                            appreciations(eleve_full)
+
+                            def _on_save_appreciations(
+                                matieres_editees,
+                                _eid=eleve_id,
+                                _cid=classe_id,
+                                _tri=trimestre,
+                            ):
+                                update_eleve_matieres_direct(
+                                    _eid, _tri, _cid, matieres_editees
+                                )
+                                ui.notify(
+                                    "Appréciations sauvegardées",
+                                    type="positive",
+                                )
+                                _render_student_view()
+
+                            appreciations(
+                                eleve_full,
+                                editable=True,
+                                on_save=_on_save_appreciations,
+                            )
                         else:
                             ui.label("Données élève non disponibles").classes(
                                 "text-warning"

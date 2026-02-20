@@ -218,6 +218,7 @@ def _import_single_pdf(
     eleve_repo: EleveRepository,
     synthese_repo: SyntheseRepository,
     force_overwrite: bool = True,
+    classe_nom: str | None = None,
 ) -> dict:
     """Importe un PDF unique avec le flux unifié.
 
@@ -229,6 +230,7 @@ def _import_single_pdf(
         eleve_repo: Repository des élèves.
         synthese_repo: Repository des synthèses.
         force_overwrite: Si False, les élèves existants sont ignorés.
+        classe_nom: Nom lisible de la classe (pour les messages de warning).
 
     Returns:
         Dict avec les résultats de l'import.
@@ -272,7 +274,9 @@ def _import_single_pdf(
     logger.info(
         f"Classe check: pdf_classe={eleve.classe!r}, user_classe_id={classe_id!r}"
     )
-    classe_warning = check_classe_mismatch(eleve.classe, classe_id)
+    classe_warning = check_classe_mismatch(
+        eleve.classe, classe_id, classe_nom=classe_nom
+    )
     if classe_warning:
         validation.warnings.append(classe_warning)
 
@@ -373,6 +377,8 @@ async def import_pdf(
 ):
     """Importer un bulletin PDF et extraire les données de l'élève."""
     ensure_classe_exists(classe_repo, classe_id)
+    classe = classe_repo.get(classe_id)
+    classe_nom = classe.nom if classe else None
 
     content = await _validate_pdf_upload(file)
 
@@ -386,6 +392,7 @@ async def import_pdf(
                 eleve_repo=eleve_repo,
                 synthese_repo=synthese_repo,
                 force_overwrite=force_overwrite,
+                classe_nom=classe_nom,
             )
 
             was_overwritten = result["status"] == "overwritten"
@@ -436,6 +443,8 @@ async def import_pdf_batch(
         )
 
     ensure_classe_exists(classe_repo, classe_id)
+    classe = classe_repo.get(classe_id)
+    classe_nom = classe.nom if classe else None
 
     results = []
     total_imported = 0
@@ -455,6 +464,7 @@ async def import_pdf_batch(
                     eleve_repo=eleve_repo,
                     synthese_repo=synthese_repo,
                     force_overwrite=force_overwrite,
+                    classe_nom=classe_nom,
                 )
 
             was_overwritten = result["status"] == "overwritten"

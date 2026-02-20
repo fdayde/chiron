@@ -167,6 +167,8 @@ def import_pdf_direct(
     pseudonymizer = get_pseudonymizer()
 
     ensure_classe_exists(classe_repo, classe_id)
+    classe = classe_repo.get(classe_id)
+    classe_nom = classe.nom if classe else None
 
     with temp_pdf_file(content) as tmp_path:
         result = _import_single_pdf(
@@ -177,6 +179,7 @@ def import_pdf_direct(
             eleve_repo=eleve_repo,
             synthese_repo=synthese_repo,
             force_overwrite=force_overwrite,
+            classe_nom=classe_nom,
         )
         was_overwritten = result["status"] == "overwritten"
         was_skipped = result["status"] == "skipped"
@@ -301,6 +304,47 @@ def delete_classe_direct(classe_id: str) -> dict:
         "deleted_eleves": deleted_eleves,
         "deleted_syntheses": deleted_syntheses,
     }
+
+
+def update_eleve_matieres_direct(
+    eleve_id: str, trimestre: int, classe_id: str, matieres: list[dict]
+) -> bool:
+    """Update appreciations for a student, re-pseudonymizing before storage.
+
+    The UI displays depseudonymized appreciations. When the teacher edits and
+    saves, we must re-pseudonymize before writing back to the database.
+
+    Args:
+        eleve_id: Student identifier.
+        trimestre: Trimester number.
+        classe_id: Class identifier (for scoped pseudonymization).
+        matieres: Updated list of matiere dicts (with depseudonymized appreciations).
+
+    Returns:
+        True if update succeeded.
+    """
+    repo = get_eleve_repo()
+    pseudonymizer = get_pseudonymizer()
+
+    # Re-pseudonymize appreciations: replace real names with ELEVE_XXX identifiers
+    mappings = pseudonymizer.list_mappings(classe_id)
+    for matiere in matieres:
+        appr = matiere.get("appreciation")
+        if appr:
+            for m in mappings:
+                nom = m.get("nom_original", "")
+                prenom = m.get("prenom_original", "")
+                eid = m["eleve_id"]
+                # Replace "Prénom" occurrences with eleve_id (reverse of depseudonymize)
+                if prenom and len(prenom) > 1:
+                    appr = appr.replace(prenom, eid)
+                if nom and len(nom) > 1:
+                    appr = appr.replace(nom, eid)
+            matiere["appreciation"] = appr
+
+    result = repo.update(eleve_id, trimestre, matieres=matieres)
+    clear_eleves_cache()
+    return result
 
 
 def clear_eleves_cache() -> None:

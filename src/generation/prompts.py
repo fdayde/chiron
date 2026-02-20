@@ -68,6 +68,12 @@ Si des exemples de synthèses validées par le professeur sont fournis dans la c
 - Le **niveau de détail** (nombre de matières citées, formulations)
 Ces exemples reflètent le style exact attendu par le professeur. Imite-les fidèlement.
 
+VISION TRANSVERSALE (RÈGLE CENTRALE) :
+La synthèse doit offrir une **vue d'ensemble transversale** de l'élève : dynamique de travail, posture, investissement général. Elle ne doit PAS être une énumération matière par matière.
+- PROSCRIRE toute liste ou énumération de matières dans la synthèse.
+- Ne citer **nommément 1 à 2 matières maximum**, et uniquement si elles présentent un écart significatif (alerte urgente ou réussite remarquable).
+- Les détails par matière sont réservés aux insights (alertes, réussites, stratégies — étapes 2 à 5).
+
 STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
 1. **Ouverture** (1 phrase courte) : commence par une formule qui qualifie le trimestre. VARIE les formulations d'un élève à l'autre. Choisis parmi ces familles selon le profil :
    - Famille "Bilan" : "Bilan positif.", "Bilan positif mais perfectible.", "Bilan contrasté.", "Bilan encourageant.", "Bilan perfectible."
@@ -75,7 +81,7 @@ STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
    - Famille "Résultats" : "Des résultats encourageants.", "De bons acquis à consolider.", "Des résultats contrastés selon les matières."
    - Famille "Efforts" : "Des efforts qui portent leurs fruits.", "Des efforts à poursuivre.", "Un investissement à renforcer."
    Ne répète PAS la même ouverture pour deux élèves consécutifs.
-2. **Feed-back** (1-3 phrases) : constat direct sur le travail et les comportements. Cite les matières individuellement, en te limitant aux 2 à 4 plus significatives (alertes urgentes ou réussites notables). Pas de liste exhaustive. Reste au niveau de la synthèse : mentionne la matière et la tendance générale (réussite, difficulté, progrès) SANS reproduire le détail des appréciations enseignantes (pas d'activités spécifiques, pas de paraphrase). En revanche, un conseil concret lié à la matière est bienvenu (ex: "se fixer un objectif mesurable par séance en EPS"). Les détails spécifiques sont réservés aux alertes, réussites et stratégies (étapes suivantes).
+2. **Feed-back** (1-3 phrases) : appréciation globale transversale sur la dynamique de travail, la posture et l'investissement. Décris des tendances générales (régularité, autonomie, participation, organisation) plutôt qu'un tour d'horizon matière par matière. Ne cite nommément une matière que si un écart très significatif le justifie (1-2 max). Les détails spécifiques sont réservés aux alertes, réussites et stratégies (étapes suivantes).
 3. **Orientation** (1 phrase) : clôture par une direction pour le trimestre suivant, formulée avec le "nous". VARIE les formulations de clôture d'un élève à l'autre. Choisis parmi :
    - "Nous comptons sur lui/elle."
    - "Nous l'en savons capable."
@@ -94,12 +100,13 @@ FORMULATIONS INTERDITES :
 - ❌ "Encouragé(e) à continuer", "Poursuivre ainsi", "Continuez ainsi" (aucune piste concrète)
 - ❌ "Les appréciations montrent que...", "Le bulletin fait apparaître...", "On note que..."
 - ❌ Toute note chiffrée, moyenne ou comparaison quantitative (cf. interdiction ci-dessus)
+- ❌ Listes ou énumérations de matières : "en français, en maths, en histoire..." (vue transversale, pas d'inventaire)
 
 FORMULATIONS RECOMMANDÉES :
-- ✅ "Bilan positif mais perfectible. [ELEVE] a fourni un travail sérieux dans de nombreuses matières. Nous l'encourageons à améliorer sa participation en [matière]. Nous l'en savons capable."
-- ✅ "Trimestre solide. Le travail régulier en [matière] et [matière] porte ses fruits. Un effort en [matière] permettrait de parfaire ce bilan. Nous comptons sur lui/elle."
-- ✅ "Des résultats contrastés. [ELEVE] montre de réelles capacités en [matière], mais la concentration reste fragile en [matière]. Il/Elle peut progresser, nous l'y encourageons."
-- ✅ "Bilan encourageant. [ELEVE] a su se mobiliser ce trimestre. Nous attendons la même régularité au prochain trimestre."
+- ✅ "Bilan positif mais perfectible. [ELEVE] fait preuve d'un investissement régulier et d'une participation active dans la majorité des disciplines. La rigueur dans le travail personnel reste à consolider, notamment en mathématiques où les résultats sont fragiles. Nous l'en savons capable."
+- ✅ "Trimestre solide. Le travail est sérieux et constant, avec une bonne autonomie. Nous comptons sur lui/elle pour maintenir cette dynamique."
+- ✅ "Des résultats contrastés. [ELEVE] montre un réel investissement à l'oral, mais le travail écrit manque encore de régularité. Il/Elle peut progresser, nous l'y encourageons."
+- ✅ "Bilan encourageant. [ELEVE] a su se mobiliser ce trimestre et gagner en confiance. Nous attendons la même régularité au prochain trimestre."
 """
 
 _ETAPE_2_ALERTES = """## ÉTAPE 2 : IDENTIFIER LES ALERTES

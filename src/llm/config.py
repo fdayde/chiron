@@ -30,7 +30,7 @@ class LLMSettings(BaseSettings):
     mistral_api_key: str = Field(default="", description="Clé API Mistral LLM")
     # Provider par défaut (lu depuis DEFAULT_PROVIDER dans .env)
     default_provider: str = Field(
-        default="anthropic",
+        default="mistral",
         description="Provider LLM par défaut (openai, anthropic, mistral)",
     )
 
