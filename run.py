@@ -91,6 +91,7 @@ if __name__ == "__main__":
             import pages.home  # noqa: F401
             import pages.import_page  # noqa: F401
             import pages.prompt  # noqa: F401
+            import pages.references  # noqa: F401
             import pages.syntheses  # noqa: F401
 
             # --- Launch ---

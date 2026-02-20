@@ -137,6 +137,7 @@ def page_layout(title: str):
                 ("Synthèses", "/syntheses"),
                 ("Export", "/export"),
                 ("Prompt", "/prompt"),
+                ("Références", "/references"),
             ]:
                 btn = ui.button(label, on_click=lambda p=path: ui.navigate.to(p)).props(
                     "flat color=white size=sm"
