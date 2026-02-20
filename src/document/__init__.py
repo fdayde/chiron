@@ -11,24 +11,14 @@ Le flux d'import unifié :
    (regex + NER safety net sur les appréciations)
 """
 
-from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from src.document.anonymizer import extract_eleve_name
 from src.document.parser import PDFContent, clean_text, extract_pdf_content
-from src.document.pdfplumber_parser import PdfplumberParser
-from src.llm.config import settings
 
 if TYPE_CHECKING:
     from src.core.models import EleveExtraction
-
-
-class ParserType(Enum):
-    """Types de parser PDF disponibles."""
-
-    PDFPLUMBER = "pdfplumber"
-    YAML_TEMPLATE = "yaml_template"
 
 
 class PDFParser(Protocol):
@@ -42,35 +32,15 @@ class PDFParser(Protocol):
     ) -> "EleveExtraction": ...
 
 
-def get_parser(parser_type: ParserType | None = None) -> PDFParser:
-    """Factory pour obtenir le parser PDF configuré.
-
-    Args:
-        parser_type: Type de parser. Si None, utilise PDF_PARSER_TYPE de .env.
+def get_parser() -> PDFParser:
+    """Retourne le parser PDF (YamlTemplateParser).
 
     Returns:
-        Instance du parser demandé.
-
-    Raises:
-        ValueError: Si le type de parser est invalide.
+        Instance du parser.
     """
-    if parser_type is None:
-        # Lire depuis la config
-        type_str = settings.pdf_parser_type.lower()
-        try:
-            parser_type = ParserType(type_str)
-        except ValueError as e:
-            raise ValueError(
-                f"PDF_PARSER_TYPE invalide: {type_str}. "
-                f"Valeurs possibles: {[p.value for p in ParserType]}"
-            ) from e
+    from src.document.yaml_template_parser import YamlTemplateParser
 
-    if parser_type == ParserType.YAML_TEMPLATE:
-        from src.document.yaml_template_parser import YamlTemplateParser
-
-        return YamlTemplateParser()
-
-    return PdfplumberParser()
+    return YamlTemplateParser()
 
 
 __all__ = [
@@ -78,10 +48,8 @@ __all__ = [
     "extract_eleve_name",
     # Factory et types
     "get_parser",
-    "ParserType",
     "PDFParser",
     # Parsers
-    "PdfplumberParser",
     "YamlTemplateParser",
     # Debug
     "generate_debug_pdf",

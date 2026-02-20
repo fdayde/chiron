@@ -114,8 +114,7 @@ Utiliser les utilitaires partagés de `src/document/parser.py` :
 
 ### 3. Enregistrer le parser
 
-Ajouter le nouveau type dans `src/document/__init__.py` :
-- Ajouter une valeur à l'enum `ParserType`
+Ajouter le nouveau parser dans `src/document/__init__.py` :
 - Ajouter le cas dans la factory `get_parser()`
 
 ### 4. Modèle de données
@@ -142,7 +141,7 @@ Adapter à un nouveau format :
   Option B — Parser Python custom :
     mon_parser.py              → implémenter PDFParser Protocol
     anonymizer.py              → regex du nom de l'élève
-    __init__.py                → enregistrer dans ParserType + get_parser()
+    __init__.py                → enregistrer dans get_parser()
     models.py                  → champs supplémentaires (optionnel)
     validation.py              → règles de validation (optionnel)
 ```

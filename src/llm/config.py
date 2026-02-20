@@ -34,12 +34,6 @@ class LLMSettings(BaseSettings):
         description="Provider LLM par défaut (openai, anthropic, mistral)",
     )
 
-    # PDF Parser configuration
-    pdf_parser_type: str = Field(
-        default="yaml_template",
-        description="Type de parser PDF (yaml_template ou pdfplumber)",
-    )
-
     # Anonymization configuration
     ner_model: str = Field(
         default="Jean-Baptiste/camembert-ner",

@@ -149,7 +149,6 @@ chiron/
 │   │   └── exceptions.py     # Exceptions custom
 │   ├── document/             # Parsing PDF
 │   │   ├── yaml_template_parser.py # Parser principal (template YAML configurable)
-│   │   ├── pdfplumber_parser.py    # Parser legacy (rétrocompatibilité)
 │   │   ├── anonymizer.py          # Extraction nom élève + NER safety net
 │   │   ├── validation.py          # Validation post-extraction + mismatch classe
 │   │   ├── debug_visualizer.py    # PDF annoté pour debug visuel

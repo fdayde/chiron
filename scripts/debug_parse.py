@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "app"))
 
 from src.document.anonymizer import extract_eleve_name  # noqa: E402
 from src.document.parser import extract_pdf_content  # noqa: E402
-from src.document.pdfplumber_parser import PdfplumberParser  # noqa: E402
+from src.document.yaml_template_parser import YamlTemplateParser  # noqa: E402
 
 
 def main():
@@ -75,7 +75,7 @@ def main():
     # --- Parser result ---
     lines.append("")
     lines.append("--- RÉSULTAT DU PARSER ---")
-    parser = PdfplumberParser()
+    parser = YamlTemplateParser()
     genre = identity.get("genre") if identity else None
     result = parser.parse(pdf, "ELEVE_001", genre=genre)
 

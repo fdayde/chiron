@@ -94,10 +94,9 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 
 | Fichier | Responsabilité |
 |---------|----------------|
-| `src/document/__init__.py` | Factory `get_parser()`, `ParserType` enum, `PDFParser` Protocol |
+| `src/document/__init__.py` | Factory `get_parser()`, `PDFParser` Protocol |
 | `src/document/anonymizer.py` | `extract_eleve_name()`, `ner_check_student_names()` |
 | `src/document/yaml_template_parser.py` | Parser principal via templates YAML (PRONOTE) |
-| `src/document/pdfplumber_parser.py` | Parser legacy (rétrocompatibilité) |
 | `src/document/parser.py` | Utilitaires partagés (`extract_pdf_content`, `extract_key_value`, etc.) |
 | `src/document/validation.py` | `validate_extraction()`, `check_classe_mismatch()` |
 | `src/document/debug_visualizer.py` | Génère un PDF annoté pour debug visuel des zones |

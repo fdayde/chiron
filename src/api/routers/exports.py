@@ -19,13 +19,12 @@ from src.api.dependencies import (
 )
 from src.core.exceptions import ParserError
 from src.core.models import EleveExtraction
-from src.document import ParserType, get_parser
+from src.document import get_parser
 from src.document.anonymizer import (
     extract_eleve_name,
     ner_check_student_names,
 )
 from src.document.validation import check_classe_mismatch, validate_extraction
-from src.llm.config import settings
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.services.shared import ensure_classe_exists, temp_pdf_file
 from src.storage.repositories.classe import ClasseRepository
@@ -255,8 +254,7 @@ def _import_single_pdf(
     logger.info(f"Created/found eleve_id: {eleve_id} for {prenom} {nom}")
 
     # 3. Parse PDF
-    parser_type = ParserType(settings.pdf_parser_type.lower())
-    parser = get_parser(parser_type)
+    parser = get_parser()
 
     eleve = parser.parse(pdf_path, eleve_id, genre=genre)
     _pseudonymize_extraction(eleve, identity, eleve_id)
