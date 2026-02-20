@@ -58,15 +58,18 @@ _DIST_ENV_EXAMPLE = """\
 # =============================================================================
 # Chiron - Configuration
 # =============================================================================
-# Renommer ce fichier en .env et remplir la cle du provider choisi.
+# Renommer ce fichier en .env et remplir votre cle API Mistral.
 
-# Provider par defaut : openai, anthropic ou mistral
-DEFAULT_PROVIDER=anthropic
+# Provider par defaut (Mistral — heberge en UE, conforme RGPD)
+DEFAULT_PROVIDER=mistral
 
-# Cles API (remplir uniquement celle du provider choisi)
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
+# Cle API Mistral (https://console.mistral.ai/)
 MISTRAL_API_KEY=
+
+# OpenAI et Anthropic disponibles en configuration avancee :
+# OPENAI_API_KEY=sk-...
+# ANTHROPIC_API_KEY=sk-ant-...
+# DEFAULT_PROVIDER=openai  (ou anthropic)
 """
 
 

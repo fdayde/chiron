@@ -39,12 +39,13 @@ def home_page():
                         "La génération de synthèses ne fonctionnera pas."
                     ).classes("text-orange-3")
                 ui.markdown(
-                    "Créez un fichier **`.env`** à la racine du projet "
-                    "(copiez `.env.example`) et ajoutez au moins une clé :\n\n"
-                    "```\nANTHROPIC_API_KEY=sk-ant-...\n"
-                    "OPENAI_API_KEY=sk-...\n"
-                    "MISTRAL_API_KEY=...\n```\n\n"
-                    "Puis relancez l'application."
+                    "1. Créez un compte sur [console.mistral.ai](https://console.mistral.ai/) "
+                    "et générez une clé API\n"
+                    "2. Créez un fichier **`.env`** à la racine du projet "
+                    "(copiez `.env.example`)\n"
+                    "3. Ajoutez votre clé :\n\n"
+                    "```\nMISTRAL_API_KEY=votre-clé-ici\n```\n\n"
+                    "4. Relancez l'application."
                 ).classes("text-body2 q-ml-lg text-grey-4")
 
         # --- API status ---
@@ -191,6 +192,23 @@ def home_page():
                     "pseudonymisés avant tout traitement IA. "
                     "Les données personnelles restent sur votre machine."
                 ).classes("text-grey-4")
+
+            with ui.expansion("Obligations RGPD").classes("w-full q-mt-sm"):
+                ui.markdown(
+                    "Avant d'utiliser Chiron, vous devez :\n\n"
+                    "1. **Informer votre chef d'établissement** et obtenir "
+                    "son accord (responsable de traitement RGPD)\n"
+                    "2. **Désactiver l'entraînement** dans votre "
+                    "[console Mistral](https://console.mistral.ai/) : "
+                    "Admin Console > Privacy > off\n"
+                    "3. **Purger les données** après chaque conseil de classe "
+                    "(page Export de Chiron)"
+                ).classes("text-body2")
+                ui.markdown(
+                    "Le chef d'établissement peut consulter le DPO académique. "
+                    "Le [DPA Mistral](https://legal.mistral.ai/terms/"
+                    "data-processing-addendum) fournit les éléments nécessaires."
+                ).classes("text-caption text-grey-7 q-mt-xs")
 
             with ui.expansion("Détail des données personnelles").classes(
                 "w-full q-mt-sm"

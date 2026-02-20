@@ -87,7 +87,7 @@ Pour le détail technique des données traitées, voir [Sécurité & RGPD](#séc
 
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
-- Clé API Mistral (OpenAI/Anthropic optionnels)
+- Clé API Mistral ([créer un compte](https://console.mistral.ai/))
 
 ## Installation (mode développeur)
 
