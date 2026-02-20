@@ -39,7 +39,6 @@ TABLES = {
             trimestre INTEGER NOT NULL,
 
             -- Données extraites (ANONYMISÉES)
-            raw_text TEXT,
             moyenne_generale FLOAT,
 
             -- Champs structurés
@@ -52,17 +51,11 @@ TABLES = {
             evenements JSON,
             matieres JSON,
 
-            -- Métadonnées OCR
-            ocr_provider VARCHAR,
-            ocr_model VARCHAR,
-            ocr_cost FLOAT,
-            ocr_duration_ms INTEGER,
-
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-            -- Clé primaire composite : un élève peut avoir plusieurs trimestres
-            PRIMARY KEY (eleve_id, trimestre)
+            -- Clé primaire composite : un élève par classe et par trimestre
+            PRIMARY KEY (eleve_id, classe_id, trimestre)
         )
     """,
     "syntheses": """
@@ -119,6 +112,8 @@ TABLE_ORDER = ["classes", "eleves", "syntheses"]
 # DuckDB supports ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
 MIGRATIONS: list[str] = [
     "ALTER TABLE syntheses ADD COLUMN IF NOT EXISTS is_fewshot_example BOOLEAN DEFAULT FALSE",
+    # RGPD: raw_text n'est jamais lu après import, suppression pour minimisation
+    "ALTER TABLE eleves DROP COLUMN IF EXISTS raw_text",
     # Migrate posture_generale values from v1 to v3
     "UPDATE syntheses SET posture_generale = 'engage' WHERE posture_generale = 'actif'",
     "UPDATE syntheses SET posture_generale = 'en_progression' WHERE posture_generale = 'variable'",
@@ -130,5 +125,8 @@ MIGRATIONS: list[str] = [
 INDEXES: dict[str, list[str]] = {
     "classes": [
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_classes_nom_annee ON classes(nom, annee_scolaire)",
+    ],
+    "eleves": [
+        "CREATE INDEX IF NOT EXISTS idx_eleves_classe_id ON eleves(classe_id)",
     ],
 }

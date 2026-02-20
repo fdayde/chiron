@@ -363,7 +363,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         sql = """
             SELECT s.id, s.eleve_id, s.trimestre, s.status, s.created_at
             FROM syntheses s
-            JOIN eleves e ON s.eleve_id = e.eleve_id
+            JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
             WHERE s.status != 'validated'
         """
         params = []
@@ -404,7 +404,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
                    s.posture_generale, s.axes_travail_json,
                    s.validated_at, s.validated_by
             FROM syntheses s
-            JOIN eleves e ON s.eleve_id = e.eleve_id
+            JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
             WHERE s.status = 'validated'
               AND e.classe_id = ?
               AND s.trimestre = ?

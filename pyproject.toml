@@ -27,6 +27,7 @@ dependencies = [
     "pydantic-settings>=2.11.0",
     "pywebview>=5.0",
     "pymupdf>=1.26.7",
+    "pyyaml>=6.0",
     "python-dotenv>=1.1.1",
     "python-multipart>=0.0.12",
     "reportlab>=4.0.0",
@@ -44,6 +45,7 @@ dev = [
     "pyinstaller-hooks-contrib>=2025.10",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
+    "pytest-cov>=6.0",
     "ruff>=0.13.2",
 ]
 

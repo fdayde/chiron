@@ -2,13 +2,11 @@
 
 Usage:
     python scripts/debug_parse.py                          # Parse raw PDF
-    python scripts/debug_parse.py --anonymize              # Anonymize then parse
     python scripts/debug_parse.py --pdf path/to/file.pdf   # Custom PDF
 """
 
 import argparse
 import sys
-import tempfile
 from pathlib import Path
 
 # Add project root to path
@@ -16,9 +14,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "app"))
 
-from src.document.anonymizer import anonymize_pdf, extract_eleve_name  # noqa: E402
+from src.document.anonymizer import extract_eleve_name  # noqa: E402
 from src.document.parser import extract_pdf_content  # noqa: E402
-from src.document.pdfplumber_parser import PdfplumberParser  # noqa: E402
+from src.document.yaml_template_parser import YamlTemplateParser  # noqa: E402
 
 
 def main():
@@ -26,7 +24,6 @@ def main():
     ap.add_argument(
         "--pdf", default=str(ROOT / "data" / "demo" / "bulletin_fictif.pdf")
     )
-    ap.add_argument("--anonymize", action="store_true", help="Anonymise avant parsing")
     args = ap.parse_args()
 
     pdf = Path(args.pdf)
@@ -37,9 +34,6 @@ def main():
     lines = []
     lines.append("=" * 70)
     lines.append(f"DIAGNOSTIC PARSING — {pdf.name}")
-    lines.append(
-        f"  mode: {'anonymisé puis parsé' if args.anonymize else 'parsing direct'}"
-    )
     lines.append("=" * 70)
 
     # --- Name ---
@@ -53,24 +47,8 @@ def main():
     else:
         lines.append("  (aucun nom trouvé)")
 
-    # --- Anonymize if requested ---
-    parse_path = pdf
-    if args.anonymize:
-        lines.append("")
-        lines.append("--- ANONYMISATION ---")
-        try:
-            anon_bytes = anonymize_pdf(pdf, "ELEVE_001")
-            tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-            tmp.write(anon_bytes)
-            tmp.close()
-            parse_path = Path(tmp.name)
-            lines.append(f"  PDF anonymisé: {len(anon_bytes)} bytes")
-            lines.append(f"  Fichier temp: {parse_path}")
-        except Exception as e:
-            lines.append(f"  ERREUR anonymisation: {e}")
-
     # --- Extract content ---
-    content = extract_pdf_content(parse_path)
+    content = extract_pdf_content(pdf)
 
     # --- Raw text ---
     lines.append("")
@@ -97,9 +75,9 @@ def main():
     # --- Parser result ---
     lines.append("")
     lines.append("--- RÉSULTAT DU PARSER ---")
-    parser = PdfplumberParser()
+    parser = YamlTemplateParser()
     genre = identity.get("genre") if identity else None
-    result = parser.parse(parse_path, "ELEVE_001", genre=genre)
+    result = parser.parse(pdf, "ELEVE_001", genre=genre)
 
     lines.append(f"  eleve_id: {result.eleve_id}")
     lines.append(f"  genre: {result.genre}")

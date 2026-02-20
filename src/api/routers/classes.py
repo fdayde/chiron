@@ -13,6 +13,12 @@ from src.api.dependencies import (
 from src.core.constants import get_current_school_year
 from src.core.exceptions import StorageError
 from src.privacy.pseudonymizer import Pseudonymizer
+from src.services.query_service import (
+    get_classe_stats as _get_classe_stats,
+)
+from src.services.query_service import (
+    get_eleves_with_syntheses as _get_eleves_with_syntheses,
+)
 from src.storage.repositories.classe import Classe, ClasseRepository
 from src.storage.repositories.eleve import EleveRepository
 from src.storage.repositories.synthese import SyntheseRepository
@@ -164,35 +170,13 @@ def get_classe_eleves_with_syntheses(
     """
     get_or_404(classe_repo, classe_id, entity_name="Class")
 
-    # Fetch all students and all syntheses in 2 queries (not N+1)
-    eleves = eleve_repo.get_by_classe(classe_id, trimestre)
-    syntheses_map = synthese_repo.get_by_classe(classe_id, trimestre)
-
-    # Fetch all pseudonymization mappings in 1 query
-    mappings = pseudonymizer.list_mappings(classe_id)
-    mappings_by_id = {m["eleve_id"]: m for m in mappings}
-
-    result = []
-    for e in eleves:
-        synth_data = syntheses_map.get(e.eleve_id)
-        mapping = mappings_by_id.get(e.eleve_id)
-        item = {
-            "eleve_id": e.eleve_id,
-            "prenom": mapping["prenom_original"] if mapping else None,
-            "nom": mapping["nom_original"] if mapping else None,
-            "genre": e.genre,
-            "trimestre": e.trimestre,
-            "absences_demi_journees": e.absences_demi_journees,
-            "retards": e.retards,
-            "nb_matieres": len(e.matieres),
-            # Synthesis data (None if not generated)
-            "synthese_id": synth_data["synthese_id"] if synth_data else None,
-            "synthese_status": synth_data["status"] if synth_data else None,
-            "has_synthese": synth_data is not None,
-        }
-        result.append(item)
-
-    return result
+    return _get_eleves_with_syntheses(
+        classe_id=classe_id,
+        trimestre=trimestre,
+        eleve_repo=eleve_repo,
+        synthese_repo=synthese_repo,
+        pseudonymizer=pseudonymizer,
+    )
 
 
 @router.get("/{classe_id}/stats")
@@ -209,26 +193,12 @@ def get_classe_stats(
     """
     get_or_404(classe_repo, classe_id, entity_name="Class")
 
-    # Get student count
-    eleves = eleve_repo.get_by_classe(classe_id, trimestre)
-    eleve_count = len(eleves)
-
-    # Get synthesis stats
-    stats = synthese_repo.get_stats(classe_id, trimestre)
-
-    return {
-        "classe_id": classe_id,
-        "trimestre": trimestre,
-        "eleve_count": eleve_count,
-        "synthese_count": stats["count"],
-        "validated_count": stats["validated_count"],
-        "generated_count": stats["generated_count"],
-        "edited_count": stats["edited_count"],
-        "tokens_input": stats["tokens_input"],
-        "tokens_output": stats["tokens_output"],
-        "tokens_total": stats["tokens_total"],
-        "cost_usd": stats["cost_usd"],
-    }
+    return _get_classe_stats(
+        classe_id=classe_id,
+        trimestre=trimestre,
+        eleve_repo=eleve_repo,
+        synthese_repo=synthese_repo,
+    )
 
 
 @router.delete("/{classe_id}")
