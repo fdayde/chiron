@@ -247,8 +247,11 @@ def _render_llm_selector() -> None:
         ui.icon("smart_toy", size="xs").classes("text-primary")
         ui.label("Modèle IA").classes("text-weight-bold text-caption")
 
-    provider_keys = list(LLM_PROVIDERS.keys())
-    provider_options = {k: LLM_PROVIDERS[k]["name"] for k in provider_keys}
+    # Only show Mistral in the UI (other providers remain available via .env)
+    provider_keys = ["mistral"]
+    provider_options = {
+        k: LLM_PROVIDERS[k]["name"] for k in provider_keys if k in LLM_PROVIDERS
+    }
 
     current_provider = get_llm_provider()
     if current_provider not in provider_options:

@@ -33,7 +33,12 @@ def import_page():
 
         # Class name
         classe_info = fetch_classe(classe_id)
-        classe_nom = classe_info.get("nom", classe_id) if classe_info else classe_id
+        if not classe_info:
+            ui.label("Sélectionnez une classe dans la barre latérale.").classes(
+                "text-grey-6"
+            )
+            return
+        classe_nom = classe_info.get("nom", classe_id)
 
         ui.label(f"Classe : {classe_nom} | Trimestre : T{trimestre}").classes(
             "text-body1"
