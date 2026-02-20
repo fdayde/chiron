@@ -4,6 +4,8 @@
 
 <h1 align="center">Chiron</h1>
 
+[![CI](https://github.com/fdayde/chiron/actions/workflows/ci.yml/badge.svg)](https://github.com/fdayde/chiron/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/fdayde/chiron/graph/badge.svg)](https://codecov.io/gh/fdayde/chiron)
 [![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#-statut-du-projet)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
