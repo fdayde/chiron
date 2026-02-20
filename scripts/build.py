@@ -94,9 +94,9 @@ def post_build(dry_run: bool = False) -> None:
         internal_env.unlink()
 
     # Copy demo PDF into data/demo/ if it exists in the source tree
-    demo_pdf_src = ROOT / "data" / "demo" / "bulletin_fictif.pdf"
+    demo_pdf_src = ROOT / "data" / "demo" / "Bulletin_TEST.pdf"
     demo_dir = DIST / "data" / "demo"
-    demo_pdf_dst = demo_dir / "bulletin_fictif.pdf"
+    demo_pdf_dst = demo_dir / "Bulletin_TEST.pdf"
     if demo_pdf_src.exists():
         print(f"{'[DRY-RUN] ' if dry_run else ''}Creating {demo_dir}")
         print(f"{'[DRY-RUN] ' if dry_run else ''}Copying demo PDF {demo_pdf_dst}")
