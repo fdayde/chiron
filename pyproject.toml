@@ -52,6 +52,7 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py313"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = [
