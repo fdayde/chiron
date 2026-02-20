@@ -241,5 +241,4 @@ Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML config
 
 ## Licence
 
-Ce logiciel est propriétaire. Voir [LICENSE](LICENSE) pour les détails.
-Distribution et modification interdites sans autorisation écrite de l'auteur.
+[Apache License 2.0](LICENSE)
