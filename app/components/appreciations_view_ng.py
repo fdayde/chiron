@@ -80,7 +80,7 @@ def appreciations(
             if editable:
                 ta = (
                     ui.textarea(value=appreciation)
-                    .props("rows=2 dense")
+                    .props("autogrow dense")
                     .classes("w-full text-body2 q-mt-xs")
                 )
                 textarea_refs.append((idx, ta))
