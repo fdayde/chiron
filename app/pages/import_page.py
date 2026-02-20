@@ -5,6 +5,7 @@ from __future__ import annotations
 from cache import (
     clear_classes_cache,
     clear_eleves_cache,
+    debug_pdf_direct,
     delete_classe_direct,
     delete_eleve_direct,
     fetch_classe,
@@ -39,20 +40,6 @@ def import_page():
         )
 
         ui.separator()
-
-        # --- Parser warning ---
-        try:
-            from src.llm.config import settings as _llm_settings
-
-            if _llm_settings.pdf_parser_type.lower() == "mistral_ocr":
-                with ui.card().classes("w-full bg-blue-10 q-mb-md"):
-                    ui.label(
-                        "Parser actif : Mistral OCR. "
-                        "Les matières, notes et absences ne seront pas extraites "
-                        "automatiquement. Seul le texte brut sera disponible."
-                    ).classes("text-body2")
-        except Exception:
-            pass
 
         # =============================================================
         # SECTION 1: FILE UPLOAD & IMPORT
@@ -168,6 +155,14 @@ def import_page():
                                 "text-negative"
                             )
 
+                # Warnings (visible sans ouvrir le détail)
+                for r in results:
+                    if r["status"] == "success":
+                        for w in r["result"].get("warnings", []):
+                            ui.label(f"⚠ {r['file']}: {w}").classes(
+                                "text-warning q-mt-xs"
+                            )
+
                 # Detail per file
                 with ui.expansion("Détail par fichier").classes("w-full q-mt-sm"):
                     for r in results:
@@ -213,10 +208,32 @@ def import_page():
                         type="warning",
                     )
 
+        async def do_debug():
+            """Génère un PDF annoté pour le premier fichier uploadé."""
+            if not pending_files:
+                ui.notify("Aucun fichier sélectionné", type="warning")
+                return
+            filename, content = pending_files[0]
+            try:
+                debug_btn.props(add="loading")
+                debug_bytes = await run.io_bound(debug_pdf_direct, content)
+                ui.download(
+                    debug_bytes,
+                    f"debug_{filename}",
+                    media_type="application/pdf",
+                )
+            except Exception as exc:
+                ui.notify(f"Erreur debug: {exc}", type="negative")
+            finally:
+                debug_btn.props(remove="loading")
+
         with ui.row().classes("items-center gap-4 q-mt-md"):
             import_btn = ui.button(
                 "Importer les fichiers", icon="upload", on_click=do_import
             ).props("color=primary disable rounded")
+            debug_btn = ui.button(
+                "Visualiser les zones", icon="visibility", on_click=do_debug
+            ).props("color=secondary flat rounded")
             overwrite_checkbox = ui.checkbox(
                 "Remplacer les données existantes en cas de doublon", value=True
             )
@@ -314,7 +331,6 @@ def import_page():
                             {
                                 "eleve_id": e["eleve_id"],
                                 "eleve": display_name,
-                                "genre": e.get("genre") or "?",
                                 "absences": e.get("absences_demi_journees", 0) or 0,
                                 "synthese": ("ok" if e.get("has_synthese") else "-"),
                                 "statut": e.get("synthese_status", "-") or "-",
@@ -325,7 +341,6 @@ def import_page():
                         ui.table(
                             columns=[
                                 {"name": "eleve", "label": "Élève", "field": "eleve"},
-                                {"name": "genre", "label": "Genre", "field": "genre"},
                                 {
                                     "name": "absences",
                                     "label": "Abs.",

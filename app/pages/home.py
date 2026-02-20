@@ -217,15 +217,15 @@ def home_page():
                         },
                         {
                             "donnee": "Genre (F/G)",
-                            "statut": "Transmis à l'IA (accord grammatical)",
+                            "statut": "Stocké localement, non transmis — le LLM déduit le genre des accords grammaticaux",
                         },
                         {
                             "donnee": "Absences, retards",
-                            "statut": "Transmis à l'IA (analyse du profil)",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
-                            "donnee": "Notes et moyennes",
-                            "statut": "Transmis à l'IA (analyse des résultats)",
+                            "donnee": "Moyennes par matière",
+                            "statut": "Catégorisées* avant envoi à l'IA",
                         },
                         {
                             "donnee": "Appréciations enseignantes",
@@ -233,7 +233,7 @@ def home_page():
                         },
                         {
                             "donnee": "Engagements (délégué...)",
-                            "statut": "Transmis à l'IA",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
                             "donnee": "Nom des professeurs",
@@ -257,6 +257,33 @@ def home_page():
                         },
                     ],
                 ).props("flat bordered dense").classes("w-full")
+                ui.label(
+                    "* Notes catégorisées selon l'échelle de maîtrise du socle commun (LSU) :"
+                    " Insuffisante < 8 · Fragile 8-12 · Satisfaisante 12-16 · Très bonne ≥ 16"
+                ).classes("text-caption text-grey-7 q-mt-xs")
+
+                ui.separator().classes("q-mt-sm")
+
+                with ui.row().classes("items-center gap-2 q-mt-sm"):
+                    ui.icon("gavel", size="sm").classes("text-grey-6")
+                    ui.label("Base légale et responsabilité").classes(
+                        "text-weight-bold text-grey-5"
+                    )
+                ui.markdown(
+                    "Le traitement des données scolaires par Chiron s'inscrit dans "
+                    "le cadre de la **mission de service public éducatif** "
+                    "(RGPD, Article 6(1)(e)). Les données personnelles des élèves "
+                    "sont pseudonymisées avant tout envoi à un service externe. "
+                    "Les données sont stockées **localement sur votre machine** "
+                    "et leur protection relève de votre responsabilité en tant "
+                    "qu'utilisateur."
+                ).classes("text-caption text-grey-7")
+                ui.markdown(
+                    "Une fois les synthèses exportées, utilisez le bouton "
+                    "**Purge trimestrielle** (page Export) pour supprimer les "
+                    "données du trimestre conformément au principe de "
+                    "**limitation de la conservation** (Art. 5(1)(e))."
+                ).classes("text-caption text-grey-7")
 
         ui.separator().classes("q-mt-md")
 

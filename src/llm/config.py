@@ -28,26 +28,10 @@ class LLMSettings(BaseSettings):
     openai_api_key: str = Field(default="", description="Clé API OpenAI")
     anthropic_api_key: str = Field(default="", description="Clé API Anthropic")
     mistral_api_key: str = Field(default="", description="Clé API Mistral LLM")
-    mistral_ocr_api_key: str = Field(default="", description="Clé API Mistral OCR")
-
     # Provider par défaut (lu depuis DEFAULT_PROVIDER dans .env)
     default_provider: str = Field(
         default="anthropic",
         description="Provider LLM par défaut (openai, anthropic, mistral)",
-    )
-
-    # PDF Parser configuration
-    pdf_parser_type: str = Field(
-        default="pdfplumber",
-        description="Type de parser PDF (pdfplumber ou mistral_ocr)",
-    )
-    mistral_ocr_model: str = Field(
-        default="mistral-ocr-latest",
-        description="Modèle Mistral OCR à utiliser",
-    )
-    mistral_ocr_cost_per_1000_pages: float = Field(
-        default=2.0,
-        description="Coût Mistral OCR en USD pour 1000 pages",
     )
 
     # Anonymization configuration

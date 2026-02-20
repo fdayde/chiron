@@ -5,7 +5,6 @@ in DuckDB for later depseudonymization when needed.
 """
 
 import logging
-import re
 import threading
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -105,6 +104,15 @@ class Pseudonymizer:
                 conn.execute(f"""
                     CREATE UNIQUE INDEX IF NOT EXISTS idx_eleve_identity_normalized
                     ON {table} (nom_normalized, prenom_normalized, classe_id)
+                """)
+            except duckdb.CatalogException:
+                pass
+
+            # Index on classe_id for filtered queries (depseudonymize, list, clear)
+            try:
+                conn.execute(f"""
+                    CREATE INDEX IF NOT EXISTS idx_mapping_classe_id
+                    ON {table} (classe_id)
                 """)
             except duckdb.CatalogException:
                 pass
@@ -239,23 +247,28 @@ class Pseudonymizer:
     def _generate_eleve_id(self, classe_id: str) -> str:
         """Generate a unique eleve_id.
 
+        Uses MAX of existing numeric suffixes to avoid collisions when
+        rows have been deleted or IDs exist from other sources.
+
         Args:
             classe_id: Class identifier.
 
         Returns:
             Unique eleve_id like "ELEVE_001".
         """
+        prefix = privacy_settings.pseudonym_prefix
         with self._get_connection() as conn:
             result = conn.execute(
                 f"""
-                SELECT COUNT(*) FROM {privacy_settings.mapping_table}
-                WHERE classe_id = ?
+                SELECT MAX(CAST(REPLACE(eleve_id, ?, '') AS INTEGER))
+                FROM {privacy_settings.mapping_table}
+                WHERE eleve_id LIKE ?
                 """,
-                [classe_id],
+                [prefix, f"{prefix}%"],
             ).fetchone()
-            count = result[0] if result else 0
+            max_num = result[0] if result and result[0] is not None else 0
 
-        return f"{privacy_settings.pseudonym_prefix}{count + 1:03d}"
+        return f"{prefix}{max_num + 1:03d}"
 
     def depseudonymize(self, eleve_id: str) -> dict | None:
         """Retrieve original identity for an eleve_id.
@@ -284,46 +297,6 @@ class Pseudonymizer:
             "prenom_original": result[1],
             "classe_id": result[2],
         }
-
-    def pseudonymize_text(self, text: str, classe_id: str) -> str:
-        """Replace all known names in a text with their pseudonyms.
-
-        Args:
-            text: Text potentially containing student names.
-            classe_id: Class to look up names from.
-
-        Returns:
-            Text with names replaced by pseudonyms.
-        """
-        with self._get_connection() as conn:
-            mappings = conn.execute(
-                f"""
-                SELECT eleve_id, nom_original, prenom_original
-                FROM {privacy_settings.mapping_table}
-                WHERE classe_id = ?
-                """,
-                [classe_id],
-            ).fetchall()
-
-        for eleve_id, nom, prenom in mappings:
-            if nom:
-                # Replace full name (case insensitive)
-                if prenom:
-                    pattern = re.compile(
-                        rf"\b{re.escape(prenom)}\s+{re.escape(nom)}\b",
-                        re.IGNORECASE,
-                    )
-                    text = pattern.sub(eleve_id, text)
-                    pattern = re.compile(
-                        rf"\b{re.escape(nom)}\s+{re.escape(prenom)}\b",
-                        re.IGNORECASE,
-                    )
-                    text = pattern.sub(eleve_id, text)
-                # Replace just nom
-                pattern = re.compile(rf"\b{re.escape(nom)}\b", re.IGNORECASE)
-                text = pattern.sub(eleve_id, text)
-
-        return text
 
     def depseudonymize_text(self, text: str, classe_id: str | None = None) -> str:
         """Restore original names in a text.
@@ -401,6 +374,26 @@ class Pseudonymizer:
             for row in result
         ]
 
+    def clear_mapping_for_eleve(self, eleve_id: str) -> int:
+        """Clear pseudonymization mapping for a single student.
+
+        Args:
+            eleve_id: Pseudonymized student identifier (e.g. "ELEVE_001").
+
+        Returns:
+            Number of mappings deleted (0 or 1).
+        """
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                f"DELETE FROM {privacy_settings.mapping_table} "
+                f"WHERE eleve_id = ? RETURNING 1",
+                [eleve_id],
+            ).fetchall()
+            deleted = len(rows)
+            if deleted:
+                logger.info("Cleared privacy mapping for %s", eleve_id)
+            return deleted
+
     def clear_mappings(self, classe_id: str | None = None) -> int:
         """Clear pseudonymization mappings.
 
@@ -412,13 +405,13 @@ class Pseudonymizer:
         """
         with self._get_connection() as conn:
             if classe_id:
-                result = conn.execute(
-                    f"""
-                    DELETE FROM {privacy_settings.mapping_table}
-                    WHERE classe_id = ?
-                    """,
+                rows = conn.execute(
+                    f"DELETE FROM {privacy_settings.mapping_table} "
+                    f"WHERE classe_id = ? RETURNING 1",
                     [classe_id],
-                )
+                ).fetchall()
             else:
-                result = conn.execute(f"DELETE FROM {privacy_settings.mapping_table}")
-            return result.rowcount
+                rows = conn.execute(
+                    f"DELETE FROM {privacy_settings.mapping_table} RETURNING 1"
+                ).fetchall()
+            return len(rows)

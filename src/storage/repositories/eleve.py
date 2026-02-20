@@ -1,6 +1,6 @@
 """Repository des élèves.
 
-Gère le stockage des données élèves avec clé composite (eleve_id, trimestre).
+Gère le stockage des données élèves avec clé composite (eleve_id, classe_id, trimestre).
 Un même élève peut avoir plusieurs enregistrements, un par trimestre.
 """
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class EleveRepository(DuckDBRepository[EleveExtraction]):
     """Repository pour la gestion des élèves.
 
-    Note : La clé primaire est (eleve_id, trimestre), pas eleve_id seul.
+    Note : La clé primaire est (eleve_id, classe_id, trimestre).
     Utiliser exists(eleve_id, trimestre) pour vérifier l'existence.
     """
 
@@ -35,9 +35,9 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
 
         Format attendu du SELECT :
             0: eleve_id, 1: classe_id, 2: trimestre,
-            3: raw_text, 4: moyenne_generale,
-            5: genre, 6: absences_demi_journees, 7: absences_justifiees, 8: retards,
-            9: engagements, 10: parcours, 11: evenements, 12: matieres
+            3: moyenne_generale,
+            4: genre, 5: absences_demi_journees, 6: absences_justifiees, 7: retards,
+            8: engagements, 9: parcours, 10: evenements, 11: matieres
 
         Gère le JSON corrompu en loggant un warning et retournant des valeurs par défaut.
         """
@@ -46,7 +46,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         # Parse matieres with error handling
         matieres = []
         try:
-            matieres_data = json.loads(row[12]) if row[12] else []
+            matieres_data = json.loads(row[11]) if row[11] else []
             matieres = [MatiereExtraction(**m) for m in matieres_data]
         except (json.JSONDecodeError, TypeError, ValueError) as e:
             logger.warning(f"Failed to parse matieres for {eleve_id}: {e}")
@@ -65,15 +65,14 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             eleve_id=eleve_id,
             classe=row[1],
             trimestre=row[2],
-            raw_text=row[3],
-            moyenne_generale=row[4],
-            genre=row[5],
-            absences_demi_journees=row[6],
-            absences_justifiees=row[7],
-            retards=row[8],
-            engagements=safe_json_loads(row[9], "engagements"),
-            parcours=safe_json_loads(row[10], "parcours"),
-            evenements=safe_json_loads(row[11], "evenements"),
+            moyenne_generale=row[3],
+            genre=row[4],
+            absences_demi_journees=row[5],
+            absences_justifiees=row[6],
+            retards=row[7],
+            engagements=safe_json_loads(row[8], "engagements"),
+            parcours=safe_json_loads(row[9], "parcours"),
+            evenements=safe_json_loads(row[10], "evenements"),
             matieres=matieres,
         )
 
@@ -98,17 +97,16 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             """
             INSERT INTO eleves (
                 eleve_id, classe_id, trimestre,
-                raw_text, moyenne_generale,
+                moyenne_generale,
                 genre, absences_demi_journees, absences_justifiees, retards,
                 engagements, parcours, evenements, matieres
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 eleve.eleve_id,
                 eleve.classe,
                 eleve.trimestre,
-                eleve.raw_text,
                 eleve.moyenne_generale,
                 eleve.genre,
                 eleve.absences_demi_journees,
@@ -138,7 +136,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             result = self._execute_one(
                 """
                 SELECT eleve_id, classe_id, trimestre,
-                       raw_text, moyenne_generale,
+                       moyenne_generale,
                        genre, absences_demi_journees, absences_justifiees, retards,
                        engagements, parcours, evenements, matieres
                 FROM eleves
@@ -151,7 +149,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             result = self._execute_one(
                 """
                 SELECT eleve_id, classe_id, trimestre,
-                       raw_text, moyenne_generale,
+                       moyenne_generale,
                        genre, absences_demi_journees, absences_justifiees, retards,
                        engagements, parcours, evenements, matieres
                 FROM eleves
@@ -198,7 +196,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         """
         sql = """
             SELECT eleve_id, classe_id, trimestre,
-                   raw_text, moyenne_generale,
+                   moyenne_generale,
                    genre, absences_demi_journees, absences_justifiees, retards,
                    engagements, parcours, evenements, matieres
             FROM eleves
@@ -261,8 +259,6 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
                 "absences_demi_journees",
                 "absences_justifiees",
                 "retards",
-                "classe_id",
-                "raw_text",
                 "moyenne_generale",
             ):
                 set_clauses.append(f"{key} = ?")

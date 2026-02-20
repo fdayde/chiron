@@ -1,5 +1,6 @@
 """Validation des données extraites d'un bulletin PDF."""
 
+import re
 from dataclasses import dataclass, field
 
 from src.core.models import EleveExtraction
@@ -34,10 +35,6 @@ def validate_extraction(eleve: EleveExtraction) -> ValidationResult:
             "Aucune matière détectée — ce PDF n'est probablement pas un bulletin scolaire"
         )
 
-    # Warning : genre non détecté
-    if eleve.genre is None:
-        result.warnings.append("Genre de l'élève non détecté")
-
     # Warning : matières sans note
     if eleve.matieres:
         sans_note = [m.nom for m in eleve.matieres if m.moyenne_eleve is None]
@@ -55,3 +52,43 @@ def validate_extraction(eleve: EleveExtraction) -> ValidationResult:
             )
 
     return result
+
+
+def _extract_level(classe_str: str) -> str | None:
+    """Extrait le niveau (ex: '5') depuis un identifiant de classe.
+
+    Gère les formats '5E', '5E_2024-2025', '3A', etc.
+
+    Returns:
+        Le niveau (chiffre) ou None si non détecté.
+    """
+    match = re.match(r"(\d+)", classe_str)
+    return match.group(1) if match else None
+
+
+def check_classe_mismatch(pdf_classe: str | None, user_classe_id: str) -> str | None:
+    """Compare le niveau de classe extrait du PDF avec celui saisi par l'utilisateur.
+
+    Args:
+        pdf_classe: Classe extraite du PDF (ex: '5E'), ou None si non détectée.
+        user_classe_id: Identifiant de classe saisi (ex: '5E_2024-2025').
+
+    Returns:
+        Message de warning si mismatch, None sinon.
+    """
+    if not pdf_classe:
+        return None
+
+    pdf_level = _extract_level(pdf_classe)
+    user_level = _extract_level(user_classe_id)
+
+    if not pdf_level or not user_level:
+        return None
+
+    if pdf_level != user_level:
+        return (
+            f"Le bulletin semble correspondre à une classe de {pdf_classe}, "
+            f"mais la classe sélectionnée est {user_classe_id}"
+        )
+
+    return None
