@@ -103,6 +103,12 @@ CHIRON_PORT=9000 python run.py   # Port personnalisé
 5. **Review** : Relire, éditer si besoin, valider
 6. **Export** : Télécharger les synthèses (noms réels restaurés automatiquement)
 
+## Tests
+
+```bash
+uv run pytest
+```
+
 ## Distribution (.exe)
 
 Pour distribuer l'application sans installer Python :
@@ -177,7 +183,7 @@ chiron/
 │   ├── state.py              # Gestion d'état
 │   ├── pages/                # home, import, synthèses, export, prompt
 │   └── components/           # eleve_card, synthese_editor, llm_selector...
-├── tests/                    # Tests unitaires (pseudonymisation, purge)
+├── tests/                    # Tests (pseudonymisation, purge, validation, parsing PDF)
 ├── run.py                    # Point d'entrée unique (API + UI)
 ├── chiron.spec               # Spec PyInstaller
 ├── scripts/build.py          # Script de build .exe
