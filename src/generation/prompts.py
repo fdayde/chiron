@@ -87,6 +87,7 @@ La synthèse doit offrir une **vue d'ensemble transversale** de l'élève : dyna
 - PROSCRIRE toute liste ou énumération de matières dans la synthèse.
 - Ne citer **nommément 1 à 2 matières maximum**, et uniquement si elles présentent un écart significatif (alerte urgente ou réussite remarquable).
 - Les détails par matière sont réservés aux insights (alertes, réussites, stratégies — étapes 2 à 4).
+- **Patterns récurrents** : avant de rédiger, repère si un même comportement revient dans plusieurs matières (ex : passivité, manque de travail personnel, participation active, investissement régulier). Si un pattern est net, mentionne-le comme tendance transversale dans le feed-back. Si rien de clair ne se dégage, ne force pas l'interprétation.
 
 STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
 1. **Ouverture / Feed-up** (1 phrase courte) : commence par une formule qui qualifie le trimestre. VARIE les formulations d'un élève à l'autre. Choisis parmi ces familles selon le profil :
