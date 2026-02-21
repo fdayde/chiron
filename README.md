@@ -11,7 +11,7 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![DuckDB](https://img.shields.io/badge/DuckDB-local-FEF502)](https://duckdb.org/)
 
-Assistant IA pour la préparation des conseils de classe. Génère des synthèses trimestrielles personnalisées à partir des bulletins scolaires (PDF PRONOTE) pseudonymisés.
+Assistant IA responsable pour la préparation des conseils de classe. Suggère des projets de synthèses trimestrielles à partir des bulletins scolaires (PDF PRONOTE) pseudonymisés, l'enseignant relit, ajuste et valide chaque synthèse.
 
 ## Sommaire
 
@@ -40,7 +40,7 @@ Les noms, prénoms et informations identifiantes sont détectés par un modèle 
 L'enseignant peut marquer jusqu'à 3 synthèses validées comme « exemples » pour l'IA. Ces exemples sont automatiquement injectés dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de détail des synthèses suivantes. Les appréciations sont tronquées et les synthèses plafonnées à 1000 caractères pour maîtriser la taille du prompt.
 
 ### Insights pédagogiques fondés sur la recherche
-Le prompt de génération est conçu selon des principes issus de la recherche en éducation :
+L'outil propose des signaux factuels et des pistes de travail, sans profilage ni catégorisation, fondés sur la recherche en éducation :
 - **Growth mindset** (Dweck, 2006) : valorisation des processus, pas des capacités fixes
 - **Feedforward** (Hattie & Timperley, 2007) : orientation prospective vers des stratégies concrètes
 - **Détection des biais de genre** : identification automatique des formulations genrées dans les appréciations
@@ -67,6 +67,9 @@ PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération
 ```
 
 ## RGPD — À lire avant utilisation
+
+Chiron s'inscrit dans une démarche de privacy by design, et propose un cadre responsable à l'usage de l'IA générative
+pour la rédaction de synthèses scolaires. L'outil ne note pas, ne classe pas et ne catégorise pas les élèves, il produit des suggestions de textes soumis au jugement de l'enseignant.
 
 Chiron **pseudonymise toutes les données** (noms → `ELEVE_XXX`, notes → niveaux LSU) avant envoi à l'API Mistral AI. Le LLM ne reçoit jamais de données nominatives.
 
@@ -231,6 +234,7 @@ chiron/
 | **Validation humaine** | Obligatoire avant export |
 | **Purge trimestrielle** | Suppression données + mappings après export (page Export) |
 | **Base légale** | Mission de service public éducatif (RGPD Art. 6(1)(e)) |
+| **Code source ouvert** | Auditable ([Apache 2.0](LICENSE)) |
 
 ### Détail des données personnelles
 
