@@ -70,7 +70,6 @@ TABLES = {
             llm_response_raw TEXT,
             alertes_json JSON,
             reussites_json JSON,
-            posture_generale VARCHAR,
             axes_travail_json JSON,
 
             -- Métadonnées LLM
@@ -114,11 +113,8 @@ MIGRATIONS: list[str] = [
     "ALTER TABLE syntheses ADD COLUMN IF NOT EXISTS is_fewshot_example BOOLEAN DEFAULT FALSE",
     # RGPD: raw_text n'est jamais lu après import, suppression pour minimisation
     "ALTER TABLE eleves DROP COLUMN IF EXISTS raw_text",
-    # Migrate posture_generale values from v1 to v3
-    "UPDATE syntheses SET posture_generale = 'engage' WHERE posture_generale = 'actif'",
-    "UPDATE syntheses SET posture_generale = 'en_progression' WHERE posture_generale = 'variable'",
-    "UPDATE syntheses SET posture_generale = 'en_retrait' WHERE posture_generale = 'passif'",
-    "UPDATE syntheses SET posture_generale = 'en_retrait' WHERE posture_generale = 'perturbateur'",
+    # RGPD Art. 4(4): suppression du profilage automatisé (posture_generale)
+    "ALTER TABLE syntheses DROP COLUMN IF EXISTS posture_generale",
 ]
 
 # Indexes to create after tables (idempotent via IF NOT EXISTS)

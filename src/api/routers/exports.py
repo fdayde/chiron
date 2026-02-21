@@ -95,9 +95,7 @@ def export_csv(
     }
 
     # Header
-    writer.writerow(
-        ["nom", "prenom", "synthese_texte", "posture_generale", "alertes", "reussites"]
-    )
+    writer.writerow(["nom", "prenom", "synthese_texte", "alertes", "reussites"])
 
     # Data rows
     for item in validated:
@@ -110,9 +108,7 @@ def export_csv(
         reussites = "; ".join(
             f"{r.matiere}: {r.description}" for r in synthese.reussites
         )
-        writer.writerow(
-            [nom, prenom, text, synthese.posture_generale, alertes, reussites]
-        )
+        writer.writerow([nom, prenom, text, alertes, reussites])
 
     csv_content = output.getvalue()
 

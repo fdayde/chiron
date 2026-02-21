@@ -145,7 +145,6 @@ class SyntheseGenerator:
         logger.info(
             f"Synthèse générée: {len(synthese.synthese_texte)} chars, "
             f"{len(synthese.alertes)} alertes, {len(synthese.reussites)} réussites, "
-            f"posture={synthese.posture_generale}, "
             f"{metadata.get('tokens_total', 0)} tokens"
         )
 

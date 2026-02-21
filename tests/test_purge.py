@@ -44,7 +44,6 @@ def _make_eleve(eleve_id: str, classe: str, trimestre: int) -> EleveExtraction:
 def _make_synthese() -> SyntheseGeneree:
     return SyntheseGeneree(
         synthese_texte="Bonne élève.",
-        posture_generale="engage",
     )
 
 

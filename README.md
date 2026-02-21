@@ -36,14 +36,13 @@ Assistant IA pour la préparation des conseils de classe. Génère des synthèse
 ### Pseudonymisation avant envoi cloud
 Les noms, prénoms et informations identifiantes sont détectés par un modèle NER local (CamemBERT) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le LLM ne reçoit jamais de données nominatives. Les noms réels sont restaurés automatiquement à l'export.
 
-### Few-shot learning — calibration par l'enseignant
+### Few-shot learning : calibration par l'enseignant
 L'enseignant peut marquer jusqu'à 3 synthèses validées comme « exemples » pour l'IA. Ces exemples sont automatiquement injectés dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de détail des synthèses suivantes. Les appréciations sont tronquées et les synthèses plafonnées à 1000 caractères pour maîtriser la taille du prompt.
 
 ### Insights pédagogiques fondés sur la recherche
 Le prompt de génération est conçu selon des principes issus de la recherche en éducation :
 - **Growth mindset** (Dweck, 2006) : valorisation des processus, pas des capacités fixes
 - **Feedforward** (Hattie & Timperley, 2007) : orientation prospective vers des stratégies concrètes
-- **Théorie de l'autodétermination** (Deci & Ryan, 2000) : profils d'engagement contextuels, pas d'étiquettes figées
 - **Détection des biais de genre** : identification automatique des formulations genrées dans les appréciations
 
 ## Statut du projet

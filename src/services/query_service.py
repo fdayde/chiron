@@ -122,7 +122,6 @@ def get_eleve_synthese(
             "synthese_texte": synthese.synthese_texte,
             "alertes": [a.model_dump() for a in synthese.alertes],
             "reussites": [r.model_dump() for r in synthese.reussites],
-            "posture_generale": synthese.posture_generale,
             "axes_travail": synthese.axes_travail,
         },
     }

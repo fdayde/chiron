@@ -86,7 +86,7 @@ VISION TRANSVERSALE (RÈGLE CENTRALE) :
 La synthèse doit offrir une **vue d'ensemble transversale** de l'élève : dynamique de travail, posture, investissement général. Elle ne doit PAS être une énumération matière par matière.
 - PROSCRIRE toute liste ou énumération de matières dans la synthèse.
 - Ne citer **nommément 1 à 2 matières maximum**, et uniquement si elles présentent un écart significatif (alerte urgente ou réussite remarquable).
-- Les détails par matière sont réservés aux insights (alertes, réussites, stratégies — étapes 2 à 5).
+- Les détails par matière sont réservés aux insights (alertes, réussites, stratégies — étapes 2 à 4).
 
 STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
 1. **Ouverture / Feed-up** (1 phrase courte) : commence par une formule qui qualifie le trimestre. VARIE les formulations d'un élève à l'autre. Choisis parmi ces familles selon le profil :
@@ -105,7 +105,7 @@ STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
    - "Il/Elle peut progresser en [matière], nous l'y encourageons."
    Ne répète PAS la même clôture pour deux élèves consécutifs.
 
-IMPORTANT : La synthèse doit rester CONCISE et laisser de la marge au professeur. Ne développe pas de stratégies détaillées — elles sont fournies séparément (étape 5).
+IMPORTANT : La synthèse doit rester CONCISE et laisser de la marge au professeur. Ne développe pas de stratégies détaillées — elles sont fournies séparément (étape 4).
 
 FORMULATIONS INTERDITES :
 - ❌ "est un(e) bon(ne) élève", "est sérieux/se", "est brillant(e)", "est faible" (person-praise)
@@ -123,9 +123,9 @@ FORMULATIONS RECOMMANDÉES :
 - ✅ "Bilan encourageant. [ELEVE] a su se mobiliser ce trimestre et gagner en confiance. Nous attendons la même régularité au prochain trimestre."
 """
 
-_ETAPE_2_ALERTES = """## ÉTAPE 2 : IDENTIFIER LES ALERTES
+_ETAPE_2_ALERTES = """## ÉTAPE 2 : IDENTIFIER LES SIGNAUX D'ATTENTION
 
-Une alerte signale un point nécessitant une attention particulière.
+Un signal d'attention relève un constat factuel nécessitant l'examen de l'enseignant.
 
 Critères :
 - Note < 10/20 dans une matière
@@ -133,11 +133,7 @@ Critères :
 - Comportement problématique mentionné dans les appréciations (passivité, bavardages, manque de travail)
 - Décalage entre les appréciations et les résultats chiffrés
 
-Sévérité :
-- "urgent" : note < 8 OU problème comportemental grave
-- "attention" : note entre 8-10 OU écart significatif avec la classe
-
-Formulation : décris le constat factuel, pas un jugement de valeur.
+Formulation : décris le constat factuel, pas un jugement de valeur. Ne qualifie pas la gravité — c'est à l'enseignant d'évaluer.
 - ❌ "Résultats insuffisants" → ✅ "Résultats en dessous de la moyenne de classe, l'appréciation mentionne un manque d'implication dans les activités"
 """
 
@@ -155,23 +151,7 @@ Formulation : décris le processus qui fonctionne, pas un talent inné.
 - ❌ "Élève douée en langues" → ✅ "Investissement constant en anglais, travail soigné à la maison comme en classe"
 """
 
-_ETAPE_4_ENGAGEMENT = """## ÉTAPE 4 : PROFIL D'ENGAGEMENT CE TRIMESTRE
-
-Analyse les appréciations pour estimer le profil d'engagement OBSERVABLE ce trimestre.
-
-Profils possibles :
-- "engage" : indices de participation active et d'investissement régulier dans la majorité des matières
-- "en_progression" : indices d'efforts visibles ou de dynamique positive, même si les résultats ne suivent pas encore partout
-- "en_retrait" : indices de participation insuffisante ou de travail irrégulier dans la majorité des matières
-- "heterogene" : engagement visiblement variable selon les matières
-- "insuffisant" : les appréciations sont trop brèves ou trop peu nombreuses pour déterminer un profil fiable
-
-RAPPELS :
-- Ce profil est un INSTANTANÉ de ce trimestre basé sur des données partielles, pas un diagnostic de personnalité.
-- Si les appréciations sont majoritairement brèves ("AB", "Bien", "Correct"), le profil "insuffisant" est préférable à une interprétation forcée.
-- Ne compare pas implicitement à un trimestre précédent (tu n'as pas ces données sauf si elles sont explicitement fournies)."""
-
-_ETAPE_5_STRATEGIES = """## ÉTAPE 5 : PROPOSER DES STRATÉGIES D'APPRENTISSAGE (feed-forward)
+_ETAPE_4_STRATEGIES = """## ÉTAPE 4 : PROPOSER DES STRATÉGIES D'APPRENTISSAGE (feed-forward)
 
 En cohérence avec le modèle de Hattie & Timperley (2007), cette étape répond à la question "Que faire ensuite ?". Liste 1 à 3 stratégies concrètes et actionnables que l'élève peut mettre en œuvre dès le prochain trimestre.
 
@@ -194,7 +174,7 @@ Exemples de MAUVAISES stratégies (trop vagues, à PROSCRIRE) :
 - ❌ "Continuer ainsi"
 """
 
-_ETAPE_6_BIAIS = """## ÉTAPE 6 : SIGNALER LES FORMULATIONS POTENTIELLEMENT GENRÉES
+_ETAPE_5_BIAIS = """## ÉTAPE 5 : SIGNALER LES FORMULATIONS POTENTIELLEMENT GENRÉES
 
 CONTEXTE : Une étude de l'IPP (Charousset & Monnet, 2026), portant sur 600 000 bulletins de terminale, montre qu'à résultats égaux, le vocabulaire des appréciations diffère selon le genre de l'élève, notamment en mathématiques et physique-chimie.
 
@@ -228,12 +208,11 @@ Réponds UNIQUEMENT avec un JSON valide selon cette structure :
 {
   "synthese_texte": "[Ouverture variée]. [3-5 phrases, 50-100 mots, voix 'nous']...",
   "alertes": [
-    {"matiere": "Nom matière", "description": "Constat factuel", "severite": "urgent|attention"}
+    {"matiere": "Nom matière", "description": "Constat factuel"}
   ],
   "reussites": [
     {"matiere": "Nom matière", "description": "Processus/stratégie qui fonctionne"}
   ],
-  "posture_generale": "engage|en_progression|en_retrait|heterogene|insuffisant",
   "axes_travail": ["Stratégie concrète et spécifique 1", "Stratégie concrète et spécifique 2"],
   "biais_detectes": [
     {"matiere": "Nom matière", "formulation_biaisee": "Citation exacte", "type_biais": "effort_vs_talent|comportement|emotionnel|autre", "suggestion": "Reformulation neutre"}
@@ -262,9 +241,8 @@ PROMPT_TEMPLATES = {
                 _ETAPE_1_SYNTHESE,
                 _ETAPE_2_ALERTES,
                 _ETAPE_3_REUSSITES,
-                _ETAPE_4_ENGAGEMENT,
-                _ETAPE_5_STRATEGIES,
-                _ETAPE_6_BIAIS,
+                _ETAPE_4_STRATEGIES,
+                _ETAPE_5_BIAIS,
                 _JSON_FORMAT,
             ]
         ),

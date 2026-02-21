@@ -185,7 +185,6 @@ class PromptBuilder:
                     "synthese_texte": exemple.synthese_ground_truth,
                     "alertes": [],
                     "reussites": [],
-                    "posture_generale": "engage",
                     "axes_travail": [],
                     "biais_detectes": [],
                 },
