@@ -85,18 +85,19 @@ Ces exemples reflètent le style exact attendu par le professeur. Imite-les fid�
 VISION TRANSVERSALE (RÈGLE CENTRALE) :
 La synthèse doit offrir une **vue d'ensemble transversale** de l'élève : dynamique de travail, posture, investissement général. Elle ne doit PAS être une énumération matière par matière.
 - PROSCRIRE toute liste ou énumération de matières dans la synthèse.
-- Ne citer **nommément 1 à 2 matières maximum**, et uniquement si elles présentent un écart significatif (alerte urgente ou réussite remarquable).
+- Ne citer **nommément 1 à 3 matières maximum**, et uniquement si elles présentent un écart significatif (alerte urgente ou réussite remarquable).
 - Les détails par matière sont réservés aux insights (alertes, réussites, stratégies — étapes 2 à 4).
-- **Patterns récurrents** : avant de rédiger, repère si un même comportement revient dans plusieurs matières (ex : passivité, manque de travail personnel, participation active, investissement régulier). Si un pattern est net, mentionne-le comme tendance transversale dans le feed-back. Si rien de clair ne se dégage, ne force pas l'interprétation.
+- **Patterns récurrents** : avant de rédiger, repère si un même comportement revient dans plusieurs matières (ex : passivité, manque de travail personnel, participation active, investissement régulier, décalage entre résultats à l'oral et à l'écrit). Si un pattern est net, mentionne-le comme tendance transversale dans le feed-back. Si rien de clair ne se dégage, ne force pas l'interprétation.
 
-STRUCTURE OBLIGATOIRE (3-5 phrases, 50-100 mots) :
+STRUCTURE OBLIGATOIRE (3-5 phrases, 60-120 mots) :
 1. **Ouverture / Feed-up** (1 phrase courte) : commence par une formule qui qualifie le trimestre. VARIE les formulations d'un élève à l'autre. Choisis parmi ces familles selon le profil :
    - Famille "Bilan" : "Bilan positif.", "Bilan positif mais perfectible.", "Bilan contrasté.", "Bilan encourageant.", "Bilan perfectible."
    - Famille "Trimestre" : "Trimestre solide.", "Trimestre en demi-teinte.", "Trimestre prometteur.", "Trimestre inégal."
    - Famille "Résultats" : "Des résultats encourageants.", "De bons acquis à consolider.", "Des résultats contrastés selon les matières."
    - Famille "Efforts" : "Des efforts qui portent leurs fruits.", "Des efforts à poursuivre.", "Un investissement à renforcer."
+   L'ouverture doit refléter la tonalité générale du profil. Le vocabulaire se gradue naturellement : d'une tonalité de félicitations pour les profils en pleine réussite, vers l'encouragement, puis l'alerte pour les profils fragiles. Laisse les exemples few-shot du professeur guider le calibrage exact.
    Ne répète PAS la même ouverture pour deux élèves consécutifs.
-2. **Feed-back** (1-3 phrases) : appréciation globale transversale sur la dynamique de travail, la posture et l'investissement. Décris des tendances générales (régularité, autonomie, participation, organisation) plutôt qu'un tour d'horizon matière par matière. Ne cite nommément une matière que si un écart très significatif le justifie (1-2 max). Les détails spécifiques sont réservés aux alertes, réussites et stratégies (étapes suivantes).
+2. **Feed-back** (1-3 phrases) : appréciation globale transversale sur la dynamique de travail, la posture et l'investissement. Décris des tendances générales (régularité, autonomie, participation, organisation, décalage oral/écrit) plutôt qu'un tour d'horizon matière par matière. Ne cite nommément une matière que si un écart très significatif le justifie (1-3 max). Les détails spécifiques sont réservés aux alertes, réussites et stratégies (étapes suivantes).
 3. **Feed-forward** (1 phrase) : clôture par une direction pour le trimestre suivant, formulée avec le "nous". VARIE les formulations de clôture d'un élève à l'autre. Choisis parmi :
    - "Nous comptons sur lui/elle."
    - "Nous l'en savons capable."
@@ -122,6 +123,7 @@ FORMULATIONS RECOMMANDÉES :
 - ✅ "Trimestre solide. Le travail est sérieux et constant, avec une bonne autonomie. Nous comptons sur lui/elle pour maintenir cette dynamique."
 - ✅ "Des résultats contrastés. [ELEVE] montre un réel investissement à l'oral, mais le travail écrit manque encore de régularité. Il/Elle peut progresser, nous l'y encourageons."
 - ✅ "Bilan encourageant. [ELEVE] a su se mobiliser ce trimestre et gagner en confiance. Nous attendons la même régularité au prochain trimestre."
+- ✅ "Bilan fragile. [ELEVE] rencontre des difficultés amplifiées lors du passage à l'écrit. Le travail personnel doit gagner en régularité. Nous l'encourageons à poursuivre les efforts engagés à l'oral tout en les intensifiant. Nous comptons sur lui."
 """
 
 _ETAPE_2_ALERTES = """## ÉTAPE 2 : IDENTIFIER LES SIGNAUX D'ATTENTION
@@ -207,7 +209,7 @@ _JSON_FORMAT = """## FORMAT DE RÉPONSE (JSON)
 Réponds UNIQUEMENT avec un JSON valide selon cette structure :
 ```json
 {
-  "synthese_texte": "[Ouverture variée]. [3-5 phrases, 50-100 mots, voix 'nous']...",
+  "synthese_texte": "[Ouverture variée]. [3-5 phrases, 60-120 mots, voix 'nous']...",
   "alertes": [
     {"matiere": "Nom matière", "description": "Constat factuel"}
   ],
@@ -234,8 +236,8 @@ _USER_TEMPLATE = """Rédige une synthèse pour cet élève :
 
 PROMPT_TEMPLATES = {
     "synthese_v3": {
-        "version": "3.0.0",
-        "description": "Prompt ancré en sciences de l'éducation : growth mindset (Dweck), feedforward (Hattie & Timperley), stratégies actionnables, détection biais de genre (PSE)",
+        "version": "3.1.0",
+        "description": "Prompt ancré en sciences de l'éducation : growth mindset (Dweck), feedforward (Hattie & Timperley), stratégies actionnables, détection biais de genre (PSE). v3.1 : calibration longueur/matières sur corpus réel, gradient de ton souple, pattern oral/écrit.",
         "system": "\n\n".join(
             [
                 _SYSTEM_INTRO,
