@@ -133,7 +133,7 @@ def _pseudonymize_extraction(
         appreciation_texts = [m.appreciation for m in eleve.matieres if m.appreciation]
         remaining = ner_check_student_names(appreciation_texts, nom_parts_set)
         if remaining:
-            logger.warning("NER safety net: found %s in appreciations", remaining)
+            logger.debug("NER safety net: found %s in appreciations", remaining)
             for variant in remaining:
                 pattern = re.compile(rf"\b{re.escape(variant)}\b", re.IGNORECASE)
                 for matiere in eleve.matieres:
@@ -186,7 +186,7 @@ def _import_single_pdf(
 
     # 2. Create eleve_id and store mapping
     eleve_id = pseudonymizer.create_eleve_id(nom, prenom, classe_id)
-    logger.info(f"Created/found eleve_id: {eleve_id} for {prenom} {nom}")
+    logger.debug(f"Created/found eleve_id: {eleve_id} for {prenom} {nom}")
 
     # 3. Parse PDF
     parser = get_parser()
