@@ -12,6 +12,11 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load .env early so LOG_LEVEL, SHOW_PROMPT etc. are available via os.getenv
+load_dotenv(Path(__file__).parent / ".env")
+
 
 def _setup_logging() -> None:
     """Configure le logging de l'application.

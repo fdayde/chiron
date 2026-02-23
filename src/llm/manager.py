@@ -4,6 +4,7 @@ Orchestration des appels LLM avec gestion des erreurs et parallélisation.
 """
 
 import asyncio
+import json
 import logging
 from typing import Any
 
@@ -152,6 +153,13 @@ class LLMManager:
         await self.rate_limiters[provider_lower].acquire()
 
         logger.debug(f"Appel LLM: {provider_lower}/{model or 'default'}")
+
+        if settings.show_prompt:
+            logger.debug(
+                "Prompt LLM (%d messages):\n%s",
+                len(messages),
+                json.dumps(messages, ensure_ascii=False, indent=2),
+            )
 
         # Override du modèle si fourni
         if model:

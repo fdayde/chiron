@@ -67,6 +67,12 @@ class LLMSettings(BaseSettings):
         default=False, description="Utiliser les modèles de test"
     )
 
+    # Debug : afficher les prompts envoyés au LLM dans les logs
+    show_prompt: bool = Field(
+        default=False,
+        description="Affiche les prompts envoyés au LLM dans les logs (niveau DEBUG)",
+    )
+
     # Retry configuration
     max_retries: int = Field(default=3, ge=0, description="Nombre max de tentatives")
     backoff_factor: float = Field(
