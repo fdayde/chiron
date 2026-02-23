@@ -261,7 +261,7 @@ def export_page():
                                     f"supprimés.",
                                     type="positive",
                                 )
-                                ui.navigate.to("/home")
+                                ui.navigate.to("/")
                             except Exception as exc:
                                 ui.notify(
                                     f"Erreur lors de la suppression : {exc}",
