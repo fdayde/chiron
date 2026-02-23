@@ -171,7 +171,7 @@ def home_page():
             )
             _workflow_card(
                 "3. Export",
-                "Téléchargez les synthèses",
+                "Exportez les synthèses",
                 ["Noms réels restaurés", "Prêt pour le conseil"],
                 accent="#C8A45C",
             )

@@ -1,4 +1,4 @@
-"""Page Export — Recapitulatif et export CSV."""
+"""Page Export — Récapitulatif et export presse-papiers."""
 
 from __future__ import annotations
 
@@ -184,65 +184,26 @@ def export_page():
         # =============================================================
 
         with ui.row().classes("items-center gap-2 q-mt-md"):
-            ui.icon("download").classes("text-primary")
+            ui.icon("content_copy").classes("text-primary")
             ui.label("Export").classes("text-h6")
 
-        with ui.row().classes("w-full gap-8"):
-            # CSV export
-            with ui.column().classes("flex-1"):
-                ui.label("CSV").classes("text-h6")
-                ui.label("Export des synthèses validées au format CSV").classes(
-                    "text-caption text-grey-7"
-                )
+        async def _copy_to_clipboard():
+            validated = [s for s in syntheses_data if s["status"] == "validated"]
+            lines = []
+            for item in validated:
+                lines.append(f"# {item['display_name']}")
+                lines.append(item["synthese"].get("synthese_texte", ""))
+                lines.append("")
+            text = "\n".join(lines)
+            escaped = text.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
+            await ui.run_javascript(f"navigator.clipboard.writeText(`{escaped}`)")
+            ui.notify("Copie dans le presse-papiers", type="positive")
 
-                if counts["validated"] == 0:
-                    ui.label("Aucune synthèse validée").classes("text-warning")
-                else:
-
-                    async def _download_csv():
-                        url = f"/export/csv?classe_id={classe_id}&trimestre={trimestre}"
-                        await ui.run_javascript(
-                            f'window.open("{url}", "_blank")',
-                        )
-
-                    ui.button(
-                        f"Télécharger CSV ({counts['validated']} synthèses)",
-                        icon="download",
-                        on_click=_download_csv,
-                    ).props("color=primary rounded")
-
-            # Clipboard copy
-            with ui.column().classes("flex-1"):
-                ui.label("Presse-papiers").classes("text-h6")
-                ui.label("Copier les synthèses pour coller dans un document").classes(
-                    "text-caption text-grey-7"
-                )
-
-                async def _copy_to_clipboard():
-                    validated = [
-                        s for s in syntheses_data if s["status"] == "validated"
-                    ]
-                    lines = []
-                    for item in validated:
-                        lines.append(f"# {item['display_name']}")
-                        lines.append(item["synthese"].get("synthese_texte", ""))
-                        lines.append("")
-                    text = "\n".join(lines)
-                    escaped = (
-                        text.replace("\\", "\\\\")
-                        .replace("`", "\\`")
-                        .replace("$", "\\$")
-                    )
-                    await ui.run_javascript(
-                        f"navigator.clipboard.writeText(`{escaped}`)"
-                    )
-                    ui.notify("Copie dans le presse-papiers", type="positive")
-
-                ui.button(
-                    "Copier dans le presse-papiers",
-                    icon="content_copy",
-                    on_click=_copy_to_clipboard,
-                ).props("outline rounded")
+        ui.button(
+            f"Copier les synthèses ({counts['validated']} validées)",
+            icon="content_copy",
+            on_click=_copy_to_clipboard,
+        ).props("color=primary rounded")
 
         # =============================================================
         # PURGE TRIMESTRIELLE (RGPD)

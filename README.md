@@ -58,7 +58,7 @@ L'outil propose des signaux factuels et des pistes de travail, sans profilage ni
 ## Vue d'ensemble
 
 ```
-PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export CSV
+PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export
      │              │                  │            │               │             │           │
      │         CamemBERT         YAML template  Few-shot       Mistral (cloud) Humain    Dépseudo
      │         (local)           (local)        (0-3 ex.)      hébergé UE     (local)    (local)
@@ -131,7 +131,7 @@ CHIRON_PORT=9000 python run.py   # Port personnalisé
 4. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
 5. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
 6. **Review** : Relire, éditer si besoin, valider
-7. **Export** : Télécharger les synthèses (noms réels restaurés automatiquement)
+7. **Export** : Copier les synthèses dans le presse-papiers (noms réels restaurés automatiquement)
 
 ## Tests
 

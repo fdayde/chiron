@@ -85,7 +85,7 @@ EleveExtraction
 ## Flux d'export
 
 ```
-synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (noms réels)
+synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → Presse-papiers (noms réels)
 ```
 
 ## Composants

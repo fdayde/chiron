@@ -1,19 +1,14 @@
 """Router d'import/export."""
 
-import csv
-import io
 import logging
 import re
-from datetime import date
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
 
 from src.api.dependencies import (
     get_classe_repo,
     get_eleve_repo,
-    get_or_404,
     get_pseudonymizer,
     get_synthese_repo,
 )
@@ -66,64 +61,6 @@ async def _validate_pdf_upload(file: UploadFile) -> bytes:
         )
 
     return content
-
-
-@router.get("/export/csv")
-def export_csv(
-    classe_id: str,
-    trimestre: int,
-    classe_repo: ClasseRepository = Depends(get_classe_repo),
-    eleve_repo: EleveRepository = Depends(get_eleve_repo),
-    synthese_repo: SyntheseRepository = Depends(get_synthese_repo),
-    pseudonymizer: Pseudonymizer = Depends(get_pseudonymizer),
-):
-    """Exporter les synthèses validées en CSV."""
-    classe = get_or_404(classe_repo, classe_id, entity_name="Class")
-    classe_nom = classe.nom.replace(" ", "_") if classe.nom else classe_id
-
-    validated = synthese_repo.get_validated(classe_id, trimestre)
-
-    # Build CSV content using csv module for proper escaping
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL)
-
-    # Build real-name lookup from pseudonymizer
-    mappings = pseudonymizer.list_mappings(classe_id)
-    name_by_id = {
-        m["eleve_id"]: (m.get("nom_original", ""), m.get("prenom_original", ""))
-        for m in mappings
-    }
-
-    # Header
-    writer.writerow(["nom", "prenom", "synthese_texte", "alertes", "reussites"])
-
-    # Data rows
-    for item in validated:
-        synthese = item["synthese"]
-        eleve_id = item["eleve_id"]
-        nom, prenom = name_by_id.get(eleve_id, ("", ""))
-        # Depseudonymize the text (scoped by classe_id for security)
-        text = pseudonymizer.depseudonymize_text(synthese.synthese_texte, classe_id)
-        alertes = "; ".join(f"{a.matiere}: {a.description}" for a in synthese.alertes)
-        reussites = "; ".join(
-            f"{r.matiere}: {r.description}" for r in synthese.reussites
-        )
-        writer.writerow([nom, prenom, text, alertes, reussites])
-
-    csv_content = output.getvalue()
-
-    # Add UTF-8 BOM for Excel compatibility
-    csv_bytes = ("\ufeff" + csv_content).encode("utf-8")
-
-    return StreamingResponse(
-        io.BytesIO(csv_bytes),
-        media_type="text/csv; charset=utf-8",
-        headers={
-            "Content-Disposition": (
-                f"attachment; filename=syntheses_{classe_nom}_T{trimestre}_{date.today().isoformat()}.csv"
-            )
-        },
-    )
 
 
 def _pseudonymize_extraction(

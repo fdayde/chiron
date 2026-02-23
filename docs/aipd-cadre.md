@@ -152,14 +152,13 @@ Les appréciations enseignantes, même pseudonymisées, peuvent contenir des él
 |---------|-------|-----------|
 | Données pseudonymisées (`chiron.duckdb`) | Au maximum la durée du trimestre scolaire en cours | Suppression manuelle par l'enseignant (page Export) |
 | Mapping identités (`privacy.duckdb`) | Au maximum la durée du trimestre scolaire en cours | Suppression en cascade avec les données |
-| Synthèses exportées (CSV) | Responsabilité du RT | Hors périmètre de l'outil |
+| Synthèses exportées (presse-papiers) | Aucune persistance fichier | L'export par copier-coller ne génère pas de fichier sur le poste |
 | Données côté Mistral AI | Aucune rétention au-delà du traitement de la requête (si entraînement désactivé). Une rétention technique temporaire à des fins de détection d'abus peut s'appliquer selon les conditions du DPA Mistral en vigueur. | Conformément au DPA Mistral |
 
 > **Note** : La purge est déclenchée manuellement par l'enseignant après le conseil de classe. L'outil affiche un rappel de purge mais ne supprime pas automatiquement les données. Le RT peut définir une procédure interne pour s'assurer que la purge est effectuée dans les délais.
 
 📝 **À compléter par le RT** :
 
-- Politique de conservation des exports CSV : _____
 - Fréquence de purge prévue : _____
 - Procédure de vérification de la purge effective : _____
 
