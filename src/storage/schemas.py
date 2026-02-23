@@ -111,10 +111,16 @@ TABLE_ORDER = ["classes", "eleves", "syntheses"]
 # DuckDB supports ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
 MIGRATIONS: list[str] = [
     "ALTER TABLE syntheses ADD COLUMN IF NOT EXISTS is_fewshot_example BOOLEAN DEFAULT FALSE",
+]
+
+# DROP COLUMN migrations checked via information_schema before execution,
+# because DuckDB checks table dependencies before checking IF EXISTS.
+# Format: (table, column, description)
+DROP_COLUMN_MIGRATIONS: list[tuple[str, str, str]] = [
     # RGPD: raw_text n'est jamais lu après import, suppression pour minimisation
-    "ALTER TABLE eleves DROP COLUMN IF EXISTS raw_text",
+    ("eleves", "raw_text", "RGPD minimisation: suppression raw_text"),
     # RGPD Art. 4(4): suppression du profilage automatisé (posture_generale)
-    "ALTER TABLE syntheses DROP COLUMN IF EXISTS posture_generale",
+    ("syntheses", "posture_generale", "RGPD Art. 4(4): suppression posture_generale"),
 ]
 
 # Indexes to create after tables (idempotent via IF NOT EXISTS)

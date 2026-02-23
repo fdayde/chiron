@@ -155,12 +155,11 @@ Les appréciations enseignantes, même pseudonymisées, peuvent contenir des él
 | Synthèses exportées (presse-papiers) | Aucune persistance fichier | L'export par copier-coller ne génère pas de fichier sur le poste |
 | Données côté Mistral AI | Aucune rétention au-delà du traitement de la requête (si entraînement désactivé). Une rétention technique temporaire à des fins de détection d'abus peut s'appliquer selon les conditions du DPA Mistral en vigueur. | Conformément au DPA Mistral |
 
-> **Note** : La purge est déclenchée manuellement par l'enseignant après le conseil de classe. L'outil affiche un rappel de purge mais ne supprime pas automatiquement les données. Le RT peut définir une procédure interne pour s'assurer que la purge est effectuée dans les délais.
+> **Note** : Les données de plus de 30 jours sont automatiquement supprimées au lancement de l'application. L'enseignant peut également supprimer manuellement les données d'un trimestre depuis la page Export. Le RT peut définir une procédure interne complémentaire.
 
 📝 **À compléter par le RT** :
 
-- Fréquence de purge prévue : _____
-- Procédure de vérification de la purge effective : _____
+- Procédure de vérification de la suppression effective : _____
 
 ---
 
@@ -175,7 +174,8 @@ Les appréciations enseignantes, même pseudonymisées, peuvent contenir des él
 | **Absence de profilage** | Aucune catégorisation automatisée des élèves (pas de scoring comportemental, pas de label) | Art. 5(1)(c), 22 |
 | **Stockage local** | DuckDB fichier local, aucune donnée stockée en cloud | Art. 32 |
 | **Séparation des bases** | Le mapping identités (`privacy.duckdb`) est séparé des données pédagogiques | Art. 25, 32 |
-| **Suppression en cascade** | La purge supprime données + mappings simultanément | Art. 5(1)(e) — limitation conservation |
+| **Suppression en cascade** | La suppression efface données + mappings simultanément | Art. 5(1)(e) — limitation conservation |
+| **Effacement automatique** | Les données de plus de 30 jours sont supprimées au lancement | Art. 5(1)(e) — limitation conservation |
 | **Hébergement UE** | Mistral AI, société française, hébergement UE, DPA conforme | Art. 44-49 — transferts |
 | **Désactivation entraînement** | Procédure documentée pour désactiver la réutilisation des données par Mistral | Art. 5(1)(b) — limitation finalités |
 
@@ -247,7 +247,7 @@ Mistral AI peut recourir à des sous-traitants ultérieurs (hébergeurs cloud) p
 | **Description** | Un tiers accède au poste de l'enseignant et aux bases DuckDB contenant les données nominatives et le mapping de pseudonymisation. |
 | **Gravité** | 🔴 Critique — accès aux données nominatives complètes |
 | **Vraisemblance** | 🟡 Variable selon la sécurité du poste |
-| **Mesures d'atténuation** | (1) Purge trimestrielle (réduction de la fenêtre d'exposition) (2) Séparation des bases (3) _Mesures de sécurité du poste — à compléter par le RT_ |
+| **Mesures d'atténuation** | (1) Effacement automatique à 30 jours (réduction de la fenêtre d'exposition) (2) Séparation des bases (3) _Mesures de sécurité du poste — à compléter par le RT_ |
 | **Risque résiduel** | 📝 À évaluer par le RT selon le contexte local |
 
 ### 4.4 Risque R4 — Qualité des synthèses / hallucinations
@@ -270,15 +270,15 @@ Mistral AI peut recourir à des sous-traitants ultérieurs (hébergeurs cloud) p
 | **Mesures d'atténuation** | (1) Le prompt intègre une consigne de détection des biais de genre (2) Validation humaine (3) Le genre n'est pas transmis explicitement au LLM |
 | **Risque résiduel** | 🟢 Faible après atténuation |
 
-### 4.6 Risque R6 — Non-purge des données après le conseil de classe
+### 4.6 Risque R6 — Conservation prolongée des données
 
 | | |
 |---|---|
-| **Description** | L'enseignant oublie de purger les données après le conseil de classe, prolongeant la durée de conservation au-delà du nécessaire. |
+| **Description** | Les données sont conservées au-delà du nécessaire, prolongeant la fenêtre d'exposition en cas de compromission du poste. |
 | **Gravité** | 🟡 Modérée — augmente la fenêtre d'exposition en cas de compromission du poste |
-| **Vraisemblance** | 🟡 Modérée — la purge est manuelle et dépend de la rigueur de l'utilisateur |
-| **Mesures d'atténuation** | (1) Rappel de purge affiché dans l'interface après l'export (2) Procédure de purge documentée (3) Le RT peut instituer un rappel ou une vérification périodique |
-| **Risque résiduel** | 🟢 Faible si le RT met en place une procédure de suivi |
+| **Vraisemblance** | 🟢 Faible — l'effacement automatique à 30 jours garantit une limite maximale de conservation |
+| **Mesures d'atténuation** | (1) Effacement automatique des données de plus de 30 jours au lancement (2) Suppression manuelle disponible depuis la page Export (3) Le RT peut instituer une vérification périodique |
+| **Risque résiduel** | 🟢 Faible — la conservation est bornée techniquement |
 
 ### 4.7 Comparaison avec le risque de référence (absence d'outil dédié)
 
@@ -318,7 +318,7 @@ Les parents peuvent demander l'accès aux données traitées et la rectification
 
 ### 5.4 Droit d'effacement (Art. 17 RGPD)
 
-Les parents peuvent demander l'effacement des données de leur enfant. Les données locales peuvent être supprimées à tout moment par l'enseignant. Les données pseudonymisées transmises à Mistral AI ne sont pas conservées au-delà du traitement de la requête (sous réserve des conditions du DPA Mistral en vigueur). La purge trimestrielle garantit un effacement systématique de l'ensemble des données à l'issue de chaque période.
+Les parents peuvent demander l'effacement des données de leur enfant. Les données locales peuvent être supprimées à tout moment par l'enseignant. Les données pseudonymisées transmises à Mistral AI ne sont pas conservées au-delà du traitement de la requête (sous réserve des conditions du DPA Mistral en vigueur). L'effacement automatique à 30 jours garantit une limite maximale de conservation, et l'enseignant peut supprimer les données manuellement à tout moment depuis la page Export.
 
 📝 **À compléter par le RT** :
 
@@ -353,8 +353,8 @@ Chiron est un **outil d'aide à la rédaction** dont le résultat est systémati
 | Inscrire le traitement au registre des activités de traitement | RT | Avant mise en service | ☐ |
 | Vérifier la désactivation de l'entraînement Mistral | Enseignant | Avant première utilisation | ☐ |
 | Former l'enseignant à la vérification des données personnelles résiduelles | RT / Enseignant | Avant première utilisation | ☐ |
-| Purger les données après chaque conseil de classe | Enseignant | Trimestrielle | ☐ |
-| Vérifier que la purge a été effectuée | RT | Trimestrielle | ☐ |
+| Supprimer les données après chaque conseil de classe | Enseignant | Trimestrielle | ☐ |
+| Vérifier que la suppression a été effectuée | RT | Trimestrielle | ☐ |
 | Réévaluer l'AIPD en cas de changement (provider, fonctionnalité, etc.) | RT + DPO | Annuelle ou événementielle | ☐ |
 
 ---

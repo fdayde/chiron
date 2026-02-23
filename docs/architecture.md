@@ -150,7 +150,8 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 - **Données non transmises** : noms, prénoms, genre, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs
 - **Dépseudonymisation** : uniquement à l'export, scoped par classe
 - **Cascade suppression** : supprimer un élève nettoie aussi son mapping dans `privacy.duckdb` (si plus aucun trimestre)
-- **Purge trimestrielle** : bouton sur la page Export pour supprimer toutes les données d'un trimestre après validation et export (Art. 5(1)(e))
+- **Effacement automatique** : les données de plus de 30 jours sont supprimées au lancement (Art. 5(1)(e))
+- **Suppression manuelle** : bouton sur la page Export pour supprimer les données d'un trimestre après validation et export
 - **Minimisation** : le texte brut PDF (`raw_text`) n'est plus persisté en base — seules les données structurées sont stockées
 - **Base légale** : mission de service public éducatif (RGPD Art. 6(1)(e)), documentée dans l'UI
 

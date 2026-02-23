@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from cache import (
+    delete_trimestre_data,
     fetch_classe,
     fetch_classe_stats,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
     get_status_counts,
-    purge_trimestre,
 )
 from layout import page_layout
 from nicegui import ui
@@ -206,7 +206,7 @@ def export_page():
         ).props("color=primary rounded")
 
         # =============================================================
-        # PURGE TRIMESTRIELLE (RGPD)
+        # SUPPRESSION DES DONNÉES (RGPD)
         # =============================================================
 
         if counts["missing"] == 0 and counts["pending"] == 0:
@@ -221,22 +221,23 @@ def export_page():
             ):
                 with ui.row().classes("items-center gap-2"):
                     ui.icon("delete_forever", color="negative")
-                    ui.label("Purge trimestrielle").classes("text-lg font-bold")
+                    ui.label("Supprimer les données du trimestre").classes(
+                        "text-lg font-bold"
+                    )
                 ui.label(
                     f"Toutes les synthèses T{trimestre} sont validées. "
-                    f"Vous pouvez purger les données de ce trimestre "
-                    f"({counts['total']} élèves)."
+                    f"Vous pouvez supprimer les données de ce trimestre "
+                    f"({counts['total']} élèves). Cette action est irréversible."
                 ).classes("text-body2")
                 ui.label(
-                    "Cette action supprime les données élèves, synthèses "
-                    "et mappings d'identité de ce trimestre. "
-                    "Elle est irréversible."
+                    "Les données de plus de 30 jours sont également "
+                    "supprimées automatiquement au lancement."
                 ).classes("text-caption text-grey-7")
 
-                def _open_purge_dialog():
+                def _open_delete_dialog():
                     with ui.dialog() as dlg, ui.card():
                         ui.label(
-                            f"Confirmer la purge du trimestre {trimestre} ?"
+                            f"Supprimer les données du trimestre {trimestre} ?"
                         ).classes("text-h6")
                         ui.label(
                             f"{counts['total']} élèves et "
@@ -248,12 +249,12 @@ def export_page():
                             "avant de continuer."
                         ).classes("text-caption text-warning")
 
-                        def _confirm_purge():
+                        def _confirm_delete():
                             dlg.close()
                             try:
-                                result = purge_trimestre(classe_id, trimestre)
+                                result = delete_trimestre_data(classe_id, trimestre)
                                 ui.notify(
-                                    f"T{trimestre} purgé : "
+                                    f"T{trimestre} : "
                                     f"{result['deleted_eleves']} élèves, "
                                     f"{result['deleted_syntheses']} synthèses, "
                                     f"{result['deleted_mappings']} mappings "
@@ -263,7 +264,7 @@ def export_page():
                                 ui.navigate.to("/home")
                             except Exception as exc:
                                 ui.notify(
-                                    f"Erreur lors de la purge : {exc}",
+                                    f"Erreur lors de la suppression : {exc}",
                                     type="negative",
                                 )
 
@@ -272,16 +273,16 @@ def export_page():
                                 "flat rounded"
                             )
                             ui.button(
-                                "Purger",
+                                "Supprimer",
                                 icon="delete_forever",
-                                on_click=_confirm_purge,
+                                on_click=_confirm_delete,
                             ).props("color=negative rounded")
                     dlg.open()
 
                 ui.button(
-                    f"Purger les données T{trimestre}",
+                    f"Supprimer les données T{trimestre}",
                     icon="delete_forever",
-                    on_click=_open_purge_dialog,
+                    on_click=_open_delete_dialog,
                 ).props("color=negative rounded")
 
         ui.separator().classes("q-mt-md")

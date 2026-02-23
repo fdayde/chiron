@@ -23,7 +23,8 @@ Ce contexte rend non applicables les vulnérabilités réseau classiques (authen
 | **Aucune donnée nominative au LLM** | Le cloud ne reçoit que des données pseudonymisées |
 | **Catégorisation des notes** | Moyennes converties en niveaux LSU avant envoi |
 | **Séparation des bases** | `privacy.duckdb` séparé de `chiron.duckdb`, cascade de suppression |
-| **Purge trimestrielle** | Suppression données + mappings après export |
+| **Effacement automatique (30j)** | Données expirées supprimées au lancement |
+| **Suppression manuelle** | Suppression données + mappings après export |
 | **Validation humaine** | Obligatoire avant export |
 | **Provider UE** | Mistral AI, hébergé en UE, soumis au RGPD |
 | **Rate limiting LLM** | Fenêtre glissante RPM sur les appels API |

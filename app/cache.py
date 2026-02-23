@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import threading
+from datetime import datetime, timedelta
 
 from cachetools import TTLCache, cached
 
@@ -39,6 +40,9 @@ from src.services.synthese_service import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Résultat de l'effacement automatique au démarrage (rempli par run.py)
+startup_deletion_result: dict | None = None
 
 # --- Caches avec TTL (remplacent @st.cache_data) ---
 
@@ -220,15 +224,15 @@ def delete_eleve_direct(eleve_id: str, trimestre: int) -> None:
             logger.info("Privacy mapping cleared for %s (no remaining data)", eleve_id)
 
 
-def purge_trimestre(classe_id: str, trimestre: int) -> dict:
-    """Purge toutes les données d'un trimestre pour une classe (RGPD).
+def delete_trimestre_data(classe_id: str, trimestre: int) -> dict:
+    """Supprime toutes les données d'un trimestre pour une classe (RGPD).
 
-    Supprime les élèves, synthèses, et mappings privacy (si l'élève
+    Efface les élèves, synthèses, et mappings privacy (si l'élève
     n'a plus de données dans aucun autre trimestre).
 
     Args:
         classe_id: Identifiant de la classe.
-        trimestre: Numéro du trimestre à purger.
+        trimestre: Numéro du trimestre.
 
     Returns:
         Dict avec le nombre d'éléments supprimés.
@@ -254,7 +258,7 @@ def purge_trimestre(classe_id: str, trimestre: int) -> dict:
     clear_eleves_cache()
 
     logger.info(
-        "Purge T%d classe %s: %d élèves, %d synthèses, %d mappings supprimés",
+        "Suppression T%d classe %s : %d élèves, %d synthèses, %d mappings supprimés",
         trimestre,
         classe_id,
         deleted_eleves,
@@ -269,6 +273,95 @@ def purge_trimestre(classe_id: str, trimestre: int) -> dict:
         "deleted_syntheses": deleted_syntheses,
         "deleted_mappings": deleted_mappings,
     }
+
+
+def auto_delete_expired_data(retention_days: int | None = None) -> dict:
+    """Efface automatiquement les données dépassant la durée de rétention (RGPD Art. 5(1)(e)).
+
+    Supprime les élèves, synthèses et mappings privacy pour les données
+    dont le created_at dépasse la durée de rétention configurée.
+    Les classes vides (plus aucun élève) sont également supprimées.
+
+    Args:
+        retention_days: Durée de rétention en jours. Si None, utilise la config.
+
+    Returns:
+        Dict résumé {deleted_classes, total_eleves, total_syntheses, total_mappings}.
+    """
+    from src.storage.config import storage_settings
+
+    if retention_days is None:
+        retention_days = storage_settings.data_retention_days
+
+    eleve_repo = get_eleve_repo()
+    synthese_repo = get_synthese_repo()
+    classe_repo = get_classe_repo()
+    pseudonymizer = get_pseudonymizer()
+
+    cutoff = datetime.now() - timedelta(days=retention_days)
+
+    # Find expired (classe_id, trimestre) pairs
+    expired = eleve_repo._execute(
+        "SELECT DISTINCT classe_id, trimestre FROM eleves WHERE created_at < ?",
+        [cutoff],
+    )
+
+    total_eleves = 0
+    total_syntheses = 0
+    total_mappings = 0
+    deleted_classes: list[str] = []
+
+    for classe_id, trimestre in expired:
+        # Get eleves for this expired (classe_id, trimestre)
+        eleves = eleve_repo._execute(
+            "SELECT eleve_id FROM eleves WHERE classe_id = ? AND trimestre = ? AND created_at < ?",
+            [classe_id, trimestre, cutoff],
+        )
+
+        for (eleve_id,) in eleves:
+            total_syntheses += synthese_repo.delete_for_eleve(eleve_id, trimestre)
+            eleve_repo.delete(eleve_id, trimestre)
+            total_eleves += 1
+
+            # Clean privacy mapping if no data remains
+            if not eleve_repo.exists(eleve_id):
+                total_mappings += pseudonymizer.clear_mapping_for_eleve(eleve_id)
+
+    # Delete classes that have no remaining eleves
+    all_classes = classe_repo.list()
+    for classe in all_classes:
+        cid = classe.classe_id if hasattr(classe, "classe_id") else classe["classe_id"]
+        remaining = eleve_repo._execute(
+            "SELECT 1 FROM eleves WHERE classe_id = ? LIMIT 1", [cid]
+        )
+        if not remaining:
+            classe_repo.delete(cid)
+            deleted_classes.append(cid)
+
+    if total_eleves > 0:
+        clear_eleves_cache()
+        clear_classes_cache()
+
+    summary = {
+        "deleted_classes": deleted_classes,
+        "total_eleves": total_eleves,
+        "total_syntheses": total_syntheses,
+        "total_mappings": total_mappings,
+    }
+
+    if total_eleves > 0:
+        logger.info(
+            "Effacement auto (%dj) : %d élèves, %d synthèses, %d mappings supprimés, %d classes vides supprimées",
+            retention_days,
+            total_eleves,
+            total_syntheses,
+            total_mappings,
+            len(deleted_classes),
+        )
+    else:
+        logger.info("Effacement auto (%dj) : aucune donnée expirée", retention_days)
+
+    return summary
 
 
 def delete_classe_direct(classe_id: str) -> dict:

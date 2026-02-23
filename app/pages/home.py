@@ -1,6 +1,11 @@
 """Page d'accueil NiceGUI — Dashboard Chiron."""
 
-from cache import check_api_health, fetch_classe_stats, fetch_classes
+from cache import (
+    check_api_health,
+    fetch_classe_stats,
+    fetch_classes,
+    startup_deletion_result,
+)
 from layout import page_layout
 from nicegui import ui
 
@@ -11,6 +16,20 @@ from src.llm.config import settings as llm_settings
 def home_page():
     """Page d'accueil avec état des lieux et workflow."""
     with page_layout("Chiron"):
+        # --- Notification effacement automatique au démarrage ---
+        if (
+            startup_deletion_result
+            and startup_deletion_result.get("total_eleves", 0) > 0
+        ):
+            r = startup_deletion_result
+            ui.notify(
+                f"Données expirées supprimées : {r['total_eleves']} élève(s), "
+                f"{r['total_syntheses']} synthèse(s), "
+                f"{r['total_mappings']} mapping(s).",
+                type="info",
+                close_button=True,
+            )
+
         ui.label("Assistant IA pour la préparation des conseils de classe").classes(
             "text-subtitle1 text-grey-7"
         )
@@ -190,7 +209,9 @@ def home_page():
                 ui.markdown(
                     "**Confidentialité garantie** : Les noms des élèves sont "
                     "pseudonymisés avant tout traitement IA. "
-                    "Les données personnelles restent sur votre machine."
+                    "Les données personnelles restent sur votre machine. "
+                    "Les données de plus de 30 jours sont automatiquement "
+                    "supprimées au lancement de l'application."
                 ).classes("text-grey-4")
 
             with ui.expansion("Obligations RGPD").classes("w-full q-mt-sm"):
@@ -201,7 +222,7 @@ def home_page():
                     "2. **Désactiver l'entraînement** dans votre "
                     "[console Mistral](https://console.mistral.ai/) : "
                     "Admin Console > Privacy > off\n"
-                    "3. **Purger les données** après chaque conseil de classe "
+                    "3. **Supprimer les données** après chaque conseil de classe "
                     "(page Export de Chiron)"
                 ).classes("text-body2")
                 ui.markdown(
@@ -297,9 +318,9 @@ def home_page():
                     "qu'utilisateur."
                 ).classes("text-caption text-grey-7")
                 ui.markdown(
-                    "Une fois les synthèses exportées, utilisez le bouton "
-                    "**Purge trimestrielle** (page Export) pour supprimer les "
-                    "données du trimestre conformément au principe de "
+                    "Les données de plus de 30 jours sont **automatiquement supprimées** "
+                    "au lancement. Vous pouvez aussi supprimer les données manuellement "
+                    "depuis la page Export, conformément au principe de "
                     "**limitation de la conservation** (Art. 5(1)(e))."
                 ).classes("text-caption text-grey-7")
 

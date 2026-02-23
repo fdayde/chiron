@@ -70,6 +70,13 @@ if __name__ == "__main__":
     # --- Database lifecycle (with = flush WAL on exit) ---
     try:
         with managed_connection():
+            # --- RGPD: effacement automatique des données expirées (Art. 5(1)(e)) ---
+            import cache as _cache_module
+
+            _cache_module.startup_deletion_result = (
+                _cache_module.auto_delete_expired_data()
+            )
+
             # --- Mount existing FastAPI routers ---
             app.include_router(classes_router, prefix="/classes", tags=["Classes"])
             app.include_router(eleves_router, prefix="/eleves", tags=["Eleves"])

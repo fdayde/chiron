@@ -79,7 +79,7 @@ Chiron **pseudonymise toutes les données** (noms → `ELEVE_XXX`, notes → niv
 
 1. **Informer votre chef d'établissement** et obtenir son accord (c'est lui le responsable de traitement RGPD)
 2. **Désactiver l'entraînement** dans votre [console Mistral](https://console.mistral.ai/) : Admin Console > Privacy > off
-3. **Purger les données** après chaque conseil de classe (page Export de Chiron)
+3. **Supprimer les données** après chaque conseil de classe (page Export de Chiron)
 
 > Le chef d'établissement peut consulter le DPO académique. Le [DPA Mistral](https://legal.mistral.ai/terms/data-processing-addendum) et cette documentation fournissent les éléments nécessaires.
 
@@ -214,7 +214,7 @@ chiron/
 │   ├── state.py              # Gestion d'état
 │   ├── pages/                # home, import, synthèses, export, prompt
 │   └── components/           # eleve_card, synthese_editor, llm_selector...
-├── tests/                    # Tests (pseudonymisation, purge, validation, parsing PDF)
+├── tests/                    # Tests (pseudonymisation, suppression, validation, parsing PDF)
 ├── run.py                    # Point d'entrée unique (API + UI)
 ├── chiron.spec               # Spec PyInstaller
 ├── scripts/build.py          # Script de build .exe
@@ -232,7 +232,8 @@ chiron/
 | **Mapping identités** | Base séparée (`privacy.duckdb`), cascade suppression |
 | **LLM cloud** | Reçoit uniquement données **pseudonymisées** |
 | **Validation humaine** | Obligatoire avant export |
-| **Purge trimestrielle** | Suppression données + mappings après export (page Export) |
+| **Effacement automatique (30j)** | Données expirées supprimées au lancement (Art. 5(1)(e)) |
+| **Suppression manuelle** | Suppression données + mappings après export (page Export) |
 | **Base légale** | Mission de service public éducatif (RGPD Art. 6(1)(e)) |
 | **Code source ouvert** | Auditable ([Apache 2.0](LICENSE)) |
 
