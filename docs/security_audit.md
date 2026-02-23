@@ -44,6 +44,12 @@ Le nom de table est une constante hardcodée (`mapping_identites` dans `config.p
 **Version flottante du modèle** (`src/llm/config.py`)
 `mistral-large-latest` est un choix délibéré pour bénéficier des améliorations automatiques.
 
+**Pas de chiffrement de `privacy.duckdb`**
+Le chiffrement a été étudié et écarté. Chiron étant distribué en `.exe` autonome (dossier unique), la clé de chiffrement devrait être stockée sur le même poste, dans le même dossier applicatif. Une clé stockée à côté du fichier chiffré n'offre aucune protection réelle. La déplacer (`%APPDATA%`, registre Windows) relèverait de la sécurité par obscurité. La protection repose sur des mesures plus pertinentes : `chiron.duckdb` ne contient que des données pseudonymisées (inexploitables sans le mapping), `privacy.duckdb` est sur le poste du professeur qui a déjà accès aux bulletins PDF source, purge automatique à 30 jours, pas d'export fichier.
+
+**Pas d'authentification**
+Chiron est une application locale mono-utilisateur. Si un tiers a accès au PC du professeur, il a déjà accès à PRONOTE, aux bulletins PDF et à l'ensemble des données pédagogiques. Un mot de passe Chiron n'ajouterait pas de protection réelle. La sécurité repose sur la protection du poste (session Windows/macOS), qui est la responsabilité de l'établissement.
+
 ### Sévérité basse
 
 **Validation PDF limitée** (`src/api/routers/exports.py`)
