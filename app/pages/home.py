@@ -155,6 +155,29 @@ def home_page():
 
         ui.separator().classes("q-mt-md")
 
+        # --- Quick actions ---
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("rocket_launch").classes("text-primary")
+            ui.label("Démarrer").classes("text-h6")
+        with ui.row().classes("q-mt-md gap-4"):
+            ui.button(
+                "Importer des bulletins",
+                icon="upload_file",
+                on_click=lambda: ui.navigate.to("/import"),
+            ).props("outline rounded")
+            ui.button(
+                "Synthèses",
+                icon="smart_toy",
+                on_click=lambda: ui.navigate.to("/syntheses"),
+            ).props("outline rounded")
+            ui.button(
+                "Exporter",
+                icon="download",
+                on_click=lambda: ui.navigate.to("/export"),
+            ).props("outline rounded")
+
+        ui.separator().classes("q-mt-md")
+
         # --- Workflow ---
         with ui.row().classes("items-center gap-2 q-mt-md"):
             ui.icon("help_outline").classes("text-primary")
@@ -323,29 +346,6 @@ def home_page():
                     "depuis la page Export, conformément au principe de "
                     "**limitation de la conservation** (Art. 5(1)(e))."
                 ).classes("text-caption text-grey-7")
-
-        ui.separator().classes("q-mt-md")
-
-        # --- Quick actions ---
-        with ui.row().classes("items-center gap-2 q-mt-md"):
-            ui.icon("rocket_launch").classes("text-primary")
-            ui.label("Démarrer").classes("text-h6")
-        with ui.row().classes("q-mt-md gap-4"):
-            ui.button(
-                "Importer des bulletins",
-                icon="upload_file",
-                on_click=lambda: ui.navigate.to("/import"),
-            ).props("outline rounded")
-            ui.button(
-                "Synthèses",
-                icon="smart_toy",
-                on_click=lambda: ui.navigate.to("/syntheses"),
-            ).props("outline rounded")
-            ui.button(
-                "Exporter",
-                icon="download",
-                on_click=lambda: ui.navigate.to("/export"),
-            ).props("outline rounded")
 
 
 def _metric_card(label: str, value: str) -> None:
