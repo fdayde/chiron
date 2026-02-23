@@ -153,6 +153,7 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 - **Effacement automatique** : les données de plus de 30 jours sont supprimées au lancement (Art. 5(1)(e))
 - **Suppression manuelle** : bouton sur la page Export pour supprimer les données d'un trimestre après validation et export
 - **Minimisation** : le texte brut PDF (`raw_text`) n'est plus persisté en base — seules les données structurées sont stockées
+- **Logs** : les logs de niveau INFO (défaut) ne contiennent jamais de données nominatives. Les mappings nom ↔ ELEVE_XXX ne sont loggués qu'au niveau DEBUG, réservé au développement (`LOG_LEVEL=DEBUG` dans `.env`)
 - **Base légale** : mission de service public éducatif (RGPD Art. 6(1)(e)), documentée dans l'UI
 
 ## Comportement d'import
