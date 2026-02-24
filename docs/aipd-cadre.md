@@ -87,7 +87,7 @@ La pseudonymisation préalable à l'envoi cloud et la catégorisation des notes 
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     POSTE DE L'ENSEIGNANT (local)                   │
 │                                                                     │
-│  PDF Bulletin ──► CamemBERT (NER) ──► Données pseudonymisées        │
+│  PDF Bulletin ──► Flair NER ──────► Données pseudonymisées           │
 │  (PRONOTE)        Pseudonymisation      Noms → ELEVE_XXX            │
 │                   locale                Notes → niveaux LSU          │
 │                                                                     │
@@ -169,7 +169,7 @@ Les appréciations enseignantes, même pseudonymisées, peuvent contenir des él
 
 | Mesure | Description | Article RGPD |
 |--------|-------------|--------------|
-| **Pseudonymisation NER** | Modèle CamemBERT (local) détecte et remplace les noms/prénoms avant tout envoi cloud | Art. 25, 32 |
+| **Pseudonymisation NER** | Pipeline Flair NER (local, 3 passes) détecte et remplace les noms/prénoms avant tout envoi cloud | Art. 25, 32 |
 | **Catégorisation LSU** | Les notes numériques sont converties en niveaux de maîtrise (4 niveaux) avant envoi | Art. 5(1)(c) — minimisation |
 | **Absence de profilage** | Aucune catégorisation automatisée des élèves (pas de scoring comportemental, pas de label) | Art. 5(1)(c), 22 |
 | **Stockage local** | DuckDB fichier local, aucune donnée stockée en cloud | Art. 32 |
@@ -390,7 +390,7 @@ Signature : _____
 - **DPA Mistral AI** : [legal.mistral.ai/terms/data-processing-addendum](https://legal.mistral.ai/terms/data-processing-addendum)
 - **Code source Chiron** : [github.com/fdayde/chiron](https://github.com/fdayde/chiron)
 - **Documentation technique** : `docs/architecture.md`
-- **CamemBERT NER** : Jean-Baptiste/camembert-ner (modèle local, aucune donnée transmise)
+- **Flair NER** : flair/ner-french (modèle local, aucune donnée transmise)
 
 ### B. Cadre d'usage du Ministère
 

@@ -56,9 +56,11 @@ hidden_imports = [
     # FastAPI / multipart
     "multipart",
     "python_multipart",
-    # Transformers / torch
-    "transformers.pipelines",
-    "transformers.models.camembert",
+    # Flair NER
+    "flair",
+    "flair.models",
+    "flair.data",
+    "flair.nn",
     # pydantic / pydantic-settings
     "pydantic",
     "pydantic_settings",
@@ -87,6 +89,9 @@ hidden_imports += nicegui_hiddenimports
 
 # Transformers data files (tokenizer configs, etc.)
 datas += collect_data_files("transformers")
+
+# Flair data files
+datas += collect_data_files("flair")
 
 # Package metadata needed at runtime
 for pkg in [
@@ -124,6 +129,8 @@ for pkg in [
     "python_multipart",
     "langdetect",
     "protobuf",
+    "flair",
+    "rapidfuzz",
 ]:
     try:
         datas += copy_metadata(pkg)

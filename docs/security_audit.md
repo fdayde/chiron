@@ -19,7 +19,7 @@ Ce contexte rend non applicables les vulnérabilités réseau classiques (authen
 
 | Mesure | Détail |
 |--------|--------|
-| **Pseudonymisation NER** | CamemBERT local avant tout envoi cloud (noms, prénoms → `ELEVE_XXX`) |
+| **Pseudonymisation NER** | Flair NER local (pipeline 3 passes) avant tout envoi cloud (noms, prénoms → `ELEVE_XXX`) |
 | **Aucune donnée nominative au LLM** | Le cloud ne reçoit que des données pseudonymisées |
 | **Catégorisation des notes** | Moyennes converties en niveaux LSU avant envoi |
 | **Séparation des bases** | `privacy.duckdb` séparé de `chiron.duckdb`, cascade de suppression |

@@ -32,8 +32,8 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 5. _pseudonymize_extraction()       │  Regex + NER safety net (CamemBERT)
-│    → textes avec noms remplacés     │  sur les appréciations
+│ 5. _pseudonymize_extraction()       │  Pipeline 3 passes (regex + Flair NER
+│    → textes avec noms remplacés     │  + fuzzy) sur les appréciations
 └─────────────────────────────────────┘
  │
  ▼
@@ -95,7 +95,8 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → Presse
 | Fichier | Responsabilité |
 |---------|----------------|
 | `src/document/__init__.py` | Factory `get_parser()`, `PDFParser` Protocol |
-| `src/document/anonymizer.py` | `extract_eleve_name()`, `ner_check_student_names()` |
+| `src/document/anonymizer.py` | `extract_eleve_name()` |
+| `src/document/pseudonymization.py` | Pipeline 3 passes : `pseudonymize()` (regex + Flair NER fuzzy + fuzzy direct) |
 | `src/document/yaml_template_parser.py` | Parser principal via templates YAML (PRONOTE) |
 | `src/document/parser.py` | Utilitaires partagés (`extract_pdf_content`, `extract_key_value`, etc.) |
 | `src/document/validation.py` | `validate_extraction()`, `check_classe_mismatch()` |
@@ -144,7 +145,7 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 ## RGPD
 
 - **Extraction du nom** : locale (regex), jamais envoyée au cloud
-- **Pseudonymisation** : regex sur tous les textes + NER safety net (CamemBERT) sur les appréciations
+- **Pseudonymisation** : pipeline 3 passes (regex + Flair NER fuzzy + fuzzy direct) sur les appréciations
 - **Genre** : extrait et stocké localement, **non transmis** au LLM (déduit des accords grammaticaux)
 - **Données transmises au LLM** : notes **catégorisées** (échelle LSU), appréciations **pseudonymisées**
 - **Données non transmises** : noms, prénoms, genre, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs

@@ -7,8 +7,8 @@ Supporte deux backends :
 Le flux d'import unifié :
 1. extract_eleve_name() - extrait le nom depuis le PDF (regex)
 2. get_parser().parse() - extrait les données structurées du PDF original
-3. _pseudonymize_extraction() - remplace les noms par eleve_id dans les textes
-   (regex + NER safety net sur les appréciations)
+3. _pseudonymize_extraction() - pipeline 3 passes sur les textes
+   (regex accent-insensitive + Flair NER fuzzy + fuzzy direct)
 """
 
 from pathlib import Path
@@ -46,6 +46,7 @@ def get_parser() -> PDFParser:
 __all__ = [
     # Flux d'import
     "extract_eleve_name",
+    "pseudonymize",
     # Factory et types
     "get_parser",
     "PDFParser",
@@ -70,4 +71,8 @@ def __getattr__(name: str):
         from src.document.debug_visualizer import generate_debug_pdf
 
         return generate_debug_pdf
+    if name == "pseudonymize":
+        from src.document.pseudonymization import pseudonymize
+
+        return pseudonymize
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

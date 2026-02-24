@@ -34,12 +34,6 @@ class LLMSettings(BaseSettings):
         description="Provider LLM par défaut (openai, anthropic, mistral)",
     )
 
-    # Anonymization configuration
-    ner_model: str = Field(
-        default="Jean-Baptiste/camembert-ner",
-        description="Modèle HuggingFace NER pour l'anonymisation",
-    )
-
     # Modèles par défaut (production)
     default_openai_model: str = Field(
         default="gpt-5-mini", description="Modèle OpenAI par défaut"

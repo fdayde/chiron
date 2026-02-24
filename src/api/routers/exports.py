@@ -1,7 +1,6 @@
 """Router d'import/export."""
 
 import logging
-import re
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -15,10 +14,8 @@ from src.api.dependencies import (
 from src.core.exceptions import ParserError
 from src.core.models import EleveExtraction
 from src.document import get_parser
-from src.document.anonymizer import (
-    extract_eleve_name,
-    ner_check_student_names,
-)
+from src.document.anonymizer import extract_eleve_name
+from src.document.pseudonymization import pseudonymize
 from src.document.validation import check_classe_mismatch, validate_extraction
 from src.privacy.pseudonymizer import Pseudonymizer
 from src.services.shared import ensure_classe_exists, temp_pdf_file
@@ -68,10 +65,7 @@ def _pseudonymize_extraction(
     identity: dict,
     eleve_id: str,
 ) -> None:
-    """Pseudonymise les champs texte d'une extraction en remplaçant le nom par eleve_id.
-
-    Remplace toutes les variantes du nom de l'élève (nom complet, prénom seul,
-    nom seul) dans les appréciations et le texte brut.
+    """Pseudonymise les champs texte d'une extraction via la pipeline 3 passes.
 
     Args:
         eleve: Extraction à pseudonymiser (modifiée in-place).
@@ -80,67 +74,20 @@ def _pseudonymize_extraction(
     """
     nom = identity.get("nom", "")
     prenom = identity.get("prenom", "")
-    nom_complet = identity.get("nom_complet", "")
 
-    # Build variants to replace (longest first to avoid partial matches)
-    variants = []
-    if nom_complet:
-        variants.append(nom_complet)
-    if prenom and nom:
-        variants.append(f"{prenom} {nom}")
-        variants.append(f"{nom} {prenom}")
-    if nom:
-        variants.append(nom)
-    if prenom:
-        variants.append(prenom)
-
-    # Deduplicate while preserving order (longest-first)
-    seen: set[str] = set()
-    unique_variants: list[str] = []
-    for v in variants:
-        v_lower = v.lower()
-        if v_lower not in seen:
-            seen.add(v_lower)
-            unique_variants.append(v)
-
-    if not unique_variants:
+    if not nom and not prenom:
         return
 
-    # Compile patterns once
-    patterns = [
-        re.compile(rf"\b{re.escape(v)}\b", re.IGNORECASE) for v in unique_variants
-    ]
-
-    def replace_names(text: str) -> str:
-        if not text:
-            return text
-        for pattern in patterns:
-            text = pattern.sub(eleve_id, text)
-        return text
-
-    # Pseudonymize appreciations
     for matiere in eleve.matieres:
         if matiere.appreciation:
-            matiere.appreciation = replace_names(matiere.appreciation)
+            matiere.appreciation = pseudonymize(
+                matiere.appreciation, nom, prenom, eleve_id
+            )
 
-    # Pseudonymize appreciation_generale if present
     if eleve.appreciation_generale:
-        eleve.appreciation_generale = replace_names(eleve.appreciation_generale)
-
-    # NER safety net : vérifier les appréciations après le pass regex
-    nom_parts_set = {p.lower() for p in [nom, prenom] if p and len(p) > 1}
-    if nom_parts_set:
-        appreciation_texts = [m.appreciation for m in eleve.matieres if m.appreciation]
-        remaining = ner_check_student_names(appreciation_texts, nom_parts_set)
-        if remaining:
-            logger.debug("NER safety net: found %s in appreciations", remaining)
-            for variant in remaining:
-                pattern = re.compile(rf"\b{re.escape(variant)}\b", re.IGNORECASE)
-                for matiere in eleve.matieres:
-                    if matiere.appreciation:
-                        matiere.appreciation = pattern.sub(
-                            eleve_id, matiere.appreciation
-                        )
+        eleve.appreciation_generale = pseudonymize(
+            eleve.appreciation_generale, nom, prenom, eleve_id
+        )
 
 
 def _import_single_pdf(

@@ -34,7 +34,7 @@ Assistant IA responsable pour la préparation des conseils de classe. Suggère d
 ## Fonctionnalités clés
 
 ### Pseudonymisation avant envoi cloud
-Les noms, prénoms et informations identifiantes sont détectés par un modèle NER local (CamemBERT) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le LLM ne reçoit jamais de données nominatives. Les noms réels sont restaurés automatiquement à l'export.
+Les noms, prénoms et informations identifiantes sont détectés par une pipeline 3 passes locale (regex + Flair NER fuzzy + fuzzy direct) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le LLM ne reçoit jamais de données nominatives. Les noms réels sont restaurés automatiquement à l'export.
 
 ### Few-shot learning : calibration par l'enseignant
 L'enseignant peut marquer jusqu'à 3 synthèses validées comme « exemples » pour l'IA. Ces exemples sont automatiquement injectés dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de détail des synthèses suivantes. Les appréciations sont tronquées et les synthèses plafonnées à 1000 caractères pour maîtriser la taille du prompt.
@@ -60,7 +60,7 @@ L'outil propose des signaux factuels et des pistes de travail, sans profilage ni
 ```
 PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export
      │              │                  │            │               │             │           │
-     │         CamemBERT         YAML template  Few-shot       Mistral (cloud) Humain    Dépseudo
+     │         Flair NER         YAML template  Few-shot       Mistral (cloud) Humain    Dépseudo
      │         (local)           (local)        (0-3 ex.)      hébergé UE     (local)    (local)
      ▼              ▼                  ▼            ▼               ▼             ▼           ▼
   Bulletin    PDF pseudonymisé   Données      Exemples        Synthèse      Validée    Noms réels
@@ -186,7 +186,8 @@ chiron/
 │   │   └── exceptions.py     # Exceptions custom
 │   ├── document/             # Parsing PDF
 │   │   ├── yaml_template_parser.py # Parser principal (template YAML configurable)
-│   │   ├── anonymizer.py          # Extraction nom élève + NER safety net
+│   │   ├── anonymizer.py          # Extraction nom élève
+│   │   ├── pseudonymization.py   # Pipeline 3 passes (regex + Flair NER + fuzzy)
 │   │   ├── validation.py          # Validation post-extraction + mismatch classe
 │   │   ├── debug_visualizer.py    # PDF annoté pour debug visuel
 │   │   └── templates/             # Templates YAML d'extraction (pronote_standard)
@@ -227,7 +228,7 @@ chiron/
 
 | Aspect | Mesure |
 |--------|--------|
-| **Pseudonymisation** | CamemBERT NER **avant** envoi cloud (ELEVE_XXX) |
+| **Pseudonymisation** | Pipeline 3 passes : regex + Flair NER fuzzy + fuzzy direct **avant** envoi cloud (ELEVE_XXX) |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
 | **Mapping identités** | Base séparée (`privacy.duckdb`), cascade suppression |
 | **LLM cloud** | Reçoit uniquement données **pseudonymisées** |
@@ -259,7 +260,7 @@ chiron/
 |-----------|-------------|
 | Runtime | Python 3.13+ |
 | LLM | Mistral (défaut) — OpenAI, Anthropic disponibles en configuration avancée |
-| NER | CamemBERT (Jean-Baptiste/camembert-ner) |
+| NER | Flair NER (flair/ner-french) + rapidfuzz |
 | PDF | pdfplumber + YAML templates (configurable) |
 | Backend | FastAPI + Uvicorn |
 | Frontend | NiceGUI |
