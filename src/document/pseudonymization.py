@@ -40,6 +40,8 @@ def _make_accent_insensitive_pattern(s: str) -> str:
     """
     result: list[str] = []
     for char in s:
+        # NFD décompose un caractère accentué en lettre base + diacritique.
+        # Ex: "é" → "e" + "\u0301".  [0] extrait la lettre base "e".
         base_char = unicodedata.normalize("NFD", char)[0].lower()
         if base_char in _ACCENT_MAP:
             result.append(_ACCENT_MAP[base_char])
@@ -59,6 +61,10 @@ def normalize_for_fuzzy(s: str) -> str:
     Different from ``normalize_name`` in utils.py which preserves accents.
     """
     s = s.lower()
+    # NFD décompose chaque caractère accentué en lettre base + diacritique(s).
+    # Ex: "héloïse" → "h" "e" "\u0301" "l" "o" "i" "\u0308" "s" "e"
+    # On filtre les diacritiques (catégorie Unicode "Mn" = Mark, nonspacing)
+    # pour ne garder que les lettres base → "heloise".
     return "".join(
         c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn"
     )
