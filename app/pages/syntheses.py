@@ -61,13 +61,13 @@ def syntheses_page(eleve: str = ""):
                 "<b>Appréciations</b> et <b>synthèses</b> sont modifiables "
                 "directement sur cette page."
                 "<ul style='margin: 4px 0 4px 16px; padding: 0;'>"
-                "<li>- Les appréciations ne doivent contenir aucune donnée "
-                "personnelle avant génération des synthèses par l'IA.</li>"
+                "<li>- Les <b>noms et prénoms</b> sont automatiquement "
+                "pseudonymisés avant envoi à l'IA.</li>"
+                "<li>- Vérifiez qu'aucune <b>information sensible</b> "
+                "(situation médicale, familiale…) ne figure dans les appréciations.</li>"
                 "<li>- Les synthèses générées sont des suggestions "
                 "à adapter par l'enseignant.</li>"
                 "</ul>"
-                "Les prénoms et noms de l'élève concerné sont "
-                "automatiquement pseudonymisés avant envoi à l'IA (il n'est pas nécessaire de les modifier ou supprimer manuellement)."
             ).style("color: var(--chiron-gold); font-size: 0.875rem;")
 
         # Fetch data (mutable container so refresh can update it)

@@ -73,8 +73,8 @@ Le droit d'opposition (Art. 21 RGPD) s'applique : les parents peuvent s'opposer 
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     POSTE DE L'ENSEIGNANT (local)                   │
 │                                                                     │
-│  PDF Bulletin ──► CamemBERT (NER) ──► Données pseudonymisées        │
-│  (PRONOTE)        Pseudonymisation      Noms → ELEVE_XXX            │
+│  PDF Bulletin ──► Flair NER (local) ──► Données pseudonymisées       │
+│  (PRONOTE)        Pseudonymisation       Noms → ELEVE_XXX            │
 │                   locale                Notes → niveaux LSU          │
 │                                                                     │
 │  ┌─────────────┐  ┌───────────────┐  ┌────────────────────┐        │
@@ -124,7 +124,7 @@ Le droit d'opposition (Art. 21 RGPD) s'applique : les parents peuvent s'opposer 
 |--------|-----------------|---------------|
 | Identité élève | `ELEVE_XXX` (pseudonyme) | Nécessaire pour structurer la synthèse |
 | Moyennes par matière | Catégorisées en niveaux de maîtrise LSU (4 niveaux) | Minimisation : la note exacte n'est pas transmise |
-| Appréciations enseignantes | Texte pseudonymisé (noms propres remplacés par NER CamemBERT) | Nécessaire pour la génération de la synthèse |
+| Appréciations enseignantes | Texte pseudonymisé (noms propres remplacés par pipeline 3 passes : regex + Flair NER + fuzzy) | Nécessaire pour la génération de la synthèse |
 
 ### 3.4 Limites connues de la pseudonymisation
 
@@ -138,7 +138,8 @@ Les appréciations enseignantes, même pseudonymisées, peuvent contenir des él
 
 | Mesure | Description | Article RGPD |
 |--------|-------------|--------------|
-| **Pseudonymisation NER** | Modèle CamemBERT local détecte et remplace les noms/prénoms avant tout envoi cloud | Art. 25, 32 |
+| **Fail-safe à l'import** | Si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière extraite), l'import est bloqué — aucune donnée n'est stockée ni transmise au LLM | Art. 25 |
+| **Pseudonymisation NER** | Pipeline 3 passes local (regex + Flair NER + fuzzy) détecte et remplace les noms/prénoms avant tout envoi cloud | Art. 25, 32 |
 | **Catégorisation LSU** | Les notes numériques sont converties en niveaux de maîtrise (4 niveaux) avant envoi | Art. 5(1)(c) — minimisation |
 | **Absence de profilage** | Aucune catégorisation automatisée des élèves | Art. 5(1)(c), 22 |
 | **Stockage local** | DuckDB fichier local, aucune donnée en cloud | Art. 32 |
@@ -291,7 +292,7 @@ Chiron est un **outil d'aide à la rédaction** dont le résultat est systémati
 - **DPA Mistral AI** : [legal.mistral.ai/terms/data-processing-addendum](https://legal.mistral.ai/terms/data-processing-addendum)
 - **Code source Chiron** : [github.com/fdayde/chiron](https://github.com/fdayde/chiron)
 - **Documentation technique** : `docs/architecture.md`
-- **CamemBERT NER** : Jean-Baptiste/camembert-ner (modèle local, aucune donnée transmise)
+- **Flair NER** : flair/ner-french (modèle local, aucune donnée transmise)
 
 ### B. Références réglementaires et institutionnelles
 
