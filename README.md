@@ -267,7 +267,7 @@ chiron/
 | Runtime | Python 3.13+ |
 | LLM | Mistral (défaut) — OpenAI, Anthropic disponibles en configuration avancée |
 | NER | Flair NER (flair/ner-french) + rapidfuzz |
-| PDF | pdfplumber + YAML templates (configurable) |
+| PDF | pdfplumber + YAML templates |
 | Backend | FastAPI + Uvicorn |
 | Frontend | NiceGUI |
 | Base de données | DuckDB (local) |

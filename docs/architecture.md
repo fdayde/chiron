@@ -19,8 +19,8 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 3. get_parser().parse()             │  yaml_template (défaut) ou pdfplumber
-│    → EleveExtraction                │  configurable via PDF_PARSER_TYPE
+│ 3. get_parser().parse()             │  YamlTemplateParser (pdfplumber)
+│    → EleveExtraction                │
 └─────────────────────────────────────┘
  │
  ▼
@@ -176,6 +176,5 @@ Cela permet d'identifier facilement la classe et l'année scolaire sans modifier
 
 ```bash
 # .env
-PDF_PARSER_TYPE=yaml_template  # yaml_template (défaut) ou pdfplumber (legacy)
-MISTRAL_API_KEY=...            # Mistral (hébergé en UE, conforme RGPD)
+MISTRAL_API_KEY=...  # Mistral (hébergé en UE, conforme RGPD)
 ```

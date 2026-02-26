@@ -1,8 +1,7 @@
 """Module de parsing de documents PDF.
 
-Supporte deux backends :
-- pdfplumber : extraction mécanique (rapide, gratuit)
-- yaml_template : extraction via templates YAML (configurable)
+Utilise pdfplumber pour l'extraction brute et des templates YAML pour
+la structuration des données (YamlTemplateParser).
 
 Le flux d'import unifié :
 1. extract_eleve_name() - extrait le nom depuis le PDF (regex)
