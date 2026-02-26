@@ -151,6 +151,8 @@ CHIRON_NATIVE=1 python run.py    # Mode desktop (pywebview)
 CHIRON_PORT=9000 python run.py   # Port personnalisé
 ```
 
+> **Vérifier la pseudonymisation** : définir `LOG_LEVEL=DEBUG` et `SHOW_PROMPT=true` dans `.env` pour afficher les prompts dans le terminal et confirmer que tous les noms sont remplacés par `ELEVE_XXX`.
+
 ### Tests
 
 ```bash
