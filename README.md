@@ -272,7 +272,7 @@ chiron/
 - **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de données, RGPD
 - **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Adapter Chiron à un autre format de bulletin (autre que PRONOTE)
 - **[docs/references.md](docs/references.md)** — Fondements scientifiques (Dweck, Hattie & Timperley, Ryan & Deci, IPP)
-- **[docs/plan-rgpd-remediation.md](docs/plan-rgpd-remediation.md)** — Plan de remédiation RGPD (audit et corrections)
+- **[docs/fiche_technique_rgpd.md](docs/fiche_technique_rgpd.md)** — Informations utiles pour rédiger l'AIPD et la note d'information aux familles dans le cadre du RPGD.
 
 ## Licence
 
