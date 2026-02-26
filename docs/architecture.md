@@ -144,6 +144,7 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 
 ## RGPD
 
+- **Fail-safe à l'import** : si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière extraite), l'import est bloqué par `extract_eleve_name()` et `validate_extraction()` — aucune donnée n'est stockée en base ni transmise au LLM. Seules les appréciations extraites et pseudonymisées peuvent atteindre l'API
 - **Extraction du nom** : locale (regex), jamais envoyée au cloud
 - **Pseudonymisation** : pipeline 3 passes (regex + Flair NER fuzzy + fuzzy direct) sur les appréciations
 - **Genre** : extrait et stocké localement, **non transmis** au LLM (déduit des accords grammaticaux)

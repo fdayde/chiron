@@ -228,6 +228,7 @@ chiron/
 
 | Aspect | Mesure |
 |--------|--------|
+| **Fail-safe à l'import** | Si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière), l'import est **bloqué** — aucune donnée n'atteint le LLM |
 | **Pseudonymisation** | Pipeline 3 passes : regex + Flair NER fuzzy + fuzzy direct **avant** envoi cloud (ELEVE_XXX) |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
 | **Mapping identités** | Base séparée (`privacy.duckdb`), cascade suppression |
