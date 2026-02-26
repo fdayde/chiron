@@ -241,7 +241,7 @@ chiron/
 | Aspect | Mesure |
 |--------|--------|
 | **Fail-safe à l'import** | Si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière), l'import est **bloqué** : aucune donnée n'atteint le LLM |
-| **Pseudonymisation** | Pipeline 3 passes : regex + Flair NER fuzzy + fuzzy direct **avant** envoi cloud (ELEVE_XXX) |
+| **Pseudonymisation** | Pipeline 3 passes : regex + Flair NER fuzzy + fuzzy direct **avant** envoi cloud (ELEVE_XXX). Validée sur BDD INSEE (48k prénoms × 219k noms) : recall 100%, precision 99.99%, F1 99.0% ([détails](notebooks/test_pseudonymisation_v2.ipynb)) |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
 | **Mapping identités** | Base séparée (`privacy.duckdb`), cascade suppression |
 | **LLM cloud** | Reçoit uniquement données **pseudonymisées** |

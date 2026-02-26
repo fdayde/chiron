@@ -54,10 +54,10 @@ class TestGetFuzzyThreshold:
         assert get_fuzzy_threshold("Petit") == 92
 
     def test_long_6_plus(self):
-        """6+ chars → 80."""
-        assert get_fuzzy_threshold("Martin") == 80
-        assert get_fuzzy_threshold("Dupont") == 80
-        assert get_fuzzy_threshold("Grégorio") == 80
+        """6+ chars → 83."""
+        assert get_fuzzy_threshold("Martin") == 83
+        assert get_fuzzy_threshold("Dupont") == 83
+        assert get_fuzzy_threshold("Grégorio") == 83
 
 
 # =============================================================================

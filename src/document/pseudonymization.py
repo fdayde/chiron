@@ -75,7 +75,7 @@ def get_fuzzy_threshold(word: str) -> float | None:
 
     ≤ 3 chars → None (exact only, no fuzzy)
     4-5 chars → 92  (very strict, avoids noté~Noé)
-    6+ chars  → 80  (more permissive, catches typos)
+    6+ chars  → 83  (permissive, catches typos without Manque~Manuel collisions)
     """
     n = len(word)
     if n <= 3:
@@ -83,7 +83,7 @@ def get_fuzzy_threshold(word: str) -> float | None:
     elif n <= 5:
         return 92
     else:
-        return 80
+        return 83
 
 
 # ---------------------------------------------------------------------------

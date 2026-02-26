@@ -146,7 +146,7 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 
 - **Fail-safe à l'import** : si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière extraite), l'import est bloqué par `extract_eleve_name()` et `validate_extraction()` — aucune donnée n'est stockée en base ni transmise au LLM. Seules les appréciations extraites et pseudonymisées peuvent atteindre l'API
 - **Extraction du nom** : locale (regex), jamais envoyée au cloud
-- **Pseudonymisation** : pipeline 3 passes (regex + Flair NER fuzzy + fuzzy direct) sur les appréciations
+- **Pseudonymisation** : pipeline 3 passes (regex + Flair NER fuzzy + fuzzy direct) sur les appréciations. Validée sur BDD INSEE open data (48 517 prénoms × 218 980 noms) : recall regex 100% (260k tests), recall typos 71.3% (20k tests), precision 99.99% (100k tests), F1 99.0%. Détails dans [`notebooks/test_pseudonymisation_v2.ipynb`](../notebooks/test_pseudonymisation_v2.ipynb)
 - **Données transmises au LLM** : notes **catégorisées** (échelle LSU), appréciations **pseudonymisées**
 - **Données non transmises** : noms, prénoms, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs
 - **Genre** : non extrait du PDF (minimisation Art. 5(1)(c)) — le LLM déduit le genre depuis les accords grammaticaux des appréciations
