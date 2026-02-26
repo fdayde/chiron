@@ -26,13 +26,6 @@ template:
 
 # Champs extraits du texte brut du PDF
 fields:
-  genre:
-    method: "key_value"      # Cherche "Clé : Valeur" dans le texte
-    key: "Genre"             # Regex du label à chercher
-    normalize:               # Mapping optionnel des valeurs
-      fille: "Fille"
-      f: "Fille"
-
   absences:
     method: "key_value"
     key: "Absences?"         # Regex (ici : "Absence" ou "Absences")
@@ -106,7 +99,6 @@ class PDFParser(Protocol):
         self,
         pdf_data: bytes | str | Path,
         eleve_id: str,
-        genre: str | None = None,
     ) -> EleveExtraction: ...
 ```
 

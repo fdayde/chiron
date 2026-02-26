@@ -55,8 +55,6 @@ class EleveExtraction(BaseModel):
     eleve_id: str | None = None  # Généré après pseudonymisation
     nom: str | None = None  # Avant pseudonymisation
     prenom: str | None = None  # Avant pseudonymisation
-    genre: Literal["Fille", "Garçon"] | None = None
-
     # Contexte scolaire
     etablissement: str | None = None
     classe: str | None = None

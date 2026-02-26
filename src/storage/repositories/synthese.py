@@ -511,7 +511,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         results = self._execute(
             """
             SELECT s.eleve_id, s.synthese_texte,
-                   e.genre, e.absences_demi_journees, e.absences_justifiees,
+                   e.absences_demi_journees, e.absences_justifiees,
                    e.retards, e.engagements, e.matieres, e.moyenne_generale
             FROM syntheses s
             JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
@@ -528,13 +528,12 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             {
                 "eleve_id": row[0],
                 "synthese_texte": row[1],
-                "genre": row[2],
-                "absences_demi_journees": row[3],
-                "absences_justifiees": row[4],
-                "retards": row[5],
-                "engagements": row[6],
-                "matieres": row[7],
-                "moyenne_generale": row[8],
+                "absences_demi_journees": row[2],
+                "absences_justifiees": row[3],
+                "retards": row[4],
+                "engagements": row[5],
+                "matieres": row[6],
+                "moyenne_generale": row[7],
             }
             for row in results
         ]

@@ -286,10 +286,6 @@ def home_page():
                             "statut": "Transmises pseudonymisées à l'IA",
                         },
                         {
-                            "donnee": "Genre (F/G)",
-                            "statut": "Stocké localement, non transmis — le LLM déduit le genre des accords grammaticaux",
-                        },
-                        {
                             "donnee": "Absences, retards",
                             "statut": "Stocké localement, non transmis",
                         },

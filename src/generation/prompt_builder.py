@@ -122,7 +122,6 @@ def build_fewshot_examples(raw_examples: list[dict]) -> list[EleveGroundTruth]:
 
         example = EleveGroundTruth(
             eleve_id=row["eleve_id"],
-            genre=row.get("genre"),
             matieres=matieres,
             synthese_ground_truth=synthese_texte,
         )

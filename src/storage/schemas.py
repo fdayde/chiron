@@ -42,7 +42,6 @@ TABLES = {
             moyenne_generale FLOAT,
 
             -- Champs structurés
-            genre VARCHAR,
             absences_demi_journees INTEGER,
             absences_justifiees BOOLEAN,
             retards INTEGER,

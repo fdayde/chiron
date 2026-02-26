@@ -82,7 +82,6 @@ LABELS = {
     "classe_label": "Classe",
     "trimestre_label": "Trimestre",
     "eleve_label": "Élève",
-    "genre_label": "Genre",
     "absences_label": "Absences",
     "retards_label": "Retards",
     "aucun_retard": "Aucun retard",

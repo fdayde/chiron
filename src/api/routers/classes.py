@@ -146,7 +146,6 @@ def get_classe_eleves(
     return [
         {
             "eleve_id": e.eleve_id,
-            "genre": e.genre,
             "trimestre": e.trimestre,
             "absences_demi_journees": e.absences_demi_journees,
             "nb_matieres": len(e.matieres),

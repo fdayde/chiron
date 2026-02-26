@@ -129,7 +129,6 @@ def _import_single_pdf(
 
     nom = identity["nom"]
     prenom = identity.get("prenom")
-    genre = identity.get("genre")
 
     # 2. Create eleve_id and store mapping
     eleve_id = pseudonymizer.create_eleve_id(nom, prenom, classe_id)
@@ -138,7 +137,7 @@ def _import_single_pdf(
     # 3. Parse PDF
     parser = get_parser()
 
-    eleve = parser.parse(pdf_path, eleve_id, genre=genre)
+    eleve = parser.parse(pdf_path, eleve_id)
     _pseudonymize_extraction(eleve, identity, eleve_id)
     logger.info(f"Text fields pseudonymized for {eleve_id}")
 

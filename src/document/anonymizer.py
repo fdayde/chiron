@@ -24,7 +24,7 @@ def extract_eleve_name(pdf_path: str | Path) -> dict | None:
         pdf_path: Chemin vers le fichier PDF.
 
     Returns:
-        Dict avec 'nom', 'prenom', 'nom_complet', 'genre', ou None si non trouvé.
+        Dict avec 'nom', 'prenom', 'nom_complet', 'texte_complet', ou None si non trouvé.
     """
     pdf_path = Path(pdf_path)
 
@@ -71,18 +71,9 @@ def extract_eleve_name(pdf_path: str | Path) -> dict | None:
             prenom = parts[0] if parts else None
             nom = " ".join(parts[1:]) if len(parts) > 1 else parts[0] if parts else None
 
-        # Extraire le genre si présent
-        genre = None
-        genre_match = re.search(
-            r"Genre\s*:\s*(Fille|Garçon)", text_complet, re.IGNORECASE
-        )
-        if genre_match:
-            genre = "Fille" if "fille" in genre_match.group(1).lower() else "Garçon"
-
         return {
             "nom": nom,
             "prenom": prenom,
             "nom_complet": nom_complet,
-            "genre": genre,
             "texte_complet": text_complet,
         }

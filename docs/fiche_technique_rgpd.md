@@ -110,7 +110,7 @@ Le droit d'opposition (Art. 21 RGPD) s'applique : les parents peuvent s'opposer 
 | Donnée | Justification de la non-transmission |
 |--------|--------------------------------------|
 | Nom, prénom | Pseudonymisé en `ELEVE_XXX` ; seul le pseudonyme est transmis |
-| Genre (F/G) | Stocké localement ; le LLM déduit le genre depuis les accords grammaticaux des appréciations |
+| Genre (F/G) | Non extrait du PDF (minimisation Art. 5(1)(c)) ; le LLM déduit le genre depuis les accords grammaticaux des appréciations |
 | Absences, retards | Non pertinents pour la synthèse IA |
 | Engagements (délégué, etc.) | Non transmis |
 | Nom des professeurs | Non transmis |

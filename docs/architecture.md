@@ -8,7 +8,7 @@ PDF
  ▼
 ┌─────────────────────────────────────┐
 │ 1. extract_eleve_name()             │  anonymizer.py (regex local)
-│    → nom, prénom, genre             │
+│    → nom, prénom                    │
 └─────────────────────────────────────┘
  │
  ▼
@@ -147,9 +147,9 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 - **Fail-safe à l'import** : si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière extraite), l'import est bloqué par `extract_eleve_name()` et `validate_extraction()` — aucune donnée n'est stockée en base ni transmise au LLM. Seules les appréciations extraites et pseudonymisées peuvent atteindre l'API
 - **Extraction du nom** : locale (regex), jamais envoyée au cloud
 - **Pseudonymisation** : pipeline 3 passes (regex + Flair NER fuzzy + fuzzy direct) sur les appréciations
-- **Genre** : extrait et stocké localement, **non transmis** au LLM (déduit des accords grammaticaux)
 - **Données transmises au LLM** : notes **catégorisées** (échelle LSU), appréciations **pseudonymisées**
-- **Données non transmises** : noms, prénoms, genre, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs
+- **Données non transmises** : noms, prénoms, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs
+- **Genre** : non extrait du PDF (minimisation Art. 5(1)(c)) — le LLM déduit le genre depuis les accords grammaticaux des appréciations
 - **Dépseudonymisation** : uniquement à l'export, scoped par classe
 - **Cascade suppression** : supprimer un élève nettoie aussi son mapping dans `privacy.duckdb` (si plus aucun trimestre)
 - **Effacement automatique** : les données de plus de 30 jours sont supprimées au lancement (Art. 5(1)(e))

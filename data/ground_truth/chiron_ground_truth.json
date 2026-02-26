@@ -9,7 +9,7 @@
   "eleves": [
     {
       "eleve_id": "ELEVE_A",
-      "genre": "Fille",
+
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,
@@ -131,7 +131,7 @@
     },
     {
       "eleve_id": "ELEVE_B",
-      "genre": "Fille",
+
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,
@@ -241,7 +241,7 @@
     },
     {
       "eleve_id": "ELEVE_C",
-      "genre": "Garçon",
+
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,
@@ -363,7 +363,7 @@
     },
     {
       "eleve_id": "ELEVE_D",
-      "genre": "Garçon",
+
       "etablissement": "Collège Test",
       "classe": "5ème",
       "trimestre": 1,

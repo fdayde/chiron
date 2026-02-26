@@ -28,7 +28,6 @@ class PDFParser(Protocol):
         self,
         pdf_data: bytes | str | Path,
         eleve_id: str,
-        genre: str | None = None,
     ) -> "EleveExtraction": ...
 
 

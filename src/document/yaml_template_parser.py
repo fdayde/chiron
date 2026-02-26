@@ -49,14 +49,12 @@ class YamlTemplateParser:
         self,
         pdf_path: str | Path,
         eleve_id: str,
-        genre: str | None = None,
     ) -> EleveExtraction:
         """Parse un PDF anonymise selon le template YAML.
 
         Args:
             pdf_path: Chemin vers le fichier PDF.
             eleve_id: Identifiant anonyme de l'eleve.
-            genre: Genre si connu (extrait en amont).
 
         Returns:
             EleveExtraction avec les donnees structurees.
@@ -80,13 +78,6 @@ class YamlTemplateParser:
         for field_name, spec in self._fields.items():
             extracted[field_name] = self._extract_field(raw_text, spec)
 
-        # Genre: parametre > extraction template
-        if not genre:
-            genre_raw = extracted.get("genre")
-            if genre_raw:
-                normalize = self._fields.get("genre", {}).get("normalize", {})
-                genre = normalize.get(genre_raw.lower(), genre_raw)
-
         # Absences justifiees (bool)
         absences_justifiees = extracted.get("absences_justifiees")
         if not isinstance(absences_justifiees, bool):
@@ -105,7 +96,6 @@ class YamlTemplateParser:
             eleve_id=eleve_id,
             nom=None,
             prenom=None,
-            genre=genre,
             classe=extracted.get("classe"),
             trimestre=extracted.get("trimestre"),
             annee_scolaire=extracted.get("annee_scolaire"),

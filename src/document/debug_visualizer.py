@@ -21,7 +21,6 @@ TEMPLATES_DIR = Path(__file__).parent / "templates"
 # Couleurs RGBA pour chaque zone (R, G, B, alpha)
 ZONE_COLORS: dict[str, tuple[float, float, float, float]] = {
     "eleve": (1.0, 0.0, 0.0, 0.3),
-    "genre": (0.2, 0.6, 1.0, 0.3),
     "absences": (1.0, 0.4, 0.4, 0.3),
     "retards": (1.0, 0.6, 0.2, 0.3),
     "engagements": (0.4, 0.8, 0.4, 0.3),

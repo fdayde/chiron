@@ -75,7 +75,6 @@ def get_eleves_with_syntheses(
             "eleve_id": eleve.eleve_id,
             "prenom": mapping["prenom_original"] if mapping else None,
             "nom": mapping["nom_original"] if mapping else None,
-            "genre": eleve.genre,
             "trimestre": eleve.trimestre,
             "absences_demi_journees": eleve.absences_demi_journees,
             "retards": eleve.retards,
