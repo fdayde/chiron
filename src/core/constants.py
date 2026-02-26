@@ -21,8 +21,8 @@ DATA_GROUND_TRUTH_DIR = DATA_DIR / "ground_truth"
 DATA_EXPORTS_DIR = DATA_DIR / "exports"
 DATA_MAPPING_DIR = DATA_DIR / "mapping"
 
-# Chemins notebooks
-NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
+# Prompt système personnalisable
+CUSTOM_SYSTEM_PROMPT_PATH = DATA_DIR / "custom_system_prompt.txt"
 
 # Chemins des bases de données
 DATA_DB_DIR = DATA_DIR / "db"

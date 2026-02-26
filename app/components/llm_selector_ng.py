@@ -20,8 +20,11 @@ def llm_selector(on_change: callable | None = None) -> tuple[ui.select, ui.selec
     Returns:
         Tuple of (provider_select, model_select) NiceGUI elements.
     """
-    provider_keys = list(LLM_PROVIDERS.keys())
-    provider_options = {k: LLM_PROVIDERS[k]["name"] for k in provider_keys}
+    # Only show Mistral in the UI (other providers remain available via .env)
+    provider_keys = ["mistral"]
+    provider_options = {
+        k: LLM_PROVIDERS[k]["name"] for k in provider_keys if k in LLM_PROVIDERS
+    }
     default_provider = ui_settings.default_provider
     if default_provider not in provider_options:
         default_provider = provider_keys[0]

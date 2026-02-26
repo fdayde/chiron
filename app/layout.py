@@ -137,6 +137,7 @@ def page_layout(title: str):
                 ("Synthèses", "/syntheses"),
                 ("Export", "/export"),
                 ("Prompt", "/prompt"),
+                ("Références", "/references"),
             ]:
                 btn = ui.button(label, on_click=lambda p=path: ui.navigate.to(p)).props(
                     "flat color=white size=sm"
@@ -162,7 +163,7 @@ def page_layout(title: str):
         ui.separator().classes("q-mt-lg")
         with ui.row().classes("w-full justify-center items-center gap-2 q-mt-sm"):
             ui.label(
-                f"© 2025-2026 Florent Dayde — All rights reserved — v{__version__}"
+                f"© 2025-2026 Florent Dayde — Apache License 2.0 — v{__version__}"
             ).classes("text-caption text-grey-7")
             ui.label("·").classes("text-caption text-grey-7")
             ui.link(
@@ -247,8 +248,11 @@ def _render_llm_selector() -> None:
         ui.icon("smart_toy", size="xs").classes("text-primary")
         ui.label("Modèle IA").classes("text-weight-bold text-caption")
 
-    provider_keys = list(LLM_PROVIDERS.keys())
-    provider_options = {k: LLM_PROVIDERS[k]["name"] for k in provider_keys}
+    # Only show Mistral in the UI (other providers remain available via .env)
+    provider_keys = ["mistral"]
+    provider_options = {
+        k: LLM_PROVIDERS[k]["name"] for k in provider_keys if k in LLM_PROVIDERS
+    }
 
     current_provider = get_llm_provider()
     if current_provider not in provider_options:

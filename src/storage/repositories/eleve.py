@@ -36,8 +36,8 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         Format attendu du SELECT :
             0: eleve_id, 1: classe_id, 2: trimestre,
             3: moyenne_generale,
-            4: genre, 5: absences_demi_journees, 6: absences_justifiees, 7: retards,
-            8: engagements, 9: parcours, 10: evenements, 11: matieres
+            4: absences_demi_journees, 5: absences_justifiees, 6: retards,
+            7: engagements, 8: parcours, 9: evenements, 10: matieres
 
         Gère le JSON corrompu en loggant un warning et retournant des valeurs par défaut.
         """
@@ -46,7 +46,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         # Parse matieres with error handling
         matieres = []
         try:
-            matieres_data = json.loads(row[11]) if row[11] else []
+            matieres_data = json.loads(row[10]) if row[10] else []
             matieres = [MatiereExtraction(**m) for m in matieres_data]
         except (json.JSONDecodeError, TypeError, ValueError) as e:
             logger.warning(f"Failed to parse matieres for {eleve_id}: {e}")
@@ -66,13 +66,12 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             classe=row[1],
             trimestre=row[2],
             moyenne_generale=row[3],
-            genre=row[4],
-            absences_demi_journees=row[5],
-            absences_justifiees=row[6],
-            retards=row[7],
-            engagements=safe_json_loads(row[8], "engagements"),
-            parcours=safe_json_loads(row[9], "parcours"),
-            evenements=safe_json_loads(row[10], "evenements"),
+            absences_demi_journees=row[4],
+            absences_justifiees=row[5],
+            retards=row[6],
+            engagements=safe_json_loads(row[7], "engagements"),
+            parcours=safe_json_loads(row[8], "parcours"),
+            evenements=safe_json_loads(row[9], "evenements"),
             matieres=matieres,
         )
 
@@ -98,17 +97,16 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
             INSERT INTO eleves (
                 eleve_id, classe_id, trimestre,
                 moyenne_generale,
-                genre, absences_demi_journees, absences_justifiees, retards,
+                absences_demi_journees, absences_justifiees, retards,
                 engagements, parcours, evenements, matieres
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 eleve.eleve_id,
                 eleve.classe,
                 eleve.trimestre,
                 eleve.moyenne_generale,
-                eleve.genre,
                 eleve.absences_demi_journees,
                 eleve.absences_justifiees,
                 eleve.retards,
@@ -137,7 +135,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
                 """
                 SELECT eleve_id, classe_id, trimestre,
                        moyenne_generale,
-                       genre, absences_demi_journees, absences_justifiees, retards,
+                       absences_demi_journees, absences_justifiees, retards,
                        engagements, parcours, evenements, matieres
                 FROM eleves
                 WHERE eleve_id = ? AND trimestre = ?
@@ -150,7 +148,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
                 """
                 SELECT eleve_id, classe_id, trimestre,
                        moyenne_generale,
-                       genre, absences_demi_journees, absences_justifiees, retards,
+                       absences_demi_journees, absences_justifiees, retards,
                        engagements, parcours, evenements, matieres
                 FROM eleves
                 WHERE eleve_id = ?
@@ -197,7 +195,7 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
         sql = """
             SELECT eleve_id, classe_id, trimestre,
                    moyenne_generale,
-                   genre, absences_demi_journees, absences_justifiees, retards,
+                   absences_demi_journees, absences_justifiees, retards,
                    engagements, parcours, evenements, matieres
             FROM eleves
         """
@@ -255,7 +253,6 @@ class EleveRepository(DuckDBRepository[EleveExtraction]):
 
         for key, value in updates.items():
             if key in (
-                "genre",
                 "absences_demi_journees",
                 "absences_justifiees",
                 "retards",

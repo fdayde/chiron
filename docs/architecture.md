@@ -8,7 +8,7 @@ PDF
  ▼
 ┌─────────────────────────────────────┐
 │ 1. extract_eleve_name()             │  anonymizer.py (regex local)
-│    → nom, prénom, genre             │
+│    → nom, prénom                    │
 └─────────────────────────────────────┘
  │
  ▼
@@ -19,8 +19,8 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 3. get_parser().parse()             │  yaml_template (défaut) ou pdfplumber
-│    → EleveExtraction                │  configurable via PDF_PARSER_TYPE
+│ 3. get_parser().parse()             │  YamlTemplateParser (pdfplumber)
+│    → EleveExtraction                │
 └─────────────────────────────────────┘
  │
  ▼
@@ -32,8 +32,8 @@ PDF
  │
  ▼
 ┌─────────────────────────────────────┐
-│ 5. _pseudonymize_extraction()       │  Regex + NER safety net (CamemBERT)
-│    → textes avec noms remplacés     │  sur les appréciations
+│ 5. _pseudonymize_extraction()       │  Pipeline 3 passes (regex + Flair NER
+│    → textes avec noms remplacés     │  + fuzzy) sur les appréciations
 └─────────────────────────────────────┘
  │
  ▼
@@ -85,7 +85,7 @@ EleveExtraction
 ## Flux d'export
 
 ```
-synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (noms réels)
+synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → Presse-papiers (noms réels)
 ```
 
 ## Composants
@@ -95,7 +95,8 @@ synthese_repo.get_validated() → pseudonymizer.depseudonymize_text() → CSV (n
 | Fichier | Responsabilité |
 |---------|----------------|
 | `src/document/__init__.py` | Factory `get_parser()`, `PDFParser` Protocol |
-| `src/document/anonymizer.py` | `extract_eleve_name()`, `ner_check_student_names()` |
+| `src/document/anonymizer.py` | `extract_eleve_name()` |
+| `src/document/pseudonymization.py` | Pipeline 3 passes : `pseudonymize()` (regex + Flair NER fuzzy + fuzzy direct) |
 | `src/document/yaml_template_parser.py` | Parser principal via templates YAML (PRONOTE) |
 | `src/document/parser.py` | Utilitaires partagés (`extract_pdf_content`, `extract_key_value`, etc.) |
 | `src/document/validation.py` | `validate_extraction()`, `check_classe_mismatch()` |
@@ -143,15 +144,19 @@ PK composite `(eleve_id, classe_id, trimestre)` — un même élève peut avoir 
 
 ## RGPD
 
+- **Fail-safe à l'import** : si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière extraite), l'import est bloqué par `extract_eleve_name()` et `validate_extraction()` — aucune donnée n'est stockée en base ni transmise au LLM. Seules les appréciations extraites et pseudonymisées peuvent atteindre l'API
 - **Extraction du nom** : locale (regex), jamais envoyée au cloud
-- **Pseudonymisation** : regex sur tous les textes + NER safety net (CamemBERT) sur les appréciations
-- **Genre** : extrait et stocké localement, **non transmis** au LLM (déduit des accords grammaticaux)
+- **Pseudonymisation** : pipeline 3 passes (regex + Flair NER fuzzy + fuzzy direct) sur les appréciations. Validée sur BDD INSEE open data (48 517 prénoms × 218 980 noms) : recall regex 100% (260k tests), recall typos 71.3% (20k tests), precision 99.99% (100k tests), F1 99.0%. Détails dans [`notebooks/test_pseudonymisation_v2.ipynb`](../notebooks/test_pseudonymisation_v2.ipynb)
 - **Données transmises au LLM** : notes **catégorisées** (échelle LSU), appréciations **pseudonymisées**
-- **Données non transmises** : noms, prénoms, genre, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs
+- **Données non transmises** : noms, prénoms, absences, retards, engagements, établissement, classe, année scolaire, noms des professeurs
+- **Genre** : non extrait du PDF (minimisation Art. 5(1)(c)) — le LLM déduit le genre depuis les accords grammaticaux des appréciations
 - **Dépseudonymisation** : uniquement à l'export, scoped par classe
 - **Cascade suppression** : supprimer un élève nettoie aussi son mapping dans `privacy.duckdb` (si plus aucun trimestre)
-- **Purge trimestrielle** : bouton sur la page Export pour supprimer toutes les données d'un trimestre après validation et export (Art. 5(1)(e))
+- **Effacement automatique** : les données de plus de 30 jours sont supprimées au lancement (Art. 5(1)(e))
+- **Suppression manuelle** : bouton sur la page Export pour supprimer les données d'un trimestre après validation et export
 - **Minimisation** : le texte brut PDF (`raw_text`) n'est plus persisté en base — seules les données structurées sont stockées
+- **Debug visualizer** : outil de développement (`debug_visualizer.py`) qui superpose les zones détectées sur le PDF. Fonctionne uniquement en affichage temporaire, ne stocke aucune donnée en base, non concerné par la minimisation
+- **Logs** : les logs de niveau INFO (défaut) ne contiennent jamais de données nominatives. Les mappings nom ↔ ELEVE_XXX ne sont loggués qu'au niveau DEBUG, réservé au développement (`LOG_LEVEL=DEBUG` dans `.env`)
 - **Base légale** : mission de service public éducatif (RGPD Art. 6(1)(e)), documentée dans l'UI
 
 ## Comportement d'import
@@ -171,9 +176,5 @@ Cela permet d'identifier facilement la classe et l'année scolaire sans modifier
 
 ```bash
 # .env
-PDF_PARSER_TYPE=yaml_template  # yaml_template (défaut) ou pdfplumber (legacy)
-DEFAULT_PROVIDER=anthropic     # openai, anthropic ou mistral
-OPENAI_API_KEY=...
-ANTHROPIC_API_KEY=...
-MISTRAL_API_KEY=...
+MISTRAL_API_KEY=...  # Mistral (hébergé en UE, conforme RGPD)
 ```

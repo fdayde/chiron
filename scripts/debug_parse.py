@@ -76,11 +76,9 @@ def main():
     lines.append("")
     lines.append("--- RÉSULTAT DU PARSER ---")
     parser = YamlTemplateParser()
-    genre = identity.get("genre") if identity else None
-    result = parser.parse(pdf, "ELEVE_001", genre=genre)
+    result = parser.parse(pdf, "ELEVE_001")
 
     lines.append(f"  eleve_id: {result.eleve_id}")
-    lines.append(f"  genre: {result.genre}")
     lines.append(f"  absences: {result.absences_demi_journees}")
     lines.append(f"  absences_justifiees: {result.absences_justifiees}")
     lines.append(f"  engagements: {result.engagements}")

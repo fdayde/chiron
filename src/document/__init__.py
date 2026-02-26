@@ -1,14 +1,13 @@
 """Module de parsing de documents PDF.
 
-Supporte deux backends :
-- pdfplumber : extraction mécanique (rapide, gratuit)
-- yaml_template : extraction via templates YAML (configurable)
+Utilise pdfplumber pour l'extraction brute et des templates YAML pour
+la structuration des données (YamlTemplateParser).
 
 Le flux d'import unifié :
 1. extract_eleve_name() - extrait le nom depuis le PDF (regex)
 2. get_parser().parse() - extrait les données structurées du PDF original
-3. _pseudonymize_extraction() - remplace les noms par eleve_id dans les textes
-   (regex + NER safety net sur les appréciations)
+3. _pseudonymize_extraction() - pipeline 3 passes sur les textes
+   (regex accent-insensitive + Flair NER fuzzy + fuzzy direct)
 """
 
 from pathlib import Path
@@ -28,7 +27,6 @@ class PDFParser(Protocol):
         self,
         pdf_data: bytes | str | Path,
         eleve_id: str,
-        genre: str | None = None,
     ) -> "EleveExtraction": ...
 
 
@@ -46,6 +44,7 @@ def get_parser() -> PDFParser:
 __all__ = [
     # Flux d'import
     "extract_eleve_name",
+    "pseudonymize",
     # Factory et types
     "get_parser",
     "PDFParser",
@@ -70,4 +69,8 @@ def __getattr__(name: str):
         from src.document.debug_visualizer import generate_debug_pdf
 
         return generate_debug_pdf
+    if name == "pseudonymize":
+        from src.document.pseudonymization import pseudonymize
+
+        return pseudonymize
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

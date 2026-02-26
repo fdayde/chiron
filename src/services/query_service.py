@@ -75,7 +75,6 @@ def get_eleves_with_syntheses(
             "eleve_id": eleve.eleve_id,
             "prenom": mapping["prenom_original"] if mapping else None,
             "nom": mapping["nom_original"] if mapping else None,
-            "genre": eleve.genre,
             "trimestre": eleve.trimestre,
             "absences_demi_journees": eleve.absences_demi_journees,
             "retards": eleve.retards,
@@ -122,7 +121,6 @@ def get_eleve_synthese(
             "synthese_texte": synthese.synthese_texte,
             "alertes": [a.model_dump() for a in synthese.alertes],
             "reussites": [r.model_dump() for r in synthese.reussites],
-            "posture_generale": synthese.posture_generale,
             "axes_travail": synthese.axes_travail,
         },
     }

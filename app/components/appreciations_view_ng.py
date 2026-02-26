@@ -37,13 +37,19 @@ def _calc_moyenne_eleve(matieres: list[dict]) -> float | None:
     return sum(notes) / len(notes) if notes else None
 
 
-def appreciations(eleve: dict) -> None:
+def appreciations(
+    eleve: dict,
+    editable: bool = False,
+    on_save: callable | None = None,
+) -> None:
     """Render subject appreciations in a compact format.
 
     Designed for side-by-side layout with synthesis.
 
     Args:
         eleve: Full student data with matieres.
+        editable: If True, appreciations are shown as editable textareas.
+        on_save: Callback called with updated matieres list on save.
     """
     matieres = eleve.get("matieres", [])
 
@@ -51,7 +57,10 @@ def appreciations(eleve: dict) -> None:
         ui.label("Aucune matière disponible.").classes("text-grey-6")
         return
 
-    for matiere in matieres:
+    # Keep references to textareas for collecting edited values
+    textarea_refs: list[tuple[int, ui.textarea]] = []
+
+    for idx, matiere in enumerate(matieres):
         with ui.card().classes("w-full q-mb-xs").style("padding: 8px 12px"):
             with ui.row().classes("w-full items-center justify-between"):
                 # Left: subject + teacher
@@ -68,8 +77,31 @@ def appreciations(eleve: dict) -> None:
 
             # Appreciation text
             appreciation = matiere.get("appreciation", "")
-            if appreciation:
+            if editable:
+                ta = (
+                    ui.textarea(value=appreciation)
+                    .props("autogrow dense")
+                    .classes("w-full text-body2 q-mt-xs")
+                )
+                textarea_refs.append((idx, ta))
+            elif appreciation:
                 ui.label(appreciation).classes("text-body2 italic q-mt-xs")
+
+    if editable and on_save and textarea_refs:
+
+        def _do_save():
+            updated_matieres = []
+            for m in matieres:
+                updated_matieres.append(dict(m))
+            for idx, ta in textarea_refs:
+                updated_matieres[idx]["appreciation"] = ta.value
+            on_save(updated_matieres)
+
+        ui.button(
+            "Sauvegarder les modifications",
+            icon="save",
+            on_click=_do_save,
+        ).props("color=primary rounded dense").classes("q-mt-sm")
 
 
 def appreciations_compact(eleve: dict, max_display: int = 5) -> None:

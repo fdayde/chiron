@@ -37,12 +37,11 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         """Convert database row to SyntheseGeneree.
 
         Expected row format (from SELECT synthese_texte, alertes_json, reussites_json,
-        posture_generale, axes_travail_json):
+        axes_travail_json):
             row[0]: synthese_texte
             row[1]: alertes_json
             row[2]: reussites_json
-            row[3]: posture_generale
-            row[4]: axes_travail_json
+            row[3]: axes_travail_json
         """
         alertes_data = self._safe_json_loads(row[1], "alertes_json")
         reussites_data = self._safe_json_loads(row[2], "reussites_json")
@@ -51,8 +50,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             synthese_texte=row[0],
             alertes=[Alerte(**a) for a in alertes_data],
             reussites=[Reussite(**r) for r in reussites_data],
-            posture_generale=row[3],
-            axes_travail=self._safe_json_loads(row[4], "axes_travail_json"),
+            axes_travail=self._safe_json_loads(row[3], "axes_travail_json"),
         )
 
     def create(
@@ -93,7 +91,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             INSERT INTO syntheses (
                 id, eleve_id, trimestre, synthese_texte,
                 llm_response_raw,
-                alertes_json, reussites_json, posture_generale, axes_travail_json,
+                alertes_json, reussites_json, axes_travail_json,
                 status,
                 llm_provider, llm_model,
                 prompt_template, prompt_hash,
@@ -101,7 +99,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
                 llm_cost, llm_duration_ms, llm_temperature,
                 retry_count
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 synthese_id,
@@ -111,7 +109,6 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
                 metadata.get("llm_response_raw"),
                 json.dumps([a.model_dump() for a in synthese.alertes]),
                 json.dumps([r.model_dump() for r in synthese.reussites]),
-                synthese.posture_generale,
                 json.dumps(synthese.axes_travail),
                 "generated",
                 metadata.get("llm_provider"),
@@ -141,7 +138,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         result = self._execute_one(
             """
             SELECT synthese_texte, alertes_json, reussites_json,
-                   posture_generale, axes_travail_json
+                   axes_travail_json
             FROM syntheses
             WHERE id = ?
             """,
@@ -165,7 +162,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         """
         sql = """
             SELECT synthese_texte, alertes_json, reussites_json,
-                   posture_generale, axes_travail_json
+                   axes_travail_json
             FROM syntheses
             WHERE eleve_id = ?
         """
@@ -196,7 +193,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         """
         sql = """
             SELECT id, status, synthese_texte, alertes_json, reussites_json,
-                   posture_generale, axes_travail_json
+                   axes_travail_json
             FROM syntheses
             WHERE eleve_id = ?
         """
@@ -215,7 +212,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         return {
             "synthese_id": result[0],
             "status": result[1],
-            "synthese": self._row_to_entity(result[2:7]),
+            "synthese": self._row_to_entity(result[2:6]),
         }
 
     def delete_for_eleve(self, eleve_id: str, trimestre: int) -> int:
@@ -247,7 +244,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         """
         sql = """
             SELECT synthese_texte, alertes_json, reussites_json,
-                   posture_generale, axes_travail_json
+                   axes_travail_json
             FROM syntheses
         """
         conditions = []
@@ -401,7 +398,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             """
             SELECT s.id, s.eleve_id, s.synthese_texte,
                    s.alertes_json, s.reussites_json,
-                   s.posture_generale, s.axes_travail_json,
+                   s.axes_travail_json,
                    s.validated_at, s.validated_by
             FROM syntheses s
             JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
@@ -417,9 +414,9 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             {
                 "synthese_id": row[0],
                 "eleve_id": row[1],
-                "synthese": self._row_to_entity(row[2:7]),
-                "validated_at": row[7],
-                "validated_by": row[8],
+                "synthese": self._row_to_entity(row[2:6]),
+                "validated_at": row[6],
+                "validated_by": row[7],
             }
             for row in results
         ]
@@ -438,7 +435,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             """
             SELECT s.id, s.eleve_id, s.status,
                    s.synthese_texte, s.alertes_json, s.reussites_json,
-                   s.posture_generale, s.axes_travail_json
+                   s.axes_travail_json
             FROM syntheses s
             JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
             WHERE e.classe_id = ? AND s.trimestre = ?
@@ -451,7 +448,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             row[1]: {
                 "synthese_id": row[0],
                 "status": row[2],
-                "synthese": self._row_to_entity(row[3:8]),
+                "synthese": self._row_to_entity(row[3:7]),
             }
             for row in results
         }
@@ -514,7 +511,7 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
         results = self._execute(
             """
             SELECT s.eleve_id, s.synthese_texte,
-                   e.genre, e.absences_demi_journees, e.absences_justifiees,
+                   e.absences_demi_journees, e.absences_justifiees,
                    e.retards, e.engagements, e.matieres, e.moyenne_generale
             FROM syntheses s
             JOIN eleves e ON s.eleve_id = e.eleve_id AND s.trimestre = e.trimestre
@@ -531,13 +528,12 @@ class SyntheseRepository(DuckDBRepository[SyntheseGeneree]):
             {
                 "eleve_id": row[0],
                 "synthese_texte": row[1],
-                "genre": row[2],
-                "absences_demi_journees": row[3],
-                "absences_justifiees": row[4],
-                "retards": row[5],
-                "engagements": row[6],
-                "matieres": row[7],
-                "moyenne_generale": row[8],
+                "absences_demi_journees": row[2],
+                "absences_justifiees": row[3],
+                "retards": row[4],
+                "engagements": row[5],
+                "matieres": row[6],
+                "moyenne_generale": row[7],
             }
             for row in results
         ]

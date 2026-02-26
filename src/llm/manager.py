@@ -4,14 +4,17 @@ Orchestration des appels LLM avec gestion des erreurs et parallélisation.
 """
 
 import asyncio
+import json
 import logging
 from typing import Any
 
 import anthropic
 import httpx
 import openai
+from mistralai import SDKError as MistralSDKError
 from tenacity import (
     retry,
+    retry_if_exception,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
@@ -28,6 +31,12 @@ from src.llm.rate_limiter import get_shared_rate_limiter
 from src.utils.async_helpers import run_async_in_sync_context
 
 logger = logging.getLogger(__name__)
+
+
+def _is_retryable_mistral_error(exc: BaseException) -> bool:
+    """Vérifie si une erreur Mistral SDK est retryable (429, 5xx)."""
+    return isinstance(exc, MistralSDKError) and exc.status_code in (429, 500, 502, 503)
+
 
 # Registry des clients LLM - ajouter un nouveau provider = 1 ligne
 CLIENT_REGISTRY: dict[str, type[LLMClient]] = {
@@ -108,16 +117,19 @@ class LLMManager:
     @retry(
         stop=stop_after_attempt(settings.max_retries),
         wait=wait_exponential(multiplier=settings.backoff_factor, min=1, max=60),
-        retry=retry_if_exception_type(
-            (
-                ConnectionError,
-                TimeoutError,
-                httpx.ReadTimeout,
-                openai.RateLimitError,
-                openai.APIConnectionError,
-                anthropic.RateLimitError,
-                anthropic.APIConnectionError,
+        retry=(
+            retry_if_exception_type(
+                (
+                    ConnectionError,
+                    TimeoutError,
+                    httpx.ReadTimeout,
+                    openai.RateLimitError,
+                    openai.APIConnectionError,
+                    anthropic.RateLimitError,
+                    anthropic.APIConnectionError,
+                )
             )
+            | retry_if_exception(_is_retryable_mistral_error)
         ),
         reraise=True,
     )
@@ -152,6 +164,13 @@ class LLMManager:
         await self.rate_limiters[provider_lower].acquire()
 
         logger.debug(f"Appel LLM: {provider_lower}/{model or 'default'}")
+
+        if settings.show_prompt:
+            logger.debug(
+                "Prompt LLM (%d messages):\n%s",
+                len(messages),
+                json.dumps(messages, ensure_ascii=False, indent=2),
+            )
 
         # Override du modèle si fourni
         if model:

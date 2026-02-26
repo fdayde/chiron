@@ -11,6 +11,7 @@ class StorageSettings(BaseSettings):
     """Paramètres de stockage/base de données."""
 
     db_path: Path = DATA_DIR / "db" / "chiron.duckdb"
+    data_retention_days: int = 30
 
     model_config = {"env_prefix": "CHIRON_STORAGE_"}
 

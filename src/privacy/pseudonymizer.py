@@ -144,12 +144,12 @@ class Pseudonymizer:
         # Check if mapping already exists (idempotent)
         existing = self._get_existing_mapping(nom, prenom, classe_id)
         if existing:
-            logger.info(f"Found existing mapping for {nom} -> {existing}")
+            logger.debug(f"Found existing mapping for {nom} -> {existing}")
             return existing
 
         # Generate new eleve_id and store mapping
         eleve_id = self._generate_eleve_id_atomic(classe_id, nom, prenom)
-        logger.info(f"Created mapping: {nom} {prenom or ''} -> {eleve_id}")
+        logger.debug(f"Created mapping: {nom} {prenom or ''} -> {eleve_id}")
         return eleve_id
 
     def _get_existing_mapping(

@@ -29,11 +29,7 @@ def _build_insights_text(synthese: dict) -> str:
     if alertes:
         parts.append("ALERTES :")
         for a in alertes:
-            sev = a.get("severite", "")
-            sev_tag = f" [{sev}]" if sev else ""
-            parts.append(
-                f"  - {a.get('matiere', '?')}{sev_tag} : {a.get('description', '')}"
-            )
+            parts.append(f"  - {a.get('matiere', '?')} : {a.get('description', '')}")
 
     reussites = synthese.get("reussites", [])
     if reussites:
@@ -42,12 +38,6 @@ def _build_insights_text(synthese: dict) -> str:
         parts.append("RÉUSSITES :")
         for r in reussites:
             parts.append(f"  - {r.get('matiere', '?')} : {r.get('description', '')}")
-
-    posture = synthese.get("posture_generale")
-    if posture:
-        if parts:
-            parts.append("")
-        parts.append(f"ENGAGEMENT : {posture}")
 
     axes = synthese.get("axes_travail", [])
     if axes:
@@ -101,13 +91,11 @@ def _render_insights_panel(synthese: dict) -> None:
         if alertes:
             with ui.row().classes("items-center gap-1 q-mb-xs"):
                 ui.icon("warning", size="xs").classes("text-orange")
-                ui.label("Alertes").classes("text-weight-bold text-caption")
+                ui.label("Signaux d'attention").classes("text-weight-bold text-caption")
             for alerte in alertes:
-                sev = alerte.get("severite", "")
-                color = "text-red" if sev == "urgent" else "text-orange"
                 ui.label(
                     f"  {alerte.get('matiere', '?')} : {alerte.get('description', '')}"
-                ).classes(f"text-caption {color}").style("user-select: text;")
+                ).classes("text-caption text-orange").style("user-select: text;")
 
         # Reussites
         reussites = synthese.get("reussites", [])
@@ -121,17 +109,12 @@ def _render_insights_panel(synthese: dict) -> None:
                 ).classes("text-caption text-green").style("user-select: text;")
 
         # Conseils & pistes de progression
-        posture = synthese.get("posture_generale")
         axes = synthese.get("axes_travail", [])
-        if posture or axes:
+        if axes:
             with ui.row().classes("items-center gap-1 q-mt-xs q-mb-xs"):
                 ui.icon("psychology", size="xs").classes("text-blue")
                 ui.label("Conseils & pistes de progression").classes(
                     "text-weight-bold text-caption"
-                )
-            if posture:
-                ui.label(f"  Profil engagé : {posture}").classes("text-caption").style(
-                    "user-select: text;"
                 )
             for axe in axes:
                 ui.label(f"  • {axe}").classes("text-caption").style(

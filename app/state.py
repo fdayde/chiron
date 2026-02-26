@@ -33,7 +33,7 @@ def set_trimestre(trimestre: int) -> None:
 
 def get_llm_provider() -> str:
     """Retourne le provider LLM sélectionné."""
-    return app.storage.user.get("llm_provider", "anthropic")
+    return app.storage.user.get("llm_provider", "mistral")
 
 
 def set_llm_provider(provider: str) -> None:
