@@ -135,14 +135,7 @@ def generate_synthese(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Generation failed for {data.eleve_id}: {e}", exc_info=True)
-        from src.core.exceptions import ConfigurationError
-
-        if isinstance(e, ConfigurationError):
-            raise HTTPException(status_code=500, detail=str(e)) from e
-        raise HTTPException(
-            status_code=500,
-            detail="Erreur lors de la génération de la synthèse. Consultez les logs du serveur.",
-        ) from e
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/generate-batch")

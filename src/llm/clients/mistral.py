@@ -6,13 +6,26 @@ Supporte les modèles Mistral (Large, Small).
 import asyncio
 import logging
 
-from mistralai import Mistral
+from mistralai import Mistral, SDKError
 
 from src.llm.base import LLMClient, LLMRawResponse
 from src.llm.config import settings
 from src.llm.pricing import PricingCalculator
 
 logger = logging.getLogger(__name__)
+
+# Messages utilisateur pour les erreurs HTTP courantes de l'API Mistral
+_ERROR_MESSAGES: dict[int, str] = {
+    401: "Clé API Mistral invalide ou expirée. Vérifiez MISTRAL_API_KEY dans votre fichier .env.",
+    403: "Accès refusé par l'API Mistral. Vérifiez les permissions de votre clé API.",
+    429: (
+        "API Mistral surchargée (capacité du tier dépassée). "
+        "Réessayez dans quelques minutes. Statut : status.mistral.ai"
+    ),
+    500: "Erreur interne du serveur Mistral. Réessayez dans quelques minutes.",
+    502: "Serveur Mistral temporairement indisponible (502). Réessayez dans quelques minutes.",
+    503: "Service Mistral temporairement indisponible (503). Réessayez dans quelques minutes.",
+}
 
 
 class MistralClient(LLMClient):
@@ -82,6 +95,12 @@ class MistralClient(LLMClient):
                 messages=messages,
                 **kwargs,
             )
+        except SDKError as e:
+            friendly = _ERROR_MESSAGES.get(e.status_code)
+            if friendly:
+                logger.error(f"Erreur API Mistral ({e.status_code}): {friendly}")
+                raise SDKError(friendly, e.raw_response, e.body) from e
+            raise
         except RuntimeError as e:
             error_msg = str(e).lower()
             if any(
