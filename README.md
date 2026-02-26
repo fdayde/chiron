@@ -13,7 +13,6 @@
 
 Assistant IA responsable pour la préparation des conseils de classe. Suggère des projets de synthèses trimestrielles à partir des bulletins scolaires (PDF PRONOTE) pseudonymisés, l'enseignant relit, ajuste et valide chaque synthèse.
 
-<!-- TODO: remplacer par le chemin réel du GIF -->
 <p align="center">
   <img src="docs/demo.gif" alt="Démo Chiron" width="720">
 </p>
