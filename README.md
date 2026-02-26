@@ -111,6 +111,8 @@ Pour le détail technique des données traitées, voir [Sécurité & RGPD](#séc
 6. **Review** : Relire, éditer si besoin, valider
 7. **Export** : Copier les synthèses dans le presse-papiers (noms réels restaurés automatiquement)
 
+> **Personnaliser le prompt** : le system prompt envoyé à l'IA est stocké dans `data/custom_system_prompt.txt` (créé automatiquement au premier lancement). Vous pouvez le modifier avec un éditeur de texte pour adapter le ton, la structure ou les consignes de rédaction. La page Prompt de l'interface affiche le prompt en cours et permet de le réinitialiser.
+
 ## Développement
 
 ### Prérequis

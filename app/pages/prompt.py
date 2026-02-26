@@ -7,7 +7,14 @@ from layout import page_layout
 from nicegui import ui
 from state import get_classe_id, get_trimestre
 
-from src.generation.prompts import CURRENT_PROMPT, get_prompt, get_prompt_hash
+from src.core.constants import CUSTOM_SYSTEM_PROMPT_PATH
+from src.generation.prompts import (
+    CURRENT_PROMPT,
+    get_prompt,
+    get_prompt_hash,
+    is_prompt_customized,
+    reset_system_prompt,
+)
 
 
 @ui.page("/prompt")
@@ -92,9 +99,41 @@ def prompt_page():
                     ".then(() => null)"
                 ),
             ).props("flat dense size=sm").tooltip("Copier le system prompt")
-        ui.label("Instructions envoyées au LLM avant les données de l'élève.").classes(
-            "text-caption text-grey-6"
-        )
+
+        # Customization notice
+        with (
+            ui.card()
+            .classes("w-full q-mt-sm p-3")
+            .style("border-left: 3px solid var(--q-primary)")
+        ):
+            ui.label(
+                "Vous pouvez personnaliser ce prompt en éditant le fichier "
+                "ci-dessous avec un éditeur de texte. "
+                "Rechargez cette page (F5) après modification pour voir les changements. "
+                "Les modifications seront prises en compte à la prochaine génération."
+            ).classes("text-body2")
+            customized = is_prompt_customized()
+            with ui.row().classes("items-center gap-2 q-mt-xs"):
+                ui.label(f"{CUSTOM_SYSTEM_PROMPT_PATH}").classes(
+                    "text-caption text-grey-6"
+                ).style("font-family: monospace;")
+                if customized:
+                    ui.badge("Modifié", color="orange").props("outline")
+
+                    def do_reset():
+                        reset_system_prompt()
+                        ui.notify(
+                            "Prompt réinitialisé. Rechargez la page.",
+                            type="positive",
+                        )
+
+                    ui.button(
+                        "Réinitialiser",
+                        icon="restart_alt",
+                        on_click=do_reset,
+                    ).props("flat dense size=sm color=orange").tooltip(
+                        "Revenir au prompt par défaut"
+                    )
         ui.code(template["system"]).classes("w-full q-mt-sm")
 
         ui.separator().classes("q-my-md")

@@ -21,6 +21,9 @@ DATA_GROUND_TRUTH_DIR = DATA_DIR / "ground_truth"
 DATA_EXPORTS_DIR = DATA_DIR / "exports"
 DATA_MAPPING_DIR = DATA_DIR / "mapping"
 
+# Prompt système personnalisable
+CUSTOM_SYSTEM_PROMPT_PATH = DATA_DIR / "custom_system_prompt.txt"
+
 # Chemins des bases de données
 DATA_DB_DIR = DATA_DIR / "db"
 DB_CHIRON = DATA_DB_DIR / "chiron.duckdb"
