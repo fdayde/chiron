@@ -1,6 +1,11 @@
 """Page d'accueil NiceGUI — Dashboard Chiron."""
 
-from cache import check_api_health, fetch_classe_stats, fetch_classes
+from cache import (
+    check_api_health,
+    fetch_classe_stats,
+    fetch_classes,
+    startup_deletion_result,
+)
 from layout import page_layout
 from nicegui import ui
 
@@ -11,6 +16,20 @@ from src.llm.config import settings as llm_settings
 def home_page():
     """Page d'accueil avec état des lieux et workflow."""
     with page_layout("Chiron"):
+        # --- Notification effacement automatique au démarrage ---
+        if (
+            startup_deletion_result
+            and startup_deletion_result.get("total_eleves", 0) > 0
+        ):
+            r = startup_deletion_result
+            ui.notify(
+                f"Données expirées supprimées : {r['total_eleves']} élève(s), "
+                f"{r['total_syntheses']} synthèse(s), "
+                f"{r['total_mappings']} mapping(s).",
+                type="info",
+                close_button=True,
+            )
+
         ui.label("Assistant IA pour la préparation des conseils de classe").classes(
             "text-subtitle1 text-grey-7"
         )
@@ -39,12 +58,13 @@ def home_page():
                         "La génération de synthèses ne fonctionnera pas."
                     ).classes("text-orange-3")
                 ui.markdown(
-                    "Créez un fichier **`.env`** à la racine du projet "
-                    "(copiez `.env.example`) et ajoutez au moins une clé :\n\n"
-                    "```\nANTHROPIC_API_KEY=sk-ant-...\n"
-                    "OPENAI_API_KEY=sk-...\n"
-                    "MISTRAL_API_KEY=...\n```\n\n"
-                    "Puis relancez l'application."
+                    "1. Créez un compte sur [console.mistral.ai](https://console.mistral.ai/) "
+                    "et générez une clé API\n"
+                    "2. Créez un fichier **`.env`** à la racine du projet "
+                    "(copiez `.env.example`)\n"
+                    "3. Ajoutez votre clé :\n\n"
+                    "```\nMISTRAL_API_KEY=votre-clé-ici\n```\n\n"
+                    "4. Relancez l'application."
                 ).classes("text-body2 q-ml-lg text-grey-4")
 
         # --- API status ---
@@ -135,6 +155,29 @@ def home_page():
 
         ui.separator().classes("q-mt-md")
 
+        # --- Quick actions ---
+        with ui.row().classes("items-center gap-2 q-mt-md"):
+            ui.icon("rocket_launch").classes("text-primary")
+            ui.label("Démarrer").classes("text-h6")
+        with ui.row().classes("q-mt-md gap-4"):
+            ui.button(
+                "Importer des bulletins",
+                icon="upload_file",
+                on_click=lambda: ui.navigate.to("/import"),
+            ).props("outline rounded")
+            ui.button(
+                "Synthèses",
+                icon="smart_toy",
+                on_click=lambda: ui.navigate.to("/syntheses"),
+            ).props("outline rounded")
+            ui.button(
+                "Exporter",
+                icon="download",
+                on_click=lambda: ui.navigate.to("/export"),
+            ).props("outline rounded")
+
+        ui.separator().classes("q-mt-md")
+
         # --- Workflow ---
         with ui.row().classes("items-center gap-2 q-mt-md"):
             ui.icon("help_outline").classes("text-primary")
@@ -170,7 +213,7 @@ def home_page():
             )
             _workflow_card(
                 "3. Export",
-                "Téléchargez les synthèses",
+                "Exportez les synthèses",
                 ["Noms réels restaurés", "Prêt pour le conseil"],
                 accent="#C8A45C",
             )
@@ -189,8 +232,27 @@ def home_page():
                 ui.markdown(
                     "**Confidentialité garantie** : Les noms des élèves sont "
                     "pseudonymisés avant tout traitement IA. "
-                    "Les données personnelles restent sur votre machine."
+                    "Les données personnelles restent sur votre machine. "
+                    "Les données de plus de 30 jours sont automatiquement "
+                    "supprimées au lancement de l'application."
                 ).classes("text-grey-4")
+
+            with ui.expansion("Obligations RGPD").classes("w-full q-mt-sm"):
+                ui.markdown(
+                    "Avant d'utiliser Chiron, vous devez :\n\n"
+                    "1. **Informer votre chef d'établissement** et obtenir "
+                    "son accord (responsable de traitement RGPD)\n"
+                    "2. **Désactiver l'entraînement** dans votre "
+                    "[console Mistral](https://console.mistral.ai/) : "
+                    "Admin Console > Privacy > off\n"
+                    "3. **Supprimer les données** après chaque conseil de classe "
+                    "(page Export de Chiron)"
+                ).classes("text-body2")
+                ui.markdown(
+                    "Le chef d'établissement peut consulter le DPO académique. "
+                    "Le [DPA Mistral](https://legal.mistral.ai/terms/"
+                    "data-processing-addendum) fournit les éléments nécessaires."
+                ).classes("text-caption text-grey-7 q-mt-xs")
 
             with ui.expansion("Détail des données personnelles").classes(
                 "w-full q-mt-sm"
@@ -216,20 +278,16 @@ def home_page():
                             "statut": "Pseudonymisé (ELEVE_XXX) avant envoi à l'IA",
                         },
                         {
-                            "donnee": "Genre (F/G)",
-                            "statut": "Stocké localement, non transmis — le LLM déduit le genre des accords grammaticaux",
-                        },
-                        {
-                            "donnee": "Absences, retards",
-                            "statut": "Stocké localement, non transmis",
-                        },
-                        {
                             "donnee": "Moyennes par matière",
                             "statut": "Catégorisées* avant envoi à l'IA",
                         },
                         {
                             "donnee": "Appréciations enseignantes",
                             "statut": "Transmises pseudonymisées à l'IA",
+                        },
+                        {
+                            "donnee": "Absences, retards",
+                            "statut": "Stocké localement, non transmis",
                         },
                         {
                             "donnee": "Engagements (délégué...)",
@@ -279,34 +337,11 @@ def home_page():
                     "qu'utilisateur."
                 ).classes("text-caption text-grey-7")
                 ui.markdown(
-                    "Une fois les synthèses exportées, utilisez le bouton "
-                    "**Purge trimestrielle** (page Export) pour supprimer les "
-                    "données du trimestre conformément au principe de "
+                    "Les données de plus de 30 jours sont **automatiquement supprimées** "
+                    "au lancement. Vous pouvez aussi supprimer les données manuellement "
+                    "depuis la page Export, conformément au principe de "
                     "**limitation de la conservation** (Art. 5(1)(e))."
                 ).classes("text-caption text-grey-7")
-
-        ui.separator().classes("q-mt-md")
-
-        # --- Quick actions ---
-        with ui.row().classes("items-center gap-2 q-mt-md"):
-            ui.icon("rocket_launch").classes("text-primary")
-            ui.label("Démarrer").classes("text-h6")
-        with ui.row().classes("q-mt-md gap-4"):
-            ui.button(
-                "Importer des bulletins",
-                icon="upload_file",
-                on_click=lambda: ui.navigate.to("/import"),
-            ).props("outline rounded")
-            ui.button(
-                "Synthèses",
-                icon="smart_toy",
-                on_click=lambda: ui.navigate.to("/syntheses"),
-            ).props("outline rounded")
-            ui.button(
-                "Exporter",
-                icon="download",
-                on_click=lambda: ui.navigate.to("/export"),
-            ).props("outline rounded")
 
 
 def _metric_card(label: str, value: str) -> None:

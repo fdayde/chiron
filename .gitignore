@@ -244,3 +244,6 @@ data/db/*.duckdb.wal
 
 # NiceGUI
 .nicegui/
+
+# Test data
+data/test/*

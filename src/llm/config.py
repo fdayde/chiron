@@ -30,14 +30,8 @@ class LLMSettings(BaseSettings):
     mistral_api_key: str = Field(default="", description="Clé API Mistral LLM")
     # Provider par défaut (lu depuis DEFAULT_PROVIDER dans .env)
     default_provider: str = Field(
-        default="anthropic",
+        default="mistral",
         description="Provider LLM par défaut (openai, anthropic, mistral)",
-    )
-
-    # Anonymization configuration
-    ner_model: str = Field(
-        default="Jean-Baptiste/camembert-ner",
-        description="Modèle HuggingFace NER pour l'anonymisation",
     )
 
     # Modèles par défaut (production)
@@ -65,6 +59,12 @@ class LLMSettings(BaseSettings):
     # Flag pour basculer entre modèles de prod et test
     use_test_models: bool = Field(
         default=False, description="Utiliser les modèles de test"
+    )
+
+    # Debug : afficher les prompts envoyés au LLM dans les logs
+    show_prompt: bool = Field(
+        default=False,
+        description="Affiche les prompts envoyés au LLM dans les logs (niveau DEBUG)",
     )
 
     # Retry configuration

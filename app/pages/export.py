@@ -1,14 +1,14 @@
-"""Page Export — Recapitulatif et export CSV."""
+"""Page Export — Récapitulatif et export presse-papiers."""
 
 from __future__ import annotations
 
 from cache import (
+    delete_trimestre_data,
     fetch_classe,
     fetch_classe_stats,
     fetch_eleve_synthese,
     fetch_eleves_with_syntheses,
     get_status_counts,
-    purge_trimestre,
 )
 from layout import page_layout
 from nicegui import ui
@@ -29,7 +29,12 @@ def export_page():
 
         # Class name
         classe_info = fetch_classe(classe_id)
-        classe_nom = classe_info.get("nom", classe_id) if classe_info else classe_id
+        if not classe_info:
+            ui.label("Sélectionnez une classe dans la barre latérale.").classes(
+                "text-grey-6"
+            )
+            return
+        classe_nom = classe_info.get("nom", classe_id)
 
         ui.label(f"Classe : {classe_nom} | Trimestre : T{trimestre}").classes(
             "text-body1"
@@ -179,68 +184,29 @@ def export_page():
         # =============================================================
 
         with ui.row().classes("items-center gap-2 q-mt-md"):
-            ui.icon("download").classes("text-primary")
+            ui.icon("content_copy").classes("text-primary")
             ui.label("Export").classes("text-h6")
 
-        with ui.row().classes("w-full gap-8"):
-            # CSV export
-            with ui.column().classes("flex-1"):
-                ui.label("CSV").classes("text-h6")
-                ui.label("Export des synthèses validées au format CSV").classes(
-                    "text-caption text-grey-7"
-                )
+        async def _copy_to_clipboard():
+            validated = [s for s in syntheses_data if s["status"] == "validated"]
+            lines = []
+            for item in validated:
+                lines.append(f"# {item['display_name']}")
+                lines.append(item["synthese"].get("synthese_texte", ""))
+                lines.append("")
+            text = "\n".join(lines)
+            escaped = text.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
+            await ui.run_javascript(f"navigator.clipboard.writeText(`{escaped}`)")
+            ui.notify("Copie dans le presse-papiers", type="positive")
 
-                if counts["validated"] == 0:
-                    ui.label("Aucune synthèse validée").classes("text-warning")
-                else:
-
-                    async def _download_csv():
-                        url = f"/export/csv?classe_id={classe_id}&trimestre={trimestre}"
-                        await ui.run_javascript(
-                            f'window.open("{url}", "_blank")',
-                        )
-
-                    ui.button(
-                        f"Télécharger CSV ({counts['validated']} synthèses)",
-                        icon="download",
-                        on_click=_download_csv,
-                    ).props("color=primary rounded")
-
-            # Clipboard copy
-            with ui.column().classes("flex-1"):
-                ui.label("Presse-papiers").classes("text-h6")
-                ui.label("Copier les synthèses pour coller dans un document").classes(
-                    "text-caption text-grey-7"
-                )
-
-                async def _copy_to_clipboard():
-                    validated = [
-                        s for s in syntheses_data if s["status"] == "validated"
-                    ]
-                    lines = []
-                    for item in validated:
-                        lines.append(f"# {item['display_name']}")
-                        lines.append(item["synthese"].get("synthese_texte", ""))
-                        lines.append("")
-                    text = "\n".join(lines)
-                    escaped = (
-                        text.replace("\\", "\\\\")
-                        .replace("`", "\\`")
-                        .replace("$", "\\$")
-                    )
-                    await ui.run_javascript(
-                        f"navigator.clipboard.writeText(`{escaped}`)"
-                    )
-                    ui.notify("Copie dans le presse-papiers", type="positive")
-
-                ui.button(
-                    "Copier dans le presse-papiers",
-                    icon="content_copy",
-                    on_click=_copy_to_clipboard,
-                ).props("outline rounded")
+        ui.button(
+            f"Copier les synthèses ({counts['validated']} validées)",
+            icon="content_copy",
+            on_click=_copy_to_clipboard,
+        ).props("color=primary rounded")
 
         # =============================================================
-        # PURGE TRIMESTRIELLE (RGPD)
+        # SUPPRESSION DES DONNÉES (RGPD)
         # =============================================================
 
         if counts["missing"] == 0 and counts["pending"] == 0:
@@ -255,22 +221,23 @@ def export_page():
             ):
                 with ui.row().classes("items-center gap-2"):
                     ui.icon("delete_forever", color="negative")
-                    ui.label("Purge trimestrielle").classes("text-lg font-bold")
+                    ui.label("Supprimer les données du trimestre").classes(
+                        "text-lg font-bold"
+                    )
                 ui.label(
                     f"Toutes les synthèses T{trimestre} sont validées. "
-                    f"Vous pouvez purger les données de ce trimestre "
-                    f"({counts['total']} élèves)."
+                    f"Vous pouvez supprimer les données de ce trimestre "
+                    f"({counts['total']} élèves). Cette action est irréversible."
                 ).classes("text-body2")
                 ui.label(
-                    "Cette action supprime les données élèves, synthèses "
-                    "et mappings d'identité de ce trimestre. "
-                    "Elle est irréversible."
+                    "Les données de plus de 30 jours sont également "
+                    "supprimées automatiquement au lancement."
                 ).classes("text-caption text-grey-7")
 
-                def _open_purge_dialog():
+                def _open_delete_dialog():
                     with ui.dialog() as dlg, ui.card():
                         ui.label(
-                            f"Confirmer la purge du trimestre {trimestre} ?"
+                            f"Supprimer les données du trimestre {trimestre} ?"
                         ).classes("text-h6")
                         ui.label(
                             f"{counts['total']} élèves et "
@@ -282,22 +249,22 @@ def export_page():
                             "avant de continuer."
                         ).classes("text-caption text-warning")
 
-                        def _confirm_purge():
+                        def _confirm_delete():
                             dlg.close()
                             try:
-                                result = purge_trimestre(classe_id, trimestre)
+                                result = delete_trimestre_data(classe_id, trimestre)
                                 ui.notify(
-                                    f"T{trimestre} purgé : "
+                                    f"T{trimestre} : "
                                     f"{result['deleted_eleves']} élèves, "
                                     f"{result['deleted_syntheses']} synthèses, "
                                     f"{result['deleted_mappings']} mappings "
                                     f"supprimés.",
                                     type="positive",
                                 )
-                                ui.navigate.to("/home")
+                                ui.navigate.to("/")
                             except Exception as exc:
                                 ui.notify(
-                                    f"Erreur lors de la purge : {exc}",
+                                    f"Erreur lors de la suppression : {exc}",
                                     type="negative",
                                 )
 
@@ -306,16 +273,16 @@ def export_page():
                                 "flat rounded"
                             )
                             ui.button(
-                                "Purger",
+                                "Supprimer",
                                 icon="delete_forever",
-                                on_click=_confirm_purge,
+                                on_click=_confirm_delete,
                             ).props("color=negative rounded")
                     dlg.open()
 
                 ui.button(
-                    f"Purger les données T{trimestre}",
+                    f"Supprimer les données T{trimestre}",
                     icon="delete_forever",
-                    on_click=_open_purge_dialog,
+                    on_click=_open_delete_dialog,
                 ).props("color=negative rounded")
 
         ui.separator().classes("q-mt-md")

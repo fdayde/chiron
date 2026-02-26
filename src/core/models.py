@@ -55,8 +55,6 @@ class EleveExtraction(BaseModel):
     eleve_id: str | None = None  # Généré après pseudonymisation
     nom: str | None = None  # Avant pseudonymisation
     prenom: str | None = None  # Avant pseudonymisation
-    genre: Literal["Fille", "Garçon"] | None = None
-
     # Contexte scolaire
     etablissement: str | None = None
     classe: str | None = None
@@ -127,11 +125,10 @@ class GroundTruthDataset(BaseModel):
 
 
 class Alerte(BaseModel):
-    """Une alerte sur une matière ou un comportement."""
+    """Un signal d'attention factuel sur une matière ou un comportement."""
 
     matiere: str
     description: str
-    severite: Literal["urgent", "attention"]
 
 
 class Reussite(BaseModel):
@@ -168,7 +165,6 @@ class SyntheseGeneree(BaseModel):
     synthese_texte: str
     alertes: list[Alerte] = Field(default_factory=list)
     reussites: list[Reussite] = Field(default_factory=list)
-    posture_generale: Literal["engage", "en_progression", "en_retrait", "heterogene"]
     axes_travail: list[str] = Field(default_factory=list)
     biais_detectes: list[BiaisGenre] = Field(default_factory=list)
 

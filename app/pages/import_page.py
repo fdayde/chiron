@@ -33,7 +33,12 @@ def import_page():
 
         # Class name
         classe_info = fetch_classe(classe_id)
-        classe_nom = classe_info.get("nom", classe_id) if classe_info else classe_id
+        if not classe_info:
+            ui.label("Sélectionnez une classe dans la barre latérale.").classes(
+                "text-grey-6"
+            )
+            return
+        classe_nom = classe_info.get("nom", classe_id)
 
         ui.label(f"Classe : {classe_nom} | Trimestre : T{trimestre}").classes(
             "text-body1"
@@ -231,9 +236,15 @@ def import_page():
             import_btn = ui.button(
                 "Importer les fichiers", icon="upload", on_click=do_import
             ).props("color=primary disable rounded")
-            debug_btn = ui.button(
-                "Visualiser les zones", icon="visibility", on_click=do_debug
-            ).props("color=secondary flat rounded")
+            debug_btn = (
+                ui.button("Vérifier l'extraction", icon="visibility", on_click=do_debug)
+                .props("color=secondary flat rounded")
+                .tooltip(
+                    "Génère un PDF annoté montrant les zones détectées "
+                    "dans le bulletin. Utile pour vérifier que les données "
+                    "sont bien extraites."
+                )
+            )
             overwrite_checkbox = ui.checkbox(
                 "Remplacer les données existantes en cas de doublon", value=True
             )

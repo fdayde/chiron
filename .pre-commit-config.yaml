@@ -26,4 +26,4 @@ repos:
       - id: check-merge-conflict
       - id: debug-statements
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: ['--maxkb=4000']

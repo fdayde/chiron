@@ -7,25 +7,43 @@
 [![CI](https://github.com/fdayde/chiron/actions/workflows/ci.yml/badge.svg)](https://github.com/fdayde/chiron/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/fdayde/chiron/graph/badge.svg)](https://codecov.io/gh/fdayde/chiron)
 [![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#-statut-du-projet)
+[![Status](https://img.shields.io/badge/status-beta-yellow.svg)](#statut-du-projet)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![DuckDB](https://img.shields.io/badge/DuckDB-local-FEF502)](https://duckdb.org/)
 
-Assistant IA pour la préparation des conseils de classe - Génère des synthèses trimestrielles personnalisées à partir des bulletins scolaires (PDF PRONOTE).
+Assistant IA responsable pour la préparation des conseils de classe. Suggère des projets de synthèses trimestrielles à partir des bulletins scolaires (PDF PRONOTE) pseudonymisés, l'enseignant relit, ajuste et valide chaque synthèse.
+
+<p align="center">
+  <img src="docs/demo.gif" alt="Démo Chiron" width="720">
+</p>
+
+## Sommaire
+
+- [Fonctionnalités clés](#fonctionnalités-clés)
+- [Statut du projet](#statut-du-projet)
+- [Vue d'ensemble](#vue-densemble)
+- [RGPD — À lire avant utilisation](#rgpd--à-lire-avant-utilisation)
+- [Utilisation](#utilisation)
+- [Développement](#développement)
+- [Structure du projet](#structure-du-projet)
+- [Sécurité & RGPD](#sécurité--rgpd)
+- [Stack technique](#stack-technique)
+- [Documentation](#documentation)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
 
 ## Fonctionnalités clés
 
 ### Pseudonymisation avant envoi cloud
-Les noms, prénoms et informations identifiantes sont détectés par un modèle NER local (CamemBERT) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le LLM ne reçoit jamais de données nominatives. Les noms réels sont restaurés automatiquement à l'export.
+Les noms, prénoms et informations identifiantes sont détectés par une pipeline 3 passes locale (regex + Flair NER fuzzy + fuzzy direct) et remplacés par des pseudonymes (`ELEVE_001`) **avant tout envoi au cloud**. Le LLM ne reçoit jamais de données nominatives. Les noms réels sont restaurés automatiquement à l'export.
 
-### Few-shot learning — calibration par l'enseignant
+### Few-shot learning : calibration par l'enseignant
 L'enseignant peut marquer jusqu'à 3 synthèses validées comme « exemples » pour l'IA. Ces exemples sont automatiquement injectés dans le prompt (few-shot) afin de calibrer le style, le ton et le niveau de détail des synthèses suivantes. Les appréciations sont tronquées et les synthèses plafonnées à 1000 caractères pour maîtriser la taille du prompt.
 
 ### Insights pédagogiques fondés sur la recherche
-Le prompt de génération est conçu selon des principes issus de la recherche en éducation :
+L'outil propose des signaux factuels et des pistes de travail, sans profilage ni catégorisation, fondés sur la recherche en éducation :
 - **Growth mindset** (Dweck, 2006) : valorisation des processus, pas des capacités fixes
 - **Feedforward** (Hattie & Timperley, 2007) : orientation prospective vers des stratégies concrètes
-- **Théorie de l'autodétermination** (Deci & Ryan, 2000) : profils d'engagement contextuels, pas d'étiquettes figées
 - **Détection des biais de genre** : identification automatique des formulations genrées dans les appréciations
 
 ## Statut du projet
@@ -35,34 +53,74 @@ Le prompt de génération est conçu selon des principes issus de la recherche e
 - UI NiceGUI (navigateur) : import, génération, calibration few-shot, validation, export
 - API FastAPI intégrée (process unique)
 - RGPD : pseudonymisation NER locale avant envoi cloud
-- Multi-provider : OpenAI, Anthropic, Mistral
+- Multi-provider : Mistral (défaut), OpenAI, Anthropic
 - Distribution : `chiron.exe` (PyInstaller, `--onedir`)
 
 ## Vue d'ensemble
 
 ```
-PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export CSV
+PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération LLM → Validation → Export
      │              │                  │            │               │             │           │
-     │         CamemBERT         YAML template  Few-shot       OpenAI/Claude   Humain    Dépseudo
-     │         (local)           (local)        (0-3 ex.)      (cloud)        (local)    (local)
+     │         Flair NER         YAML template  Few-shot       Mistral (cloud) Humain    Dépseudo
+     │         (local)           (local)        (0-3 ex.)      hébergé UE     (local)    (local)
      ▼              ▼                  ▼            ▼               ▼             ▼           ▼
   Bulletin    PDF pseudonymisé   Données      Exemples        Synthèse      Validée    Noms réels
 ```
 
-**Principes** :
-- Le professeur reste dans la boucle (validation obligatoire)
-- **Noms et prénoms pseudonymisés avant envoi au cloud** (le LLM ne reçoit que des identifiants `ELEVE_XXX`)
-- Style et ton calibrés via few-shot learning (exemples de l'enseignant)
-- Insights pédagogiques actionnables (alertes, réussites, stratégies, biais de genre)
-- Application locale + APIs cloud (LLM)
+## RGPD : À lire avant utilisation
 
-## Prérequis (mode développeur)
+Chiron s'inscrit dans une démarche de privacy by design, et propose un cadre responsable à l'usage de l'IA générative
+pour la rédaction de synthèses scolaires. L'outil ne note pas, ne classe pas et ne catégorise pas les élèves, il produit des suggestions de textes soumis au jugement de l'enseignant.
+
+Chiron **pseudonymise toutes les données** (noms → `ELEVE_XXX`, notes → niveaux LSU) avant envoi à l'API Mistral AI. Le LLM ne reçoit jamais de données nominatives.
+
+**Mistral AI** est une société française 🇫🇷, hébergée en UE, soumise au RGPD ([DPA](https://legal.mistral.ai/terms/data-processing-addendum)).
+
+### Avant d'utiliser Chiron, vous devez :
+
+1. **Informer votre chef d'établissement** et obtenir son accord (c'est lui le responsable de traitement RGPD)
+2. **Désactiver l'entraînement** dans votre [console Mistral](https://console.mistral.ai/) : Admin Console > Privacy > off
+3. **Supprimer les données** après chaque conseil de classe (page Export de Chiron)
+
+> Le chef d'établissement peut consulter le DPO académique. Le [DPA Mistral](https://legal.mistral.ai/terms/data-processing-addendum) et cette documentation fournissent les éléments nécessaires.
+
+Pour le détail technique des données traitées, voir [Sécurité & RGPD](#sécurité--rgpd).
+
+## Utilisation
+
+### Installation
+
+1. Télécharger `chiron-x.y.z.zip` depuis la page [Releases](https://github.com/fdayde/chiron/releases)
+2. Décompresser l'archive (vous obtenez un dossier `chiron/`)
+3. Renommer `.env.example` en `.env` et renseigner votre clé API Mistral :
+   ```env
+   MISTRAL_API_KEY=votre-clé-ici
+   ```
+4. Double-cliquer sur `chiron.exe`
+
+> Pour construire l'application depuis les sources, voir [Build .exe](#build-exe).
+
+### Workflow type
+
+1. **Classe** : Importer les PDF bulletins de la classe (pseudonymisation automatique)
+2. **Vérification** : Utilisez le bouton « Visualiser les zones » pour vérifier que l'extraction du bulletin est correcte
+3. **Génération** : Générer 1-2 synthèses, relire et modifier au besoin, et valider
+4. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
+5. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
+6. **Review** : Relire, éditer si besoin, valider
+7. **Export** : Copier les synthèses dans le presse-papiers (noms réels restaurés automatiquement)
+
+> **Personnaliser le prompt** : le system prompt envoyé à l'IA est stocké dans `data/custom_system_prompt.txt` (créé automatiquement au premier lancement). Vous pouvez le modifier avec un éditeur de texte pour adapter le ton, la structure ou les consignes de rédaction. La page Prompt de l'interface affiche le prompt en cours et permet de le réinitialiser.
+
+## Développement
+
+### Prérequis
 
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
-- Clé API : OpenAI et/ou Anthropic et/ou Mistral
+- Clé API Mistral ([créer un compte](https://console.mistral.ai/))
 
-## Installation (mode développeur)
+### Installation
 
 ```bash
 git clone https://github.com/fdayde/chiron.git
@@ -80,7 +138,7 @@ cp .env.example .env
 # Éditer .env avec vos clés API
 ```
 
-## Démarrage rapide
+### Démarrage rapide
 
 ```bash
 python run.py
@@ -94,24 +152,17 @@ CHIRON_NATIVE=1 python run.py    # Mode desktop (pywebview)
 CHIRON_PORT=9000 python run.py   # Port personnalisé
 ```
 
-### Workflow type
+> **Vérifier la pseudonymisation** : définir `LOG_LEVEL=DEBUG` et `SHOW_PROMPT=true` dans `.env` pour afficher les prompts dans le terminal et confirmer que tous les noms sont remplacés par `ELEVE_XXX`.
 
-1. **Classe** : Importer les PDF bulletins de la classe (pseudonymisation automatique)
-2. **Génération** : Générer 1-2 synthèses, relire et valider
-3. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
-4. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
-5. **Review** : Relire, éditer si besoin, valider
-6. **Export** : Télécharger les synthèses (noms réels restaurés automatiquement)
-
-## Tests
+### Tests
 
 ```bash
 uv run pytest
 ```
 
-## Distribution (.exe)
+### Build .exe
 
-Pour distribuer l'application sans installer Python :
+Pour construire l'exécutable depuis les sources (nécessite Python + uv). L'exécutable produit, lui, fonctionne sans Python :
 
 ```bash
 # Installer les outils de build
@@ -121,24 +172,7 @@ uv pip install pyinstaller pyinstaller-hooks-contrib
 python scripts/build.py --clean
 ```
 
-Le dossier `dist/chiron/` contient tout le nécessaire. Pour l'utilisateur final :
-
-1. Renommer `.env.example` en `.env` et remplir sa clé API
-2. Double-cliquer sur `chiron.exe`
-
-## Configuration (.env)
-
-```env
-# Provider par défaut : openai, anthropic ou mistral
-DEFAULT_PROVIDER=anthropic
-
-# Clés API (seule celle du provider choisi est nécessaire)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-MISTRAL_API_KEY=...
-```
-
-Options avancées (développeurs) : voir [.env.example](.env.example).
+Le dossier `dist/chiron/` contient tout le nécessaire.
 
 ## Structure du projet
 
@@ -155,7 +189,8 @@ chiron/
 │   │   └── exceptions.py     # Exceptions custom
 │   ├── document/             # Parsing PDF
 │   │   ├── yaml_template_parser.py # Parser principal (template YAML configurable)
-│   │   ├── anonymizer.py          # Extraction nom élève + NER safety net
+│   │   ├── anonymizer.py          # Extraction nom élève
+│   │   ├── pseudonymization.py   # Pipeline 3 passes (regex + Flair NER + fuzzy)
 │   │   ├── validation.py          # Validation post-extraction + mismatch classe
 │   │   ├── debug_visualizer.py    # PDF annoté pour debug visuel
 │   │   └── templates/             # Templates YAML d'extraction (pronote_standard)
@@ -183,7 +218,7 @@ chiron/
 │   ├── state.py              # Gestion d'état
 │   ├── pages/                # home, import, synthèses, export, prompt
 │   └── components/           # eleve_card, synthese_editor, llm_selector...
-├── tests/                    # Tests (pseudonymisation, purge, validation, parsing PDF)
+├── tests/                    # Tests (pseudonymisation, suppression, validation, parsing PDF)
 ├── run.py                    # Point d'entrée unique (API + UI)
 ├── chiron.spec               # Spec PyInstaller
 ├── scripts/build.py          # Script de build .exe
@@ -196,23 +231,25 @@ chiron/
 
 | Aspect | Mesure |
 |--------|--------|
-| **Pseudonymisation** | CamemBERT NER **avant** envoi cloud (ELEVE_XXX) |
+| **Fail-safe à l'import** | Si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière), l'import est **bloqué** : aucune donnée n'atteint le LLM |
+| **Pseudonymisation** | Pipeline 3 passes : regex + Flair NER fuzzy + fuzzy direct **avant** envoi cloud (ELEVE_XXX). Validée sur BDD INSEE (48k prénoms × 219k noms) : recall 100%, precision 99.99%, F1 99.0% ([détails](notebooks/test_pseudonymisation_v2.ipynb)) |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
 | **Mapping identités** | Base séparée (`privacy.duckdb`), cascade suppression |
 | **LLM cloud** | Reçoit uniquement données **pseudonymisées** |
 | **Validation humaine** | Obligatoire avant export |
-| **Purge trimestrielle** | Suppression données + mappings après export (page Export) |
+| **Effacement automatique (30j)** | Données expirées supprimées au lancement (Art. 5(1)(e)) |
+| **Suppression manuelle** | Suppression données + mappings après export (page Export) |
 | **Base légale** | Mission de service public éducatif (RGPD Art. 6(1)(e)) |
+| **Code source ouvert** | Auditable ([Apache 2.0](LICENSE)) |
 
 ### Détail des données personnelles
 
 | Donnée | Traitement |
 |--------|------------|
 | Nom, prénom | Pseudonymisé (ELEVE_XXX) avant envoi à l'IA |
-| Genre (F/G) | Extrait du PDF, stocké localement, **non transmis** — le LLM déduit le genre depuis les accords grammaticaux des appréciations |
-| Absences, retards | Stocké localement, **non transmis** |
-| Moyennes par matière | Catégorisées selon l'échelle de maîtrise du socle commun (LSU) avant envoi à l'IA |
 | Appréciations enseignantes | Transmises pseudonymisées à l'IA |
+| Moyennes par matière | Catégorisées selon l'échelle de maîtrise du socle commun (LSU) avant envoi à l'IA |
+| Absences, retards | Stocké localement, **non transmis** |
 | Engagements (délégué...) | Stocké localement, **non transmis** |
 | Nom des professeurs | Stocké localement, **non transmis** |
 | Établissement | Stocké localement, **non transmis** |
@@ -220,20 +257,14 @@ chiron/
 | Année scolaire | Stocké localement, **non transmis** |
 | Trimestre | Stocké localement, **non transmis** |
 
-## Adapter à un autre format de bulletin
-
-Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML configurable (`src/document/templates/pronote_standard.yaml`). Pour l'adapter à un autre format, consultez le guide dédié :
-
-**[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)**
-
 ## Stack technique
 
 | Composant | Technologie |
 |-----------|-------------|
 | Runtime | Python 3.13+ |
-| LLM | OpenAI GPT-5-mini / Claude Sonnet 4.5 / Mistral |
-| NER | CamemBERT (Jean-Baptiste/camembert-ner) |
-| PDF | pdfplumber + YAML templates (configurable) |
+| LLM | Mistral (défaut) — OpenAI, Anthropic disponibles en configuration avancée |
+| NER | Flair NER (flair/ner-french) + rapidfuzz |
+| PDF | pdfplumber + YAML templates |
 | Backend | FastAPI + Uvicorn |
 | Frontend | NiceGUI |
 | Base de données | DuckDB (local) |
@@ -242,8 +273,20 @@ Le parsing est conçu pour les bulletins **PRONOTE** via un template YAML config
 ## Documentation
 
 - **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de données, RGPD
-- **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Guide d'adaptation à un autre format de bulletin
-- **[docs/plan-rgpd-remediation.md](docs/plan-rgpd-remediation.md)** — Plan de remédiation RGPD (audit et corrections)
+- **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Adapter Chiron à un autre format de bulletin (autre que PRONOTE)
+- **[docs/references.md](docs/references.md)** — Fondements scientifiques (Dweck, Hattie & Timperley, Ryan & Deci, IPP)
+- **[docs/fiche_technique_rgpd.md](docs/fiche_technique_rgpd.md)** — Informations utiles pour rédiger l'AIPD et la note d'information aux familles dans le cadre du RGPD.
+
+## Contribuer
+
+Les contributions sont bienvenues. Pour commencer :
+
+1. Forker le projet et créer une branche (`git checkout -b feat/ma-feature`)
+2. Installer l'environnement de développement (voir [Développement](#développement))
+3. Lancer les tests (`uv run pytest`) et le linter (`uv run ruff check`)
+4. Ouvrir une Pull Request
+
+Pour signaler un bug ou proposer une fonctionnalité, ouvrir une [issue](https://github.com/fdayde/chiron/issues).
 
 ## Licence
 

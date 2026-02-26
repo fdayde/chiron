@@ -16,7 +16,13 @@ import duckdb
 
 from src.core.exceptions import StorageError
 from src.storage.config import storage_settings
-from src.storage.schemas import INDEXES, MIGRATIONS, TABLE_ORDER, TABLES
+from src.storage.schemas import (
+    DROP_COLUMN_MIGRATIONS,
+    INDEXES,
+    MIGRATIONS,
+    TABLE_ORDER,
+    TABLES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +102,7 @@ class DuckDBConnection:
     def ensure_tables(self) -> None:
         """Crée toutes les tables et index si ils n'existent pas."""
         with self._get_conn() as conn:
+            # 1. Create tables
             for table_name in TABLE_ORDER:
                 sql = TABLES[table_name]
                 try:
@@ -106,6 +113,41 @@ class DuckDBConnection:
                         f"Failed to create table {table_name}: {e}"
                     ) from e
 
+            # 2. Run migrations BEFORE indexes (DROP COLUMN fails if
+            #    DuckDB sees dependent indexes on the table)
+            for migration_sql in MIGRATIONS:
+                try:
+                    conn.execute(migration_sql)
+                except Exception as e:
+                    logger.warning(f"Migration skipped: {e}")
+
+            # DROP COLUMN migrations: DuckDB blocks ALTER TABLE DROP COLUMN
+            # when ANY index exists on the table (table-level dependency),
+            # even if the index doesn't reference the dropped column.
+            # Strategy: drop indexes → drop column → indexes are recreated in step 3.
+            for table, column, desc in DROP_COLUMN_MIGRATIONS:
+                exists = conn.execute(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE table_name = ? AND column_name = ?",
+                    [table, column],
+                ).fetchone()
+                if not exists:
+                    continue
+                # Drop all indexes on this table to unblock ALTER TABLE
+                idx_rows = conn.execute(
+                    "SELECT index_name FROM duckdb_indexes() WHERE table_name = ?",
+                    [table],
+                ).fetchall()
+                for (idx_name,) in idx_rows:
+                    conn.execute(f"DROP INDEX IF EXISTS {idx_name}")
+                    logger.debug("Dropped index %s (for migration)", idx_name)
+                try:
+                    conn.execute(f"ALTER TABLE {table} DROP COLUMN {column}")
+                    logger.info("Migration: %s", desc)
+                except Exception as e:
+                    logger.warning("Migration skipped (%s): %s", desc, e)
+
+            # 3. Create indexes (after migrations, idempotent via IF NOT EXISTS)
             for table_name in TABLE_ORDER:
                 for idx_sql in INDEXES.get(table_name, []):
                     try:
@@ -115,13 +157,6 @@ class DuckDBConnection:
                         raise StorageError(
                             f"Failed to create index for {table_name}: {e}"
                         ) from e
-
-            # Run idempotent migrations for existing databases
-            for migration_sql in MIGRATIONS:
-                try:
-                    conn.execute(migration_sql)
-                except Exception as e:
-                    logger.warning(f"Migration skipped: {e}")
 
         logger.info(f"Database initialized at {self.db_path}")
 

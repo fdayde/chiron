@@ -58,14 +58,10 @@ _DIST_ENV_EXAMPLE = """\
 # =============================================================================
 # Chiron - Configuration
 # =============================================================================
-# Renommer ce fichier en .env et remplir la cle du provider choisi.
+# Renommer ce fichier en .env et remplir votre cle API Mistral.
 
-# Provider par defaut : openai, anthropic ou mistral
-DEFAULT_PROVIDER=anthropic
-
-# Cles API (remplir uniquement celle du provider choisi)
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
+# Cle API Mistral (https://console.mistral.ai/)
+# Mistral est heberge en UE, conforme RGPD.
 MISTRAL_API_KEY=
 """
 
@@ -91,9 +87,9 @@ def post_build(dry_run: bool = False) -> None:
         internal_env.unlink()
 
     # Copy demo PDF into data/demo/ if it exists in the source tree
-    demo_pdf_src = ROOT / "data" / "demo" / "bulletin_fictif.pdf"
+    demo_pdf_src = ROOT / "data" / "demo" / "Bulletin_TEST.pdf"
     demo_dir = DIST / "data" / "demo"
-    demo_pdf_dst = demo_dir / "bulletin_fictif.pdf"
+    demo_pdf_dst = demo_dir / "Bulletin_TEST.pdf"
     if demo_pdf_src.exists():
         print(f"{'[DRY-RUN] ' if dry_run else ''}Creating {demo_dir}")
         print(f"{'[DRY-RUN] ' if dry_run else ''}Copying demo PDF {demo_pdf_dst}")

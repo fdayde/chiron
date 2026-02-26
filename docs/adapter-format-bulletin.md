@@ -2,7 +2,7 @@
 
 Le parsing est conçu pour un format de bulletin **PRONOTE** particulier (PDF tabulaire, 4 colonnes : matière, moyennes, programme, appréciations). Pour l'adapter à un autre logiciel scolaire (EcoleDirecte, Siecle, etc.) ou un format PRONOTE différent, voici les approches possibles.
 
-> **Bulletin exemple** : un PDF de référence au format PRONOTE fictif est disponible dans [`data/demo/bulletin_fictif.pdf`](../data/demo/bulletin_fictif.pdf).
+> **Bulletin exemple** : un PDF de référence au format PRONOTE est disponible dans [`data/demo/Bulletin_TEST.pdf`](../data/demo/Bulletin_TEST.pdf).
 
 ## Approche recommandée : template YAML
 
@@ -26,13 +26,6 @@ template:
 
 # Champs extraits du texte brut du PDF
 fields:
-  genre:
-    method: "key_value"      # Cherche "Clé : Valeur" dans le texte
-    key: "Genre"             # Regex du label à chercher
-    normalize:               # Mapping optionnel des valeurs
-      fille: "Fille"
-      f: "Fille"
-
   absences:
     method: "key_value"
     key: "Absences?"         # Regex (ici : "Absence" ou "Absences")
@@ -78,6 +71,10 @@ tables:
 
 Pour l'instant, le template est en dur dans `YamlTemplateParser.__init__()` (`pronote_standard.yaml`). Pour utiliser un autre template, modifier cette référence ou ajouter une variable d'environnement.
 
+### Vérifier l'extraction
+
+Sur la page **Import** de l'UI, le bouton **« Visualiser les zones »** génère un PDF annoté montrant les zones détectées par le parser (champs texte, tableaux, colonnes). Utilisez-le pour vérifier que votre template YAML extrait correctement les données du bulletin avant de lancer la génération.
+
 ## Approche alternative : parser Python custom
 
 Pour des formats très différents (structure non tabulaire, PDF scannés, etc.), vous pouvez créer un parser Python dédié.
@@ -102,7 +99,6 @@ class PDFParser(Protocol):
         self,
         pdf_data: bytes | str | Path,
         eleve_id: str,
-        genre: str | None = None,
     ) -> EleveExtraction: ...
 ```
 

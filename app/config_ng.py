@@ -16,7 +16,7 @@ class UISettings(BaseSettings):
     """Settings for the NiceGUI UI."""
 
     api_base_url: str = "http://localhost:8080"
-    default_provider: str = "anthropic"
+    default_provider: str = "mistral"
     default_model: str = ""  # Empty = use provider default from llm_settings
     default_temperature: float = llm_settings.default_temperature
 

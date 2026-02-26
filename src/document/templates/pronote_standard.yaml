@@ -4,16 +4,6 @@ template:
 
 # Champs extraits du texte brut du PDF (PDFContent.text)
 fields:
-  genre:
-    method: "key_value"
-    key: "Genre"
-    normalize:
-      fille: "Fille"
-      f: "Fille"
-      "garçon": "Garçon"
-      garcon: "Garçon"
-      m: "Garçon"
-
   absences:
     method: "key_value"
     key: "Absences?"

@@ -12,11 +12,31 @@ import os
 import sys
 from pathlib import Path
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    datefmt="%H:%M:%S",
-)
+from dotenv import load_dotenv
+
+# Load .env early so LOG_LEVEL, SHOW_PROMPT etc. are available via os.getenv
+load_dotenv(Path(__file__).parent / ".env")
+
+
+def _setup_logging() -> None:
+    """Configure le logging de l'application.
+
+    Niveau par défaut : INFO (les données personnelles ne sont jamais loguées).
+    Les logs contenant des noms/prénoms sont au niveau DEBUG uniquement.
+
+    Pour le développement, définir LOG_LEVEL=DEBUG dans .env afin de
+    voir les mappings pseudonymisation (noms réels → ELEVE_XXX).
+    """
+    level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, level_name, logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+
+_setup_logging()
 # Suppress noisy httpx/httpcore cleanup warnings (Event loop is closed)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -70,6 +90,13 @@ if __name__ == "__main__":
     # --- Database lifecycle (with = flush WAL on exit) ---
     try:
         with managed_connection():
+            # --- RGPD: effacement automatique des données expirées (Art. 5(1)(e)) ---
+            import cache as _cache_module
+
+            _cache_module.startup_deletion_result = (
+                _cache_module.auto_delete_expired_data()
+            )
+
             # --- Mount existing FastAPI routers ---
             app.include_router(classes_router, prefix="/classes", tags=["Classes"])
             app.include_router(eleves_router, prefix="/eleves", tags=["Eleves"])
@@ -91,6 +118,7 @@ if __name__ == "__main__":
             import pages.home  # noqa: F401
             import pages.import_page  # noqa: F401
             import pages.prompt  # noqa: F401
+            import pages.references  # noqa: F401
             import pages.syntheses  # noqa: F401
 
             # --- Launch ---

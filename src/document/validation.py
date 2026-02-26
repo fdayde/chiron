@@ -66,12 +66,18 @@ def _extract_level(classe_str: str) -> str | None:
     return match.group(1) if match else None
 
 
-def check_classe_mismatch(pdf_classe: str | None, user_classe_id: str) -> str | None:
+def check_classe_mismatch(
+    pdf_classe: str | None,
+    user_classe_id: str,
+    classe_nom: str | None = None,
+) -> str | None:
     """Compare le niveau de classe extrait du PDF avec celui saisi par l'utilisateur.
 
     Args:
         pdf_classe: Classe extraite du PDF (ex: '5E'), ou None si non détectée.
-        user_classe_id: Identifiant de classe saisi (ex: '5E_2024-2025').
+        user_classe_id: Identifiant de classe saisi (ex: '5E_2024-2025' ou UUID).
+        classe_nom: Nom lisible de la classe (ex: '6A'). Utilisé pour l'extraction
+                    du niveau et l'affichage si fourni, sinon user_classe_id est utilisé.
 
     Returns:
         Message de warning si mismatch, None sinon.
@@ -79,8 +85,9 @@ def check_classe_mismatch(pdf_classe: str | None, user_classe_id: str) -> str | 
     if not pdf_classe:
         return None
 
+    display_name = classe_nom or user_classe_id
     pdf_level = _extract_level(pdf_classe)
-    user_level = _extract_level(user_classe_id)
+    user_level = _extract_level(display_name)
 
     if not pdf_level or not user_level:
         return None
@@ -88,7 +95,7 @@ def check_classe_mismatch(pdf_classe: str | None, user_classe_id: str) -> str | 
     if pdf_level != user_level:
         return (
             f"Le bulletin semble correspondre à une classe de {pdf_classe}, "
-            f"mais la classe sélectionnée est {user_classe_id}"
+            f"mais la classe sélectionnée est {display_name}"
         )
 
     return None
