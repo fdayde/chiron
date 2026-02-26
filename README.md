@@ -13,22 +13,24 @@
 
 Assistant IA responsable pour la préparation des conseils de classe. Suggère des projets de synthèses trimestrielles à partir des bulletins scolaires (PDF PRONOTE) pseudonymisés, l'enseignant relit, ajuste et valide chaque synthèse.
 
+<!-- TODO: remplacer par le chemin réel du GIF -->
+<p align="center">
+  <img src="docs/demo.gif" alt="Démo Chiron" width="720">
+</p>
+
 ## Sommaire
 
 - [Fonctionnalités clés](#fonctionnalités-clés)
 - [Statut du projet](#statut-du-projet)
 - [Vue d'ensemble](#vue-densemble)
 - [RGPD — À lire avant utilisation](#rgpd--à-lire-avant-utilisation)
-- [Prérequis](#prérequis-mode-développeur)
-- [Installation](#installation-mode-développeur)
-- [Démarrage rapide](#démarrage-rapide)
-- [Tests](#tests)
-- [Distribution (.exe)](#distribution-exe)
-- [Configuration (.env)](#configuration-env)
+- [Utilisation](#utilisation)
+- [Développement](#développement)
 - [Structure du projet](#structure-du-projet)
 - [Sécurité & RGPD](#sécurité--rgpd)
 - [Stack technique](#stack-technique)
 - [Documentation](#documentation)
+- [Contribuer](#contribuer)
 - [Licence](#licence)
 
 ## Fonctionnalités clés
@@ -66,7 +68,7 @@ PDF PRONOTE → Pseudonymisation → Extraction → Calibration → Génération
   Bulletin    PDF pseudonymisé   Données      Exemples        Synthèse      Validée    Noms réels
 ```
 
-## RGPD — À lire avant utilisation
+## RGPD : À lire avant utilisation
 
 Chiron s'inscrit dans une démarche de privacy by design, et propose un cadre responsable à l'usage de l'IA générative
 pour la rédaction de synthèses scolaires. L'outil ne note pas, ne classe pas et ne catégorise pas les élèves, il produit des suggestions de textes soumis au jugement de l'enseignant.
@@ -85,13 +87,51 @@ Chiron **pseudonymise toutes les données** (noms → `ELEVE_XXX`, notes → niv
 
 Pour le détail technique des données traitées, voir [Sécurité & RGPD](#sécurité--rgpd).
 
-## Prérequis (mode développeur)
+## Utilisation
+
+### Installation
+
+1. Télécharger le dossier `chiron/` (fourni par le développeur ou via [Releases](https://github.com/fdayde/chiron/releases))
+2. Renommer `.env.example` en `.env` et renseigner votre clé API Mistral :
+   ```env
+   MISTRAL_API_KEY=votre-clé-ici
+   ```
+3. Double-cliquer sur `chiron.exe`
+
+### Configuration (.env)
+
+```env
+# Provider par défaut : Mistral (hébergé en UE, conforme RGPD)
+DEFAULT_PROVIDER=mistral
+MISTRAL_API_KEY=...
+
+# OpenAI et Anthropic disponibles en configuration avancée :
+# OPENAI_API_KEY=sk-...
+# ANTHROPIC_API_KEY=sk-ant-...
+# DEFAULT_PROVIDER=openai  (ou anthropic)
+```
+
+Options avancées (développeurs) : voir [.env.example](.env.example).
+
+### Workflow type
+
+1. **Classe** : Importer les PDF bulletins de la classe (pseudonymisation automatique)
+2. **Vérification** : Utilisez le bouton « Visualiser les zones » pour vérifier que l'extraction du bulletin est correcte
+3. **Génération** : Générer 1-2 synthèses, relire et modifier au besoin, et valider
+4. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
+5. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
+6. **Review** : Relire, éditer si besoin, valider
+7. **Export** : Copier les synthèses dans le presse-papiers (noms réels restaurés automatiquement)
+
+## Développement
+
+### Prérequis
 
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
 - Clé API Mistral ([créer un compte](https://console.mistral.ai/))
 
-## Installation (mode développeur)
+### Installation
 
 ```bash
 git clone https://github.com/fdayde/chiron.git
@@ -109,7 +149,7 @@ cp .env.example .env
 # Éditer .env avec vos clés API
 ```
 
-## Démarrage rapide
+### Démarrage rapide
 
 ```bash
 python run.py
@@ -123,23 +163,13 @@ CHIRON_NATIVE=1 python run.py    # Mode desktop (pywebview)
 CHIRON_PORT=9000 python run.py   # Port personnalisé
 ```
 
-### Workflow type
-
-1. **Classe** : Importer les PDF bulletins de la classe (pseudonymisation automatique)
-2. **Vérification** : Utilisez le bouton « Visualiser les zones » pour vérifier que l'extraction du bulletin est correcte
-3. **Génération** : Générer 1-2 synthèses, relire et modifier au besoin, et valider
-4. **Calibration** : Marquer 1 à 3 synthèses validées comme exemples pour l'IA
-5. **Batch** : Générer les synthèses restantes (calibrées par les exemples)
-6. **Review** : Relire, éditer si besoin, valider
-7. **Export** : Copier les synthèses dans le presse-papiers (noms réels restaurés automatiquement)
-
-## Tests
+### Tests
 
 ```bash
 uv run pytest
 ```
 
-## Distribution (.exe)
+### Build .exe
 
 Pour distribuer l'application sans installer Python :
 
@@ -151,25 +181,7 @@ uv pip install pyinstaller pyinstaller-hooks-contrib
 python scripts/build.py --clean
 ```
 
-Le dossier `dist/chiron/` contient tout le nécessaire. Pour l'utilisateur final :
-
-1. Renommer `.env.example` en `.env` et remplir sa clé API
-2. Double-cliquer sur `chiron.exe`
-
-## Configuration (.env)
-
-```env
-# Provider par défaut : Mistral (hébergé en UE, conforme RGPD)
-DEFAULT_PROVIDER=mistral
-MISTRAL_API_KEY=...
-
-# OpenAI et Anthropic disponibles en configuration avancée :
-# OPENAI_API_KEY=sk-...
-# ANTHROPIC_API_KEY=sk-ant-...
-# DEFAULT_PROVIDER=openai  (ou anthropic)
-```
-
-Options avancées (développeurs) : voir [.env.example](.env.example).
+Le dossier `dist/chiron/` contient tout le nécessaire.
 
 ## Structure du projet
 
@@ -228,7 +240,7 @@ chiron/
 
 | Aspect | Mesure |
 |--------|--------|
-| **Fail-safe à l'import** | Si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière), l'import est **bloqué** — aucune donnée n'atteint le LLM |
+| **Fail-safe à l'import** | Si le PDF ne correspond pas au format attendu (nom non détecté, aucune matière), l'import est **bloqué** : aucune donnée n'atteint le LLM |
 | **Pseudonymisation** | Pipeline 3 passes : regex + Flair NER fuzzy + fuzzy direct **avant** envoi cloud (ELEVE_XXX) |
 | **Stockage local** | DuckDB fichier local, pas de cloud |
 | **Mapping identités** | Base séparée (`privacy.duckdb`), cascade suppression |
@@ -244,10 +256,10 @@ chiron/
 | Donnée | Traitement |
 |--------|------------|
 | Nom, prénom | Pseudonymisé (ELEVE_XXX) avant envoi à l'IA |
-| Genre (F/G) | Extrait du PDF, stocké localement, **non transmis** — le LLM déduit le genre depuis les accords grammaticaux des appréciations |
-| Absences, retards | Stocké localement, **non transmis** |
-| Moyennes par matière | Catégorisées selon l'échelle de maîtrise du socle commun (LSU) avant envoi à l'IA |
 | Appréciations enseignantes | Transmises pseudonymisées à l'IA |
+| Moyennes par matière | Catégorisées selon l'échelle de maîtrise du socle commun (LSU) avant envoi à l'IA |
+| Genre (F/G) | **non extrait** : le LLM déduit le genre depuis les accords grammaticaux des appréciations |
+| Absences, retards | Stocké localement, **non transmis** |
 | Engagements (délégué...) | Stocké localement, **non transmis** |
 | Nom des professeurs | Stocké localement, **non transmis** |
 | Établissement | Stocké localement, **non transmis** |
@@ -273,7 +285,18 @@ chiron/
 - **[docs/architecture.md](docs/architecture.md)** — Architecture, flux de données, RGPD
 - **[docs/adapter-format-bulletin.md](docs/adapter-format-bulletin.md)** — Adapter Chiron à un autre format de bulletin (autre que PRONOTE)
 - **[docs/references.md](docs/references.md)** — Fondements scientifiques (Dweck, Hattie & Timperley, Ryan & Deci, IPP)
-- **[docs/fiche_technique_rgpd.md](docs/fiche_technique_rgpd.md)** — Informations utiles pour rédiger l'AIPD et la note d'information aux familles dans le cadre du RPGD.
+- **[docs/fiche_technique_rgpd.md](docs/fiche_technique_rgpd.md)** — Informations utiles pour rédiger l'AIPD et la note d'information aux familles dans le cadre du RGPD.
+
+## Contribuer
+
+Les contributions sont bienvenues. Pour commencer :
+
+1. Forker le projet et créer une branche (`git checkout -b feat/ma-feature`)
+2. Installer l'environnement de développement (voir [Développement](#développement))
+3. Lancer les tests (`uv run pytest`) et le linter (`uv run ruff check`)
+4. Ouvrir une Pull Request
+
+Pour signaler un bug ou proposer une fonctionnalité, ouvrir une [issue](https://github.com/fdayde/chiron/issues).
 
 ## Licence
 
