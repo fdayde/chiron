@@ -60,16 +60,9 @@ _DIST_ENV_EXAMPLE = """\
 # =============================================================================
 # Renommer ce fichier en .env et remplir votre cle API Mistral.
 
-# Provider par defaut (Mistral — heberge en UE, conforme RGPD)
-DEFAULT_PROVIDER=mistral
-
 # Cle API Mistral (https://console.mistral.ai/)
+# Mistral est heberge en UE, conforme RGPD.
 MISTRAL_API_KEY=
-
-# OpenAI et Anthropic disponibles en configuration avancee :
-# OPENAI_API_KEY=sk-...
-# ANTHROPIC_API_KEY=sk-ant-...
-# DEFAULT_PROVIDER=openai  (ou anthropic)
 """
 
 

@@ -177,8 +177,5 @@ Cela permet d'identifier facilement la classe et l'année scolaire sans modifier
 ```bash
 # .env
 PDF_PARSER_TYPE=yaml_template  # yaml_template (défaut) ou pdfplumber (legacy)
-DEFAULT_PROVIDER=anthropic     # openai, anthropic ou mistral
-OPENAI_API_KEY=...
-ANTHROPIC_API_KEY=...
-MISTRAL_API_KEY=...
+MISTRAL_API_KEY=...            # Mistral (hébergé en UE, conforme RGPD)
 ```

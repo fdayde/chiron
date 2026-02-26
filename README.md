@@ -101,14 +101,8 @@ Pour le détail technique des données traitées, voir [Sécurité & RGPD](#séc
 ### Configuration (.env)
 
 ```env
-# Provider par défaut : Mistral (hébergé en UE, conforme RGPD)
-DEFAULT_PROVIDER=mistral
-MISTRAL_API_KEY=...
-
-# OpenAI et Anthropic disponibles en configuration avancée :
-# OPENAI_API_KEY=sk-...
-# ANTHROPIC_API_KEY=sk-ant-...
-# DEFAULT_PROVIDER=openai  (ou anthropic)
+# Mistral (hébergé en UE, conforme RGPD)
+MISTRAL_API_KEY=votre-clé-ici
 ```
 
 Options avancées (développeurs) : voir [.env.example](.env.example).
