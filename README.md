@@ -91,21 +91,15 @@ Pour le détail technique des données traitées, voir [Sécurité & RGPD](#séc
 
 ### Installation
 
-1. Télécharger le dossier `chiron/` (fourni par le développeur ou via [Releases](https://github.com/fdayde/chiron/releases))
-2. Renommer `.env.example` en `.env` et renseigner votre clé API Mistral :
+1. Télécharger `chiron-x.y.z.zip` depuis la page [Releases](https://github.com/fdayde/chiron/releases)
+2. Décompresser l'archive (vous obtenez un dossier `chiron/`)
+3. Renommer `.env.example` en `.env` et renseigner votre clé API Mistral :
    ```env
    MISTRAL_API_KEY=votre-clé-ici
    ```
-3. Double-cliquer sur `chiron.exe`
+4. Double-cliquer sur `chiron.exe`
 
-### Configuration (.env)
-
-```env
-# Mistral (hébergé en UE, conforme RGPD)
-MISTRAL_API_KEY=votre-clé-ici
-```
-
-Options avancées (développeurs) : voir [.env.example](.env.example).
+> Pour construire l'application depuis les sources, voir [Build .exe](#build-exe).
 
 ### Workflow type
 
@@ -165,7 +159,7 @@ uv run pytest
 
 ### Build .exe
 
-Pour distribuer l'application sans installer Python :
+Pour construire l'exécutable depuis les sources (nécessite Python + uv). L'exécutable produit, lui, fonctionne sans Python :
 
 ```bash
 # Installer les outils de build
