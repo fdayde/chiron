@@ -100,6 +100,10 @@ def _get_flair_tagger():
     if _flair_tagger is None:
         with _flair_lock:
             if _flair_tagger is None:
+                # Pre-import transformers submodules that flair needs but that
+                # transformers' lazy loader fails to resolve in PyInstaller bundles.
+                import transformers.models.auto.feature_extraction_auto  # noqa: F401
+                import transformers.models.auto.tokenization_auto  # noqa: F401
                 from flair.models import SequenceTagger
 
                 logger.info("Chargement du modèle Flair NER: flair/ner-french")

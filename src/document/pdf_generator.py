@@ -17,7 +17,7 @@ from reportlab.lib.colors import Color
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from src.core.constants import DATA_RAW_DIR
+from src.core.constants import DATA_DIR
 from src.document.templates import (
     COLORS,
     FONTS,
@@ -64,9 +64,9 @@ class BulletinPDFGenerator:
         """Initialise le générateur.
 
         Args:
-            output_dir: Répertoire de sortie (défaut: DATA_RAW_DIR).
+            output_dir: Répertoire de sortie (défaut: data/raw).
         """
-        self.output_dir = Path(output_dir) if output_dir else DATA_RAW_DIR
+        self.output_dir = Path(output_dir) if output_dir else DATA_DIR / "raw"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._init_styles()
 

@@ -56,20 +56,25 @@ hidden_imports = [
     # FastAPI / multipart
     "multipart",
     "python_multipart",
-    # Flair NER
-    "flair",
-    "flair.models",
-    "flair.data",
-    "flair.nn",
     # pydantic / pydantic-settings
     "pydantic",
     "pydantic_settings",
     # protobuf (needed by transformers / onnx at runtime)
     "google.protobuf",
+    # segtok (flair tokenization)
+    "segtok",
+    "segtok.tokenizer",
+    "segtok.segmenter",
+    # deprecated (used by flair)
+    "deprecated",
 ]
 
 # Collect all src.* submodules
 hidden_imports += collect_submodules("src")
+
+# Flair + transformers: heavy use of dynamic/lazy imports, collect all submodules
+hidden_imports += collect_submodules("flair")
+hidden_imports += collect_submodules("transformers")
 
 # ---------------------------------------------------------------------------
 # Data files
@@ -78,6 +83,9 @@ datas = []
 
 # App directory (pages, components, etc.) → _internal/app/
 datas += [(str(ROOT / "app"), "app")]
+
+# YAML templates (not collected by collect_submodules which only gets .py files)
+datas += [(str(ROOT / "src" / "document" / "templates"), "src/document/templates")]
 
 # .env.example → next to exe (will be moved post-build by scripts/build.py)
 datas += [(str(ROOT / ".env.example"), ".")]

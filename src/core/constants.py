@@ -15,11 +15,7 @@ PROJECT_ROOT = _get_project_root()
 
 # Chemins des données
 DATA_DIR = PROJECT_ROOT / "data"
-DATA_RAW_DIR = DATA_DIR / "raw"
 DATA_PROCESSED_DIR = DATA_DIR / "processed"
-DATA_GROUND_TRUTH_DIR = DATA_DIR / "ground_truth"
-DATA_EXPORTS_DIR = DATA_DIR / "exports"
-DATA_MAPPING_DIR = DATA_DIR / "mapping"
 
 # Prompt système personnalisable
 CUSTOM_SYSTEM_PROMPT_PATH = DATA_DIR / "custom_system_prompt.txt"
@@ -32,21 +28,13 @@ DB_CHIRON = DATA_DB_DIR / "chiron.duckdb"
 DATA_LLM_METRICS_DIR = DATA_PROCESSED_DIR / "llm_metrics"
 DB_LLM_METRICS = DATA_LLM_METRICS_DIR / "metrics.duckdb"
 
-# Chemins logs
-DATA_LOGS_DIR = DATA_PROCESSED_DIR / "logs"
-
 
 def ensure_data_directories() -> None:
     """Create all data subdirectories if they don't exist."""
     for d in [
         DATA_DIR,
-        DATA_RAW_DIR,
         DATA_PROCESSED_DIR,
-        DATA_GROUND_TRUTH_DIR,
-        DATA_EXPORTS_DIR,
-        DATA_MAPPING_DIR,
         DATA_DB_DIR,
-        DATA_LOGS_DIR,
         DATA_LLM_METRICS_DIR,
     ]:
         d.mkdir(parents=True, exist_ok=True)

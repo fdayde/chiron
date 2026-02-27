@@ -27,12 +27,6 @@ _EXE_NAME = f"chiron-{_VERSION}.exe"
 # Directories to create inside dist/chiron/data/
 DATA_SUBDIRS = [
     "db",
-    "raw",
-    "processed",
-    "processed/logs",
-    "exports",
-    "mapping",
-    "ground_truth",
 ]
 
 
