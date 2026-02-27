@@ -100,9 +100,6 @@ def _get_flair_tagger():
     if _flair_tagger is None:
         with _flair_lock:
             if _flair_tagger is None:
-                # NOTE: transformers lazy-import patching is done by the
-                # PyInstaller runtime hook (hooks/rthook_transformers.py)
-                # which runs at startup, before any application import.
                 from flair.models import SequenceTagger
 
                 logger.info("Chargement du modèle Flair NER: flair/ner-french")

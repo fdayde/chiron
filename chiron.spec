@@ -215,10 +215,7 @@ a = Analysis(
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
-    # Runtime hook: patches transformers _LazyModule before any app import.
-    # Needed because flair does `from transformers import AutoFeatureExtractor`
-    # which fails through _LazyModule's importlib resolution in frozen bundles.
-    runtime_hooks=[str(ROOT / "hooks" / "rthook_transformers.py")],
+    runtime_hooks=[],
     excludes=excludes,
     noarchive=False,
     cipher=block_cipher,
