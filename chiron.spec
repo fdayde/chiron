@@ -165,7 +165,7 @@ excludes = [
     # Transitive deps not used by the app
     "cv2",
     "opencv_python",
-    "scipy",
+    # scipy + sklearn: required by flair (direct dep) and transformers (transitive)
     "pyarrow",
     "torchvision",
     "torchtext",
@@ -215,7 +215,10 @@ a = Analysis(
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    # Runtime hook: patches transformers _LazyModule before any app import.
+    # Needed because flair does `from transformers import AutoFeatureExtractor`
+    # which fails through _LazyModule's importlib resolution in frozen bundles.
+    runtime_hooks=[str(ROOT / "hooks" / "rthook_transformers.py")],
     excludes=excludes,
     noarchive=False,
     cipher=block_cipher,
